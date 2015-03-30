@@ -221,7 +221,7 @@ class Build(Command):
         flags = SpaceList()
         for d in libdirs:
             flags.append('-I' + d)
-            flags.extend('-I' + subd for subd in list_subdirs(d, recursive=True, exclude=['examples']))
+            flags.extend('-I' + subd for subd in list_subdirs(d, recursive=True, exclude=['examples', 'extras']))
         return flags
 
     def _scan_dependencies(self, dir, lib_dirs, inc_flags):
