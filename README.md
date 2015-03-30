@@ -1,2 +1,1 @@
-(about to init from ino master)
-
+![Arturo Logo](docs/ArturoLogo.png)
