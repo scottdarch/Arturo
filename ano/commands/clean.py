@@ -3,7 +3,7 @@
 import os.path
 import shutil
 
-from ino.commands.base import Command
+from ano.commands.base import Command
 
 
 class Clean(Command):

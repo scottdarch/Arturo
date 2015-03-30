@@ -51,7 +51,7 @@ def list_subdirs(dirname, recursive=False, exclude=[]):
 def format_available_options(items, head_width, head_color='cyan', 
                              default=None, default_mark="[DEFAULT]", 
                              default_mark_color='red'):
-    from ino.filters import colorize
+    from ano.filters import colorize
     default_mark = colorize(default_mark + ' ', default_mark_color)
     lines = ['%s: %s%s' % (colorize('%%%ds' % head_width % key, head_color), 
                            default_mark if key == default else '', 

@@ -3,9 +3,8 @@
 import sys
 import os.path
 import fnmatch
-import functools
 
-from ino.utils import FileMap, SpaceList
+from ano.utils import FileMap, SpaceList
 
 
 class GlobFile(object):
@@ -30,23 +29,23 @@ def filter(f):
 
 
 @filter
-def glob(dir, *patterns, **kwargs):
+def glob(dirname, *patterns, **kwargs):
     recursive = kwargs.get('recursive', True)
     subdir = kwargs.get('subdir', '')
 
     result = SpaceList()
-    scan_dir = os.path.join(dir, subdir)
+    scan_dir = os.path.join(dirname, subdir)
     if not os.path.isdir(scan_dir):
         return result
 
     for entry in os.listdir(scan_dir):
         path = os.path.join(scan_dir, entry)
         if os.path.isdir(path) and recursive:
-            subglob = glob(dir, *patterns, recursive=True,
+            subglob = glob(dirname, *patterns, recursive=True,
                            subdir=os.path.join(subdir, entry))
             result.extend(subglob)
         elif os.path.isfile(path) and any(fnmatch.fnmatch(entry, p) for p in patterns):
-            result.append(GlobFile(os.path.join(subdir, entry), dir))
+            result.append(GlobFile(os.path.join(subdir, entry), dirname))
 
     return result
 

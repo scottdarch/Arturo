@@ -2,17 +2,17 @@
 # -*- coding: utf-8; -*-
 
 """\
-Ino is a command-line toolkit for working with Arduino hardware.
+Arturo is a command-line toolkit for working with Arduino hardware.
 
 It is intended to replace Arduino IDE UI for those who prefer to work in
 terminal or want to integrate Arduino development in a 3rd party IDE.
 
-Ino can build sketches, libraries, upload firmwares, establish
+Arturo can build sketches, libraries, upload firmwares, establish
 serial-communication. For this it is split in a bunch of subcommands, like git
 or mercurial do. The full list is provided below. You may run any of them with
 --help to get further help. E.g.:
 
-    ino build --help
+    ano build --help
 """
 
 import sys
@@ -20,14 +20,14 @@ import os.path
 import argparse
 import inspect
 
-import ino.commands
+import ano.commands
 
-from ino.commands.base import Command
-from ino.conf import configure
-from ino.exc import Abort
-from ino.filters import colorize
-from ino.environment import Environment
-from ino.argparsing import FlexiFormatter
+from ano.commands.base import Command
+from ano.conf import configure
+from ano.exc import Abort
+from ano.filters import colorize
+from ano.environment import Environment
+from ano.argparsing import FlexiFormatter
 
 
 def main():
@@ -41,10 +41,10 @@ def main():
     except IndexError:
         current_command = None
 
-    parser = argparse.ArgumentParser(prog='ino', formatter_class=FlexiFormatter, description=__doc__)
+    parser = argparse.ArgumentParser(prog='ano', formatter_class=FlexiFormatter, description=__doc__)
     subparsers = parser.add_subparsers()
     is_command = lambda x: inspect.isclass(x) and issubclass(x, Command) and x != Command
-    commands = [cls(e) for _, cls in inspect.getmembers(ino.commands, is_command)]
+    commands = [cls(e) for _, cls in inspect.getmembers(ano.commands, is_command)]
     for cmd in commands:
         p = subparsers.add_parser(cmd.name, formatter_class=FlexiFormatter, help=cmd.help_line)
         if current_command != cmd.name:

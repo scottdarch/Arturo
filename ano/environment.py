@@ -3,7 +3,6 @@
 import sys
 import os.path
 import itertools
-import argparse
 import pickle
 import platform
 import hashlib
@@ -18,9 +17,9 @@ except ImportError:
 from collections import namedtuple
 from glob2 import glob
 
-from ino.filters import colorize
-from ino.utils import format_available_options
-from ino.exc import Abort
+from ano.filters import colorize
+from ano.utils import format_available_options
+from ano.exc import Abort
 
 
 class Version(namedtuple('Version', 'major minor build')):
@@ -92,7 +91,7 @@ class Environment(dict):
         arduino_user_dir_guesses.insert(0, os.path.expanduser(os.path.join("~", "My Documents", "Arduino")))
 
     default_board_model = 'uno'
-    ino = sys.argv[0]
+    ano = sys.argv[0]
 
     def dump(self):
         if not os.path.isdir(self.output_dir):
@@ -285,14 +284,14 @@ class Environment(dict):
         return self.board_models()[key]
     
     def add_board_model_arg(self, parser):
-        help = '\n'.join([
+        helpText = '\n'.join([
             "Arduino board model (default: %(default)s)",
             "For a full list of supported models run:", 
-            "`ino list-models'"
+            "`ano list-models'"
         ])
 
         parser.add_argument('-m', '--board-model', metavar='MODEL', 
-                            default=self.default_board_model, help=help)
+                            default=self.default_board_model, help=helpText)
 
     def add_arduino_dist_arg(self, parser):
         parser.add_argument('-d', '--arduino-dist', metavar='PATH', 
@@ -343,8 +342,8 @@ class Environment(dict):
         # pair should go to a separate subdirectory
         build_dirname = board_model or self.default_board_model
         if arduino_dist:
-            hash = hashlib.md5(arduino_dist).hexdigest()[:8]
-            build_dirname = '%s-%s' % (build_dirname, hash)
+            distHash = hashlib.md5(arduino_dist).hexdigest()[:8]
+            build_dirname = '%s-%s' % (build_dirname, distHash)
 
         self['build_dir'] = os.path.join(self.output_dir, build_dirname)
 
@@ -366,5 +365,5 @@ class Environment(dict):
 
 class BoardModels(OrderedDict):
     def format(self):
-        map = [(key, val['name']) for key, val in self.iteritems() if 'name' in val]
-        return format_available_options(map, head_width=12, default=self.default)
+        boardsMap = [(key, val['name']) for key, val in self.iteritems() if 'name' in val]
+        return format_available_options(boardsMap, head_width=12, default=self.default)

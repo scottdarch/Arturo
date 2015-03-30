@@ -4,19 +4,16 @@ import re
 import os.path
 import inspect
 import subprocess
-import platform
 import jinja2
 import shlex
 
 from jinja2.runtime import StrictUndefined
 
-import ino.filters
+import ano.filters
 
-from ino.commands.base import Command
-from ino.environment import Version
-from ino.filters import colorize
-from ino.utils import SpaceList, list_subdirs
-from ino.exc import Abort
+from ano.commands.base import Command
+from ano.utils import SpaceList, list_subdirs
+from ano.exc import Abort
 
 
 class Build(Command):
@@ -130,6 +127,9 @@ class Build(Command):
             self.e.find_dir('arduino_variants_dir', ['.'], [variants_place],
                             human_name='Arduino variants directory')
 
+        self.e.find_arduino_dir('arduino_core_libraries_dir', [os.path.join(board['_coredir'], 'libraries')],
+                                human_name='Arduino core libraries')
+
         self.e.find_arduino_dir('arduino_libraries_dir', ['libraries'],
                                 human_name='Arduino standard libraries')
 
@@ -195,8 +195,8 @@ class Build(Command):
             undefined=StrictUndefined, # bark on Undefined render
             extensions=['jinja2.ext.do'])
 
-        # inject @filters from ino.filters
-        for name, f in inspect.getmembers(ino.filters, lambda x: getattr(x, 'filter', False)):
+        # inject @filters from ano.filters
+        for name, f in inspect.getmembers(ano.filters, lambda x: getattr(x, 'filter', False)):
             self.jenv.filters[name] = f
 
         # inject globals
@@ -227,9 +227,9 @@ class Build(Command):
             flags.extend('-I' + subd for subd in list_subdirs(d, recursive=True, exclude=['examples', 'extras']))
         return flags
 
-    def _scan_dependencies(self, dir, lib_dirs, inc_flags):
-        output_filepath = os.path.join(self.e.build_dir, os.path.basename(dir), 'dependencies.d')
-        self.make('Makefile.deps', inc_flags=inc_flags, src_dir=dir, output_filepath=output_filepath)
+    def _scan_dependencies(self, dirName, lib_dirs, inc_flags):
+        output_filepath = os.path.join(self.e.build_dir, os.path.basename(dirName), 'dependencies.d')
+        self.make('Makefile.deps', inc_flags=inc_flags, src_dir=dirName, output_filepath=output_filepath)
         self.e['deps'].append(output_filepath)
 
         # search for dependencies on libraries
@@ -241,7 +241,7 @@ class Build(Command):
         with open(output_filepath) as f:
             for line in f:
                 for lib, regex in regexes.iteritems():
-                    if regex.search(line) and lib != dir:
+                    if regex.search(line) and lib != dirName:
                         used_libs.add(lib)
 
         return used_libs
@@ -252,6 +252,7 @@ class Build(Command):
         lib_dirs = [self.e.arduino_core_dir] + \
             list_subdirs(self.e.lib_dir) + \
             list_subdirs(self.e.arduino_libraries_dir) + \
+            list_subdirs(self.e.arduino_core_libraries_dir) + \
             list_subdirs(self.e.arduino_user_libraries_dir)
         inc_flags = self.recursive_inc_lib_flags(lib_dirs)
 

@@ -3,6 +3,5 @@
 tags
 build
 dist
-ino.egg-info
 doc/.build
 .*.sw[op]

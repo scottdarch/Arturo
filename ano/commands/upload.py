@@ -10,15 +10,15 @@ from time import sleep
 from serial import Serial
 from serial.serialutil import SerialException
 
-from ino.commands.base import Command
-from ino.exc import Abort
+from ano.commands.base import Command
+from ano.exc import Abort
 
 
 class Upload(Command):
     """
     Upload built firmware to the device.
 
-    The firmware must be already explicitly built with `ino build'. If current
+    The firmware must be already explicitly built with `ano build'. If current
     device firmare reads/writes serial port extensively, upload may fail. In
     that case try to retry few times or upload just after pushing Reset button
     on Arduino board.

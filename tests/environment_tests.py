@@ -2,7 +2,7 @@
 
 from nose.tools import assert_equal
 
-from ino.environment import Version
+from ano.environment import Version
 
 
 class TestVersion(object):

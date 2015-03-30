@@ -5,9 +5,9 @@ import shutil
 
 from configobj import ConfigObj
 
-from ino.commands.base import Command
-from ino.exc import Abort
-from ino.utils import format_available_options, list_subdirs
+from ano.commands.base import Command
+from ano.exc import Abort
+from ano.utils import format_available_options, list_subdirs
 
 
 class Init(Command):

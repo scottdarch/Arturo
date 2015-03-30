@@ -1,8 +1,8 @@
-In order to install Ino from source tarball run:
+In order to install Arturo from source run:
 
     make install
 
-By default Ino is installed into `/usr/local'. You can change this by setting
+By default ano is installed into `/usr/local'. You can change this by setting
 PREFIX or DESTDIR variables.
 
     * DESTDIR changes file system root (`/' by default)
@@ -10,5 +10,5 @@ PREFIX or DESTDIR variables.
 
 Examples:
 
-    * make install DESTDIR=~/ino
+    * make install DESTDIR=~/ano
     * make install PREFIX=/usr

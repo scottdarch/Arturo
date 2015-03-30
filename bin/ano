@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-from ino.runner import main
+from ano.runner import main
 
 if __name__ == '__main__':
     main()

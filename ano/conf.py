@@ -22,4 +22,4 @@ class Configuration(object):
 
 
 def configure():
-    return Configuration('/etc/ino.ini', '~/.inorc', 'ino.ini')
+    return Configuration('/etc/ano.ini', '~/.anorc', 'ano.ini')

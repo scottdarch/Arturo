@@ -1,0 +1,19 @@
+Metadata-Version: 1.1
+Name: ano
+Version: 0.4.0
+Summary: Command line toolkit for working with Arduino hardware
+Home-page: http://archxs.com
+Author: Victor Nakoryakov, Amperka Team, Scott Dixon
+Author-email: scottd.nerd@gmail.com
+License: MIT
+Description: (about to init from ino master)
+        
+        
+Keywords: arduino build system
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Software Development :: Embedded Systems

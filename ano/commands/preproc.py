@@ -3,15 +3,15 @@
 import sys
 import re
 
-from ino.commands.base import Command
-from ino.exc import Abort
+from ano.commands.base import Command
+from ano.exc import Abort
 
 
 class Preprocess(Command):
     """
     Preprocess an .ino or .pde sketch file and produce ready-to-compile .cpp source.
 
-    Ino mimics steps that are performed by official Arduino Software to
+    Arturo mimics steps that are performed by official Arduino Software to
     produce similar result:
 
         * Either #include <Arduino.h> or <WProgram.h> is prepended

@@ -2,7 +2,7 @@
 
 import subprocess
 
-from ino.commands.base import Command
+from ano.commands.base import Command
 
 
 class Serial(Command):
