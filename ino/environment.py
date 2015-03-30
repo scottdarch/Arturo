@@ -72,14 +72,24 @@ class Environment(dict):
     lib_dir = 'lib'
     hex_filename = 'firmware.hex'
 
+    arduino_user_dir = None
+    arduino_user_dir_guesses = [
+        'libraries',
+        os.path.expanduser("~/Documents/Arduino")
+    ]
+
+    platformSystem = platform.system()
+
     arduino_dist_dir = None
     arduino_dist_dir_guesses = [
         '/usr/local/share/arduino',
         '/usr/share/arduino',
     ]
 
-    if platform.system() == 'Darwin':
+    if platformSystem == 'Darwin':
         arduino_dist_dir_guesses.insert(0, '/Applications/Arduino.app/Contents/Resources/Java')
+    elif platformSystem == 'Windows':
+        arduino_user_dir_guesses.insert(0, os.path.expanduser(os.path.join("~", "My Documents", "Arduino")))
 
     default_board_model = 'uno'
     ino = sys.argv[0]
@@ -186,6 +196,9 @@ class Environment(dict):
     def find_arduino_dir(self, key, dirname_parts, items=None, human_name=None, multi=False):
         return self.find_dir(key, items, self.arduino_dist_places(dirname_parts), human_name, multi=multi)
 
+    def find_arduino_user_dir(self, key, dirname_parts, items=None, human_name=None, multi=False):
+        return self.find_dir(key, items, self.arduino_user_places(dirname_parts), human_name, multi=multi)
+
     def find_arduino_file(self, key, dirname_parts, items=None, human_name=None, multi=False):
         return self.find_file(key, items, self.arduino_dist_places(dirname_parts), human_name, multi=multi)
 
@@ -193,6 +206,9 @@ class Environment(dict):
         # if not bundled with Arduino Software the tool should be searched on PATH
         places = self.arduino_dist_places(dirname_parts) + ['$PATH']
         return self.find_file(key, items, places, human_name, multi=multi)
+
+    def arduino_user_places(self, dirname_parts):
+        return self.guess_at_places('arduino_user_dir', self.arduino_user_dir_guesses, dirname_parts)
 
     def arduino_dist_places(self, dirname_parts):
         """
@@ -202,10 +218,13 @@ class Environment(dict):
             /usr/local/share/arduino/a/b/c
             /usr/share/arduino/a/b/c
         """
-        if 'arduino_dist_dir' in self:
-            places = [self['arduino_dist_dir']]
+        return self.guess_at_places('arduino_dist_dir', self.arduino_dist_dir_guesses, dirname_parts)
+
+    def guess_at_places(self, key, guesses, dirname_parts):
+        if key in self:
+            places = [self[key]]
         else:
-            places = self.arduino_dist_dir_guesses
+            places = guesses
         return [os.path.join(p, *dirname_parts) for p in places]
 
     def board_models(self):
