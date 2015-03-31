@@ -25,3 +25,5 @@ is not true).
 
 Make sure you do an ```ano clean``` if you had previously built using ino. I will
 try to handle this automatically in a future release.
+
+<img src="docs/Toscanini.png" alt="Arturo Toscanini" height="150" width="147"/>
