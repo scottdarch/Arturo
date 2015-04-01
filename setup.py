@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup
+from ano import __version__
 
 install_requires = open("requirements.txt").read().split('\n')
 readme_content = open("README.md").read()
@@ -17,7 +18,7 @@ ano_package_data = gen_data_files('ano', 'make') + gen_data_files('ano', 'templa
 
 setup(
     name='ano',
-    version='0.4.0',
+    version=__version__,
     description='Command line toolkit for working with Arduino hardware',
     long_description=readme_content,
     author='Victor Nakoryakov, Amperka Team, Scott Dixon',

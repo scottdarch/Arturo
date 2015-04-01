@@ -55,7 +55,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        run_anywhere = "init clean list-models serial"
+        run_anywhere = "init clean list-models serial version"
 
         in_project_dir = os.path.isdir(e.src_dir)
         if not in_project_dir and current_command not in run_anywhere:
