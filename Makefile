@@ -9,7 +9,7 @@ doc:
 	$(MAKE) -f doc/Makefile html
 
 install:
-	env python2 setup.py install --root $(DESTDIR) --prefix $(PREFIX) --exec-prefix $(PREFIX)
+	env python2 setup.py install
 
 .PHONY : doc
 .PHONY : install
