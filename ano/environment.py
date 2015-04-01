@@ -66,7 +66,7 @@ class Version(namedtuple('Version', 'major minor build')):
 class Environment(dict):
 
     templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
-    output_dir = '.build'
+    output_dir = '.build_ano'
     src_dir = 'src'
     lib_dir = 'lib'
     hex_filename = 'firmware.hex'
@@ -93,25 +93,36 @@ class Environment(dict):
     default_board_model = 'uno'
     ano = sys.argv[0]
 
+    def __init__(self):
+        super(Environment, self).__init__()
+        self['__ano_objectVersion__'] = 3;
+
     def dump(self):
         if not os.path.isdir(self.output_dir):
             return
         with open(self.dump_filepath, 'wb') as f:
-            pickle.dump(self.items(), f)
+            pickle.dump(self.items(), f, pickle.HIGHEST_PROTOCOL)
 
     def load(self):
         if not os.path.exists(self.dump_filepath):
             return
+        needToResetPickle = False
         with open(self.dump_filepath, 'rb') as f:
             try:
-                self.update(pickle.load(f))
+                unjarred = dict(pickle.load(f))
+                if unjarred['__ano_objectVersion__'] != self['__ano_objectVersion__']:
+                    needToResetPickle = True
+                else:
+                    self.update(unjarred)
             except:
-                print colorize('Environment dump exists (%s), but failed to load' % 
-                               self.dump_filepath, 'yellow')
+                needToResetPickle = True
+
+        if needToResetPickle:
+            os.remove(self.dump_filepath)
 
     @property
     def dump_filepath(self):
-        return os.path.join(self.output_dir, 'environment.pickle')
+        return os.path.join(self.output_dir, 'environment-ano.pickle')
 
     def __getitem__(self, key):
         try:
