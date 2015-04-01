@@ -10,7 +10,7 @@ readme_content = open("README.md").read()
 def gen_data_files(package_dir, subdir):
     import os.path
     results = []
-    for root, dirs, files in os.walk(os.path.join(package_dir, subdir)):
+    for root, dirs, files in os.walk(os.path.join(package_dir, subdir)):  # @UnusedVariable
         results.extend([os.path.join(root, f)[len(package_dir)+1:] for f in files])
     return results
 
@@ -21,11 +21,11 @@ setup(
     version=__version__,
     description='Command line toolkit for working with Arduino hardware',
     long_description=readme_content,
-    author='Victor Nakoryakov, Amperka Team, Scott Dixon',
-    author_email='scottd.nerd@gmail.com',
+    author='Victor Nakoryakov, Amperka Team: Scott Dixon, Arturo Team',
+    author_email='scottd.nerd+arturo@gmail.com',
     license='MIT',
     keywords="arduino build system",
-    url='http://archxs.com',
+    url='http://32bits.io/Arturo',
     packages=['ano', 'ano.commands'],
     scripts=['bin/ano'],
     package_data={'ano': ano_package_data},
