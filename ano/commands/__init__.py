@@ -7,3 +7,4 @@ from ano.commands.clean import Clean
 from ano.commands.upload import Upload
 from ano.commands.serial import Serial
 from ano.commands.listmodels import ListModels
+from ano.commands.version import Version
