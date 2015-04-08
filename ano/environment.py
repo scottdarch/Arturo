@@ -67,14 +67,14 @@ class Environment(dict):
 
     templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
     output_dir = '.build_ano'
-    src_dir = 'src'
     lib_dir = 'lib'
     hex_filename = 'firmware.hex'
 
     arduino_user_dir = None
     arduino_user_dir_guesses = [
         'libraries',
-        os.path.expanduser("~/Documents/Arduino")
+        os.path.expanduser("~/Documents/Arduino"),
+        os.path.expanduser("~/Arduino")
     ]
 
     platformSystem = platform.system()
@@ -304,6 +304,16 @@ class Environment(dict):
         parser.add_argument('-m', '--board-model', metavar='MODEL', 
                             default=self.default_board_model, help=helpText)
 
+        parser.add_argument('-s', '--source-dir', metavar='SOURCE',
+                    default='src',
+                    help='The name of the directory which contains '
+                    'the project source/sketches. By default this is ' 
+                    'a folder named src.')
+
+        parser.add_argument('--cpu', metavar='CPU',
+                            default=self.default_board_model, help='''
+Additional CPU argument required for board models available with different CPUs (e.g. Arduino Pro).''')
+
     def add_arduino_dist_arg(self, parser):
         parser.add_argument('-d', '--arduino-dist', metavar='PATH', 
                             help='Path to Arduino distribution, e.g. ~/Downloads/arduino-0022.\nTry to guess if not specified')
@@ -337,6 +347,8 @@ class Environment(dict):
                     (''.join(['\n  - ' + p for p in self.serial_port_patterns()])))
 
     def process_args(self, args):
+        self.src_dir = getattr(args, 'source_dir', None)
+
         arduino_dist = getattr(args, 'arduino_dist', None)
         if arduino_dist:
             self['arduino_dist_dir'] = arduino_dist
@@ -375,6 +387,23 @@ class Environment(dict):
 
 
 class BoardModels(OrderedDict):
+
+    @classmethod
+    def getValueForVariant(cls, boardsDict, variant, keyType, key):
+        if variant is not None:
+            try:
+                return boardsDict['menu']['cpu'][variant][keyType][key]
+            except KeyError:
+                None
+
+        try:
+            return boardsDict[keyType][key]
+        except KeyError as e:
+            if 'menu' in boardsDict and 'cpu' in boardsDict['menu']:
+                raise KeyError("Are you missing --cpu %s" % (str(boardsDict['menu']['cpu'].keys())))
+            else:
+                raise e;
+
     def format(self):
         boardsMap = [(key, val['name']) for key, val in self.iteritems() if 'name' in val]
         return format_available_options(boardsMap, head_width=12, default=self.default)

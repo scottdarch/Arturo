@@ -57,11 +57,14 @@ def main():
     try:
         run_anywhere = "init clean list-models serial version"
 
-        in_project_dir = os.path.isdir(e.src_dir)
-        if not in_project_dir and current_command not in run_anywhere:
-            raise Abort("No project found in this directory.")
-
         e.process_args(args)
+
+        if current_command not in run_anywhere:
+            if os.path.isdir(e.output_dir):
+                # we have an output dir so we'll pretend this is a project folder
+                None
+            elif e.src_dir is None or not os.path.isdir(e.src_dir):
+                raise Abort("No project found in this directory.")
 
         if current_command not in run_anywhere:
             # For valid projects create .build & lib

@@ -4,7 +4,6 @@ import sys
 import re
 
 from ano.commands.base import Command
-from ano.exc import Abort
 
 
 class Preprocess(Command):
@@ -25,6 +24,7 @@ class Preprocess(Command):
         super(Preprocess, self).setup_arg_parser(parser)
         self.e.add_arduino_dist_arg(parser)
         parser.add_argument('sketch', help='Input sketch file name')
+        parser.add_argument('-s', '--source-dir', help="Folder the sketches are located in.")
         parser.add_argument('-o', '--output', default='-', help='Output source file name (default: use stdout)')
 
     def run(self, args):
