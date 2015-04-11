@@ -1,19 +1,18 @@
 # -*- coding: utf-8; -*-
 
-import re
-import os.path
 import inspect
-import subprocess
-import jinja2
+import os.path
+import re
 import shlex
-
-from jinja2.runtime import StrictUndefined
-
-import ano.filters
+import subprocess
 
 from ano.commands.base import Command
-from ano.utils import SpaceList, list_subdirs
+from ano.environment import BoardModels
 from ano.exc import Abort
+import ano.filters
+from ano.utils import SpaceList, list_subdirs
+import jinja2
+from jinja2.runtime import StrictUndefined
 
 
 class Build(Command):
@@ -151,21 +150,27 @@ class Build(Command):
 
     def setup_flags(self, args):
         board = self.e.board_model(args.board_model)
-        mcu = '-mmcu=' + board['build']['mcu']
+        boardVariant = args.cpu if ('cpu' in args) else None;
+
+        mcu = '-mmcu=' + BoardModels.getValueForVariant(board, boardVariant, 'build', 'mcu')
         # Hard-code the flags that are essential to building the sketch
         self.e['cppflags'] = SpaceList([
             mcu,
-            '-DF_CPU=' + board['build']['f_cpu'],
+            '-DF_CPU=' + BoardModels.getValueForVariant(board, boardVariant, 'build', 'f_cpu'),
             '-DARDUINO=' + str(self.e.arduino_lib_version.as_int()),
             '-I' + self.e['arduino_core_dir'],
         ]) 
         # Add additional flags as specified
         self.e['cppflags'] += SpaceList(shlex.split(args.cppflags))
 
-        if 'vid' in board['build']:
-            self.e['cppflags'].append('-DUSB_VID=%s' % board['build']['vid'])
-        if 'pid' in board['build']:
-            self.e['cppflags'].append('-DUSB_PID=%s' % board['build']['pid'])
+        try:
+            self.e['cppflags'].append('-DUSB_VID=%s' % BoardModels.getValueForVariant(board, boardVariant, 'build', 'vid'))
+        except KeyError:
+            None
+        try:
+            self.e['cppflags'].append('-DUSB_PID=%s' % BoardModels.getValueForVariant(board, boardVariant, 'build', 'pid'))
+        except KeyError:
+            None
             
         if self.e.arduino_lib_version.major:
             variant_dir = os.path.join(self.e.arduino_variants_dir, 

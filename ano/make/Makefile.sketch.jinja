@@ -6,7 +6,7 @@
 {{ target }} : {{ source }}
 	@mkdir -p {{ target|dirname }}
 	@echo {{ source|colorize('yellow') }}
-	{{v}}{{ e.ano }} preproc {% if 'arduino_dist_dir' in e %}-d {{ e['arduino_dist_dir'] }}{% endif %} -o $@ $^
+	{{v}}{{ e.ano }} preproc --source-dir {{e.src_dir}} {% if 'arduino_dist_dir' in e %}-d {{ e['arduino_dist_dir'] }}{% endif %} -o $@ $^
 {% endfor %}
 
 all : {{ sketches.target_paths() }}
