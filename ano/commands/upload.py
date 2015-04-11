@@ -41,7 +41,7 @@ class Upload(Command):
         if platform.system() == 'Linux':
             self.e.find_arduino_tool('avrdude', ['hardware', 'tools', 'avr', 'bin'])
 
-            conf_places = self.e.arduino_dist_places(['hardware', 'tools', 'avr', 'bin'])
+            conf_places = self.e.arduino_dist_places(['hardware', 'tools', 'avr', 'etc'])
             conf_places.append('/etc/avrdude') # fallback to system-wide conf on Fedora
             self.e.find_file('avrdude.conf', places=conf_places)
         else:
