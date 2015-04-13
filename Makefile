@@ -5,6 +5,9 @@ PREFIX=/usr/local
 all:
 	@# do nothing yet
 
+clean:
+	rm -rf build
+
 doc:
 	$(MAKE) -f doc/Makefile html
 
