@@ -20,10 +20,10 @@ class NamedOrderedDict(OrderedDict):
 
     def __init__(self, name):
         super(NamedOrderedDict, self).__init__()
-        self._name = name;
+        self['name'] = name
         
     def __str__(self):
-        return self._name
+        return self['name']
 
 # +---------------------------------------------------------------------------+
 # | SearchPath

@@ -26,7 +26,7 @@ setup(
     license='MIT',
     keywords="arduino build system",
     url='http://32bits.io/Arturo',
-    packages=['ano', 'ano.commands', 'ano.Arduino15'],
+    packages=['ano', 'ano.commands', 'ano.Arduino15', 'ano.Arduino15.templates'],
     scripts=['bin/ano'],
     package_data={'ano': ano_package_data},
     install_requires=install_requires,

@@ -74,6 +74,7 @@ class Platform(object):
         self._platformMetadata = platformMetadata
         self._boards = None
         self._programmers = None
+        self._platformBoardFactory = PlatformBoardFactory(self, console)
         
         if not os.path.isdir(self._platformPath):
             raise Exception("%s was not found" % (self._platformPath))
@@ -83,7 +84,7 @@ class Platform(object):
     
     def getBoards(self):
         if self._boards is None:
-            self._boards = KeyValueParser.parse(os.path.join(self._platformPath, Platform.BOARDS_FILENAME), OrderedDict(), PlatformBoardFactory(self, self._console), self._console)
+            self._boards = KeyValueParser.parse(os.path.join(self._platformPath, Platform.BOARDS_FILENAME), OrderedDict(), self._platformBoardFactory, self._console)
         return self._boards
     
     def getProgrammers(self):
@@ -98,4 +99,4 @@ class Platform(object):
     # | PYTHON DATA MODEL
     # +-----------------------------------------------------------------------+
     def __getitem__(self, key):
-        return self._platformMetadata[key]
+        return self.getBoards()[key]

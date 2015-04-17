@@ -43,7 +43,7 @@ class Package(object):
     # | PYTHON DATA MODEL
     # +-----------------------------------------------------------------------+
     def __getitem__(self, key):
-        return self._packageMetadata[key]
+        return self.getPlatforms()[key]
     
 # +---------------------------------------------------------------------------+
 # | Packages
@@ -72,6 +72,9 @@ class Packages(object):
 
         return self._packageIndex
         
+    def __getitem__(self, key):
+        return self.getPackages()[key]
+
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
