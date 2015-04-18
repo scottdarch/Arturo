@@ -6,4 +6,6 @@ dist
 doc/.build
 .*.sw[op]
 ano.egg-info
+local.mk
+.build_ano
 

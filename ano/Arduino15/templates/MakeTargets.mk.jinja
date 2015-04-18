@@ -5,19 +5,47 @@
 # http://32bits.io/Arturo/
 #
 
+
+BOARD := {{config.board}}
+
 # +----------------------------------------------------------------------------+
-# | BUILD VARIABLES
+# | SOURCE
 # +----------------------------------------------------------------------------+
-VERSION_STRING := {{env.version}}
+C_HEADERS := {arturo.src.headers}
+
+# +----------------------------------------------------------------------------+
+# | FLAGS
+# +----------------------------------------------------------------------------+
+CFLAGS += -Wall \
+
+CXX_FLAGS += \
+
+C_DEBUG_FLAGS := -g \
+
+CXX_DEBUG_FLAGS := -g \
+
+AR_FLAGS := \
+
+# +----------------------------------------------------------------------------+
+# | COMMON TARGETS
+# +----------------------------------------------------------------------------+
+.PHONY: all
+all:
+
+.PHONY: debug
+debug: CFLAGS += $(C_DEBUG_FLAGS)
+debug: CXX_FLAGS += $(CXX_DEBUG_FLAGS)
+debug: all
+
+
+.PHONY: clean
+clean: cleandocs
+    rm -rf $(BUILDDIR)
 
 # +----------------------------------------------------------------------------+
 # | DIRECTORIES AND CONFIGURATIONS
 # +----------------------------------------------------------------------------+
-BUILDDIR := {{project.builddir}}
 
-# +----------------------------------------------------------------------------+
-# | DIRECTORIES AND CONFIGURATIONS
-# +----------------------------------------------------------------------------+
+include $(BUILDDIR)/Toolchain_{{config.target_platform}}.mk
 
-include $(BUILDDIR)/ArturoMakeTargets.mk
-
+include$(BUILDDIR)/MakeHex.mk

@@ -1,0 +1,36 @@
+# -*- coding: utf-8 -*-
+
+# Thanks to (Maemo)[https://wiki.maemo.org/Internationalize_a_Python_application] for this snippit and the
+# tutorial
+
+import os
+import locale
+import gettext
+from ano import __app_name__
+
+
+def _init_i18n():
+    mo_location = os.path.dirname(__file__)
+
+    # Now we need to choose the language. We will provide a list, and gettext
+    # will use the first translation available in the list
+    #
+    DEFAULT_LANGUAGES = os.environ.get('LANG', '').split(':')
+    DEFAULT_LANGUAGES += ['en_US']
+     
+    lc, encoding = locale.getdefaultlocale()  # @UnusedVariable
+    if lc:
+        languages = [lc]
+    
+    # Concat all languages (env + default locale),
+    #  and here we have the languages and location of the translations
+    languages += DEFAULT_LANGUAGES
+
+    # Lets tell those details to gettext
+    gettext.install(True, localedir=None, unicode=1)
+    gettext.find(__app_name__, mo_location)
+    gettext.textdomain (__app_name__)
+    gettext.bind_textdomain_codeset(__app_name__, "UTF-8")
+    return gettext.translation(__app_name__, mo_location, languages=languages, fallback=True)
+
+language = _init_i18n()

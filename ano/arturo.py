@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 
-import os
-
 from ano.Arduino15.environment import Environment
+from ano import i18n
 
+_ = i18n.language.ugettext
 
 #  _____     _               
 # |  _  |___| |_ _ _ ___ ___ 
@@ -12,7 +12,7 @@ from ano.Arduino15.environment import Environment
 # http://32bits.io/Arturo/
 #
 def main():
-    print "Start anew"
+    print _("Arturo 2.0")
 #     searchPath = SearchPath()
 #     anoConsole = Console()
 #     print "Search here: ", str(searchPath)
@@ -27,8 +27,10 @@ def main():
 #         print str(platform.getProgrammers())
 #         print str(platform.getBoards()['yun'].getBuildInfo())
     env = Environment()
-    env.getMakefileGenerator('arduino', 'Arduino AVR Boards', 'uno').writeMakefile()
-        
+    localProject = env.getInferredProject()
+    #localProject.initProjectDir()
+    configuration = localProject.getLastConfiguration()
+    configuration.getMakefileGenerator().writeMakeTargets()
     
 if __name__ == "__main__" :
     main()

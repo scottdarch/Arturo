@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup
-from ano import __version__
+from ano import __version__, __app_name__
 
 install_requires = open("requirements.txt").read().split('\n')
 readme_content = open("README.md").read()
@@ -14,10 +14,13 @@ def gen_data_files(package_dir, subdir):
         results.extend([os.path.join(root, f)[len(package_dir)+1:] for f in files])
     return results
 
-ano_package_data = gen_data_files('ano', 'make') + gen_data_files('ano', 'templates')
+ano_package_data = gen_data_files('ano', 'make') + \
+                   gen_data_files('ano', 'templates') + \
+                   gen_data_files('ano', 'Arduino15/templates') + \
+                   gen_data_files('ano', 'i18n')
 
 setup(
-    name='ano',
+    name=__app_name__,
     version=__version__,
     description='Command line toolkit for working with Arduino hardware',
     long_description=readme_content,

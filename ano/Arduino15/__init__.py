@@ -5,11 +5,14 @@
 # http://32bits.io/Arturo/
 #
 from collections import OrderedDict
-import os
 
 from ano.Arduino15.parsers import KeyValueParser
+import os
 
 
+# +---------------------------------------------------------------------------+
+# | COMMON TYPES
+# +---------------------------------------------------------------------------+
 class MissingRequiredFileException(BaseException):
     
     def __init__(self, searchPath, filenames, genericName):
@@ -35,13 +38,13 @@ class SearchPath(object):
         self._envpath = [os.path.expanduser("~/Library/Arduino15")]
         self._envpath += os.environ['PATH'].split(":")
         
-    def findFirstFileOfNameOrThrow(self, fileNames):
+    def findFirstFileOfNameOrThrow(self, fileNames, genericName):
         for name in fileNames:
             packageIndexPath = self.findFile(name)
             if packageIndexPath is not None:
                 return packageIndexPath
 
-        raise MissingRequiredFileException(self._searchPath, fileNames, "package index")
+        raise MissingRequiredFileException(self._searchPath, fileNames, genericName)
 
     def findFile(self, filename):
         if filename is None:
@@ -74,6 +77,9 @@ class Preferences(object):
         
     def get(self, key, defaultValue):
         return self._getPreferences().get(key, defaultValue)
+    
+    def __getitem__(self, key):
+        return self._getPreferences()[key]
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
@@ -82,7 +88,7 @@ class Preferences(object):
         if self._prefs is not None:
             return self._prefs
         
-        preferenceFilePath = self._searchPath.findFirstFileOfNameOrThrow(Preferences.PREFERENCE_FILE_NAMES)
+        preferenceFilePath = self._searchPath.findFirstFileOfNameOrThrow(Preferences.PREFERENCE_FILE_NAMES, "preferences")
         self._prefs = KeyValueParser.parse(preferenceFilePath, dict(), None, self._console)
         
         return self._prefs
