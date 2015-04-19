@@ -8,4 +8,5 @@ doc/.build
 ano.egg-info
 local.mk
 .build_ano
+.intermediates
 

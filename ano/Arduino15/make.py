@@ -7,13 +7,10 @@
 import errno
 import os
 
+from ano.Arduino15.templates import JinjaTemplates
+
 
 class MakefileGenerator(object):
-    
-    TEMPLATE_MAKEFILE_TARGETS = "MakeTargets.mk"
-    TEMPLATE_MAKEFILE_HEX = "MakeHex.mk"
-    
-    GENNAME_MAKEFILE = "Makefile"
     
     def __init__(self, configuration, console):
         super(MakefileGenerator, self).__init__()
@@ -24,9 +21,10 @@ class MakefileGenerator(object):
         return self._builddir
     
     def writeMakeTargets(self):
-        template = self._configuration.getJinjaEnvironment().get_template(MakefileGenerator.TEMPLATE_MAKEFILE_TARGETS + ".jinja")
+        jinjaEnv = self._configuration.getJinjaEnvironment()
+        template = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_TARGETS)
         builddir = self._configuration.getBuilddir()
-        makefilePath = os.path.join(self._configuration.getBuilddir(), MakefileGenerator.TEMPLATE_MAKEFILE_TARGETS)
+        makefilePath = os.path.join(self._configuration.getBuilddir(), JinjaTemplates.MAKEFILE_TARGETS)
         self._mkdirs(builddir)
         with open(makefilePath, 'wt') as f:
             f.write(template.render())

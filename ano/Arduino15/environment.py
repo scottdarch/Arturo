@@ -9,9 +9,8 @@ import os
 from ano import Console, __version__, i18n
 from ano.Arduino15 import SearchPath, Preferences
 from ano.Arduino15.make import MakefileGenerator
+from ano.Arduino15.templates import JinjaTemplates
 from ano.Arduino15.vendors import Packages
-import jinja2
-from jinja2.loaders import PackageLoader
 
 _ = i18n.language.ugettext
 
@@ -96,7 +95,7 @@ class Project(object):
 
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
-            self._jinjaEnv = jinja2.Environment(loader=PackageLoader("ano", "Arduino15/templates"))
+            self._jinjaEnv = JinjaTemplates.createJinjaEnvironmentForTemplates()
             self._jinjaEnv.globals['env'] = {
                 'version':__version__
             }
