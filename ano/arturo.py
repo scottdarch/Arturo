@@ -20,9 +20,13 @@ from ano.argparsing import FlexiFormatter
 _ = i18n.language.ugettext
 
 class ArturoSession(object):
+    '''
+    Object representing an interactive session using Arturo
+    '''
     
-    def __init__(self):
+    def __init__(self, command):
         super(ArturoSession, self).__init__()
+        self._sessionCommand = command
         self._env = None
         self._commands = None
         
@@ -40,64 +44,53 @@ class ArturoSession(object):
                 self._commands[string.lower(name)] = commandClass(environment)
         return self._commands
     
+    def onVisitArgParser(self, parser):
+        subparsers = parser.add_subparsers()
+        commands = self.getCommands()
+        for commandName, command in commands.iteritems():
+            p = subparsers.add_parser(commandName, formatter_class=FlexiFormatter, help=command.getHelpText())
+            if self._sessionCommand != commandName:
+                continue
+            command.onVisitArgParser(p)
+            p.set_defaults(func=command.run)
+
+    def run(self):
+        parser = argparse.ArgumentParser(prog=__app_name__, formatter_class=FlexiFormatter, description=self.getCommandLineDescription())
+    
+        self.onVisitArgParser(parser)
+        
+        args = parser.parse_args()
+        
+        try:
+            args.func(args)
+        except KeyboardInterrupt:
+            print 'Terminated by user'
+
     def getCommandLineDescription(self):
         return _("""\
-Arturo is a command-line toolkit for working with Arduino hardware.
+Arturo is a command-line toolkit for working with MCU prototype hardware adhering
+to the Arduino15 IDE specification for 3rp party hardware:
 
-It is intended to replace Arduino IDE UI for those who prefer to work in
-terminal or want to integrate Arduino development in a 3rd party IDE.
+https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5---3rd-party-Hardware-specification
 
-Arturo can build sketches, libraries, upload firmwares, establish
-serial-communication. For this it is split in a bunch of subcommands, like git
-or mercurial do. The full list is provided below. You may run any of them with
+TODO: more about gnu make and the core functionality provided by arturo.
+
 --help to get further help. E.g.:
 
     ano build --help
 """)
 
     
-    
-    def main(self):
-        try:
-            current_command = sys.argv[1]
-        except IndexError:
-            current_command = None
-    
-        parser = argparse.ArgumentParser(prog=__app_name__, formatter_class=FlexiFormatter, description=self.getCommandLineDescription())
-        subparsers = parser.add_subparsers()
-        commands = self.getCommands()
-        for commandName, command in commands.iteritems():
-            p = subparsers.add_parser(commandName, formatter_class=FlexiFormatter, help=command.getHelpText())
-            if current_command != commandName:
-                continue
-            command.setup_arg_parser(p)
-            p.set_defaults(func=command.run)
+# +---------------------------------------------------------------------------+
+# | ARTURO MAIN
+# +---------------------------------------------------------------------------+
+def main():
+    try:
+        command = sys.argv[1]
+    except IndexError:
+        command = None
 
-        args = parser.parse_args()
-        
-        try:
-            run_anywhere = "init clean list-models serial version"
-    
-#             if current_command not in run_anywhere:
-#                 if os.path.isdir(e.output_dir):
-#                     # we have an output dir so we'll pretend this is a project folder
-#                     None
-#                 elif e.src_dir is None or not os.path.isdir(e.src_dir):
-#                     raise Abort("No project found in this directory.")
-#     
-#             if current_command not in run_anywhere:
-#                 # For valid projects create .build & lib
-#                 if not os.path.isdir(e.build_dir):                
-#                     os.makedirs(e.build_dir)
-#     
-#                 if not os.path.isdir(e.lib_dir):
-#                     os.makedirs(e.lib_dir)
-#                     with open('lib/.holder', 'w') as f:
-#                         f.write("")
-    
-            args.func(args)
-        except KeyboardInterrupt:
-            print 'Terminated by user'
+    ArturoSession(command).run()
         
 if __name__ == "__main__" :
-    ArturoSession().main()
+    main()

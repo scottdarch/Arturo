@@ -1,21 +1,36 @@
-import textwrap
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+from abc import ABCMeta, abstractmethod
 
 
 class Command(object):
-    _help_line = None
+    '''
+    Abstract base class for all arturo commands.
+    '''
+    
+    __metaclass__ = ABCMeta
         
     def __init__(self, environment):
+        super(Command, self).__init__()
         self._env = environment
 
     def getEnvironment(self):
         return self._env
+
+    @abstractmethod
+    def run(self, args):
+        None
     
+    # +-----------------------------------------------------------------------+
+    # | ARGPARSE API
+    # +-----------------------------------------------------------------------+
+    @abstractmethod
     def getHelpText(self):
         return None
     
-    def setup_arg_parser(self, parser, description=None):
-        if description:
-            parser.description = textwrap.dedent(description)
-
-    def run(self, args):
-        raise NotImplementedError
+    def onVisitArgParser(self, parser):
+        None

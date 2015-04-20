@@ -7,13 +7,16 @@
 import os
 
 from ano import Console, __version__, i18n
-from ano.Arduino15 import SearchPath, Preferences, templates
+from ano.Arduino15 import SearchPath, Preferences
 from ano.Arduino15.make import MakefileGenerator
 from ano.Arduino15.templates import JinjaTemplates
 from ano.Arduino15.vendors import Packages
 
 _ = i18n.language.ugettext
 
+# +---------------------------------------------------------------------------+
+# | Configuration
+# +---------------------------------------------------------------------------+
 class Configuration(object):
     '''
     An environment with package, platform, board, uploader, and other targeting parameters defined.
@@ -69,6 +72,9 @@ class Configuration(object):
         return self._makefileGenerator
         
     
+# +---------------------------------------------------------------------------+
+# | Project
+# +---------------------------------------------------------------------------+
 class Project(object):
     
     BUILDDIR = ".build_ano"
@@ -134,6 +140,10 @@ class Project(object):
     def getConfiguration(self, packageName, platformName, boardName):
         return Configuration(self, packageName, platformName, boardName, self._env.getConsole())
         
+# +---------------------------------------------------------------------------+
+# | Environment
+# +---------------------------------------------------------------------------+
+
 class Environment(object):
     '''
     All available configurations for the given project.

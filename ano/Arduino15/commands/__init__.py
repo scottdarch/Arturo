@@ -15,14 +15,14 @@ from ano.Arduino15.commands.base import Command
 from ano.Arduino15.commands.init import Init
 
 
-def _is_command(commandClass):
-    if inspect.isclass(commandClass):
-        print "okay"
+def _is_command_subclass(commandClass):
     if inspect.isclass(commandClass) and issubclass(commandClass, Command) and commandClass != Command:
-        print "yes"
         return True
     else:
         return False
-    
+
 def getAllCommands():
-    return inspect.getmembers(sys.modules[__name__], _is_command)
+    '''
+    Returns a dictionary of class names to class objects for all Command subclasses in the commands module.
+    '''
+    return inspect.getmembers(sys.modules[__name__], _is_command_subclass)

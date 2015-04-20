@@ -1,6 +1,13 @@
 #!/usr/bin/env python2
 
-from ano.arturo import ArturoSession
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+from ano.arturo import main
 
 if __name__ == '__main__':
-    ArturoSession().main()
+    main()
