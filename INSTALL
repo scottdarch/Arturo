@@ -2,13 +2,5 @@ In order to install Arturo from source run:
 
     make install
 
-By default ano is installed into `/usr/local'. You can change this by setting
-PREFIX or DESTDIR variables.
-
-    * DESTDIR changes file system root (`/' by default)
-    * PREFIX sets installation prefix (`/usr/local` by default).
-
-Examples:
-
-    * make install DESTDIR=~/ano
-    * make install PREFIX=/usr
+make install will invoke python setuptools and should add itself to your existing python environment
+automatically.

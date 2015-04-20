@@ -26,7 +26,13 @@ class JinjaTemplates(object):
     
     @classmethod
     def createJinjaEnvironmentForTemplates(cls):
-        return jinja2.Environment(loader=PackageLoader(__app_name__, cls.getRelPathToTemplatesFromPackage()))
+        env = jinja2.Environment(loader=PackageLoader(__app_name__, cls.getRelPathToTemplatesFromPackage()))
+        env.globals['templates'] = {
+            'make_targets':cls.MAKEFILE_TARGETS,
+            'make_hex':cls.MAKEFILE_HEX,
+            'makefile':cls.MAKEFILE
+        }
+        return env
         
     @classmethod
     def getTemplate(cls, jinjaEnvironment, templateName):

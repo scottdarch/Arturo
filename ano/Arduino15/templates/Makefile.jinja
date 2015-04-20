@@ -16,8 +16,13 @@ VERSION_STRING := {{env.version}}
 BUILDDIR := {{project.builddir}}
 
 # +----------------------------------------------------------------------------+
-# | DIRECTORIES AND CONFIGURATIONS
+# | MAKEFILE INCLUDES
 # +----------------------------------------------------------------------------+
+MAKEINCLUDE_MAKETARGETS := $(BUILDDIR)/{{templates.make_targets}}
+MAKEINCLUDE_MAKEHEX 	:= $(BUILDDIR)/{{templates.make_hex}}
 
-include $(BUILDDIR)/ArturoMakeTargets.mk
+# +----------------------------------------------------------------------------+
+# | TARGETS
+# +----------------------------------------------------------------------------+
+include $(MAKEINCLUDE_MAKEHEX)
 
