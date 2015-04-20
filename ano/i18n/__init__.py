@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
 # Thanks to (Maemo)[https://wiki.maemo.org/Internationalize_a_Python_application] for this snippit and the
 # tutorial
 

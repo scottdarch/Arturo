@@ -7,7 +7,7 @@
 import os
 
 from ano import Console, __version__, i18n
-from ano.Arduino15 import SearchPath, Preferences
+from ano.Arduino15 import SearchPath, Preferences, templates
 from ano.Arduino15.make import MakefileGenerator
 from ano.Arduino15.templates import JinjaTemplates
 from ano.Arduino15.vendors import Packages
@@ -71,9 +71,7 @@ class Configuration(object):
     
 class Project(object):
     
-    CONFIG_FILE = "preferences.txt.jinja"
     BUILDDIR = ".build_ano"
-    TOPLEVEL_MAKE = "Makefile"
         
     @classmethod
     def infer(cls, environment):
@@ -110,13 +108,13 @@ class Project(object):
         return self._builddir
        
     def initProjectDir(self):
-        makefilePath = os.path.join(self._path, Project.TOPLEVEL_MAKE)
+        makefilePath = os.path.join(self._path, JinjaTemplates.MAKEFILE)
         if os.path.exists(makefilePath):
             message = _('%s exists. Overwrite? ' % (makefilePath))
             if not self._console.askYesNoQuestion(message):
                 return
         jinjaEnv = self.getJinjaEnvironment()
-        makefileTemplate = jinjaEnv.get_template(Project.TOPLEVEL_MAKE + ".jinja")
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE)
         with open(makefilePath, 'wt') as makefile:
             makefile.write(makefileTemplate.render())
         
