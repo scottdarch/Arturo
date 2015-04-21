@@ -7,65 +7,44 @@
 # http://32bits.io/Arturo/
 #
 
-import argparse
-import string
 import sys
 
 from ano import i18n, __app_name__
-from ano.Arduino15.commands import getAllCommands
-from ano.Arduino15.environment import Environment
+from ano.Arturo2 import ArgumentVisitor, Runnable
+from ano.Arturo2.commands import getAllCommands
+from ano.Arturo2.commands.base import ConfiguredCommand, ProjectCommand
+from ano.Arturo2.display import Console
+from ano.Arturo2.environment import Environment
 from ano.argparsing import FlexiFormatter
+import ano.runner
+import argparse
 
 
 _ = i18n.language.ugettext
 
-class ArturoSession(object):
+class ArturoCommandLine(ArgumentVisitor, Runnable):
     '''
-    Object representing an interactive session using Arturo
+    Object representing a command-line invokation of Arturo
     '''
     
-    def __init__(self, command):
-        super(ArturoSession, self).__init__()
-        self._sessionCommand = command
+    def __init__(self, console):
+        super(ArturoCommandLine, self).__init__()
+        self._commandName = None
+        self._command = None
+        self._console = console
         self._env = None
         self._commands = None
         
     def getEnvironment(self):
         if self._env is None:
-            self._env = Environment()
+            self._env = Environment(self._console)
         return self._env
     
     def getCommands(self):
         if self._commands is None:
-            self._commands = dict()
-            commands = getAllCommands()
-            environment = self.getEnvironment()
-            for name, commandClass in commands:
-                self._commands[string.lower(name)] = commandClass(environment)
+            self._commands = getAllCommands()
         return self._commands
     
-    def onVisitArgParser(self, parser):
-        subparsers = parser.add_subparsers()
-        commands = self.getCommands()
-        for commandName, command in commands.iteritems():
-            p = subparsers.add_parser(commandName, formatter_class=FlexiFormatter, help=command.getHelpText())
-            if self._sessionCommand != commandName:
-                continue
-            command.onVisitArgParser(p)
-            p.set_defaults(func=command.run)
-
-    def run(self):
-        parser = argparse.ArgumentParser(prog=__app_name__, formatter_class=FlexiFormatter, description=self.getCommandLineDescription())
-    
-        self.onVisitArgParser(parser)
-        
-        args = parser.parse_args()
-        
-        try:
-            args.func(args)
-        except KeyboardInterrupt:
-            print 'Terminated by user'
-
     def getCommandLineDescription(self):
         return _("""\
 Arturo is a command-line toolkit for working with MCU prototype hardware adhering
@@ -80,17 +59,69 @@ TODO: more about gnu make and the core functionality provided by arturo.
     ano build --help
 """)
 
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        subparsers = parser.add_subparsers()
+        commands = self.getCommands()
+        for arg in sys.argv:
+            if arg in commands:
+                self._commandName = arg
+                break;
+        commandClass = commands[self._commandName]
+        #TODO: on failure list valid commands
+        environment = self.getEnvironment()
+        
+        if issubclass(commandClass, ProjectCommand):
+            #TODO: allow explicit project to be provided
+            project = environment.getInferredProject()
+
+            if issubclass(commandClass, ConfiguredCommand):
+                #TODO: allow explicit configuration to be provided
+                command = commandClass(environment, project, project.getLastConfiguration(), self._console)
+            else:
+                command = commandClass(environment, project, self._console)
+        else:
+            command = commandClass(environment, self._console)
+            
+        p = subparsers.add_parser(self._commandName, formatter_class=FlexiFormatter, help=command.getHelpText())
+        command.onVisitArgParser(p)
+        p.set_defaults(func=command.run)
+        
+        self._command = command
+
+    def onVisitArgs(self, args):
+        if self._command is not None:
+            self._command.onVisitArgs(args)
+        
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        parser = argparse.ArgumentParser(prog=__app_name__, formatter_class=FlexiFormatter, description=self.getCommandLineDescription())
     
+        self._console.onVisitArgParser(parser)
+        self.onVisitArgParser(parser)
+        
+        args = parser.parse_args()
+        
+        self.onVisitArgs(args)
+        self._console.onVisitArgs(args)
+        
+        try:
+            args.func()
+        except KeyboardInterrupt:
+            print 'Terminated by user'
+
 # +---------------------------------------------------------------------------+
 # | ARTURO MAIN
 # +---------------------------------------------------------------------------+
 def main():
-    try:
-        command = sys.argv[1]
-    except IndexError:
-        command = None
-
-    ArturoSession(command).run()
+    if len(sys.argv) >= 2 and sys.argv[1] in ('-v1', '--version1'):
+        ano.runner.main()
+    else:
+        ArturoCommandLine(Console()).run()
         
 if __name__ == "__main__" :
     main()

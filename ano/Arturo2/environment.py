@@ -6,11 +6,12 @@
 #
 import os
 
-from ano import Console, __version__, i18n
-from ano.Arduino15 import SearchPath, Preferences
-from ano.Arduino15.make import MakefileGenerator
-from ano.Arduino15.templates import JinjaTemplates
-from ano.Arduino15.vendors import Packages
+from ano import __version__, i18n
+from ano.Arturo2 import SearchPath, Preferences
+from ano.Arturo2.make import MakefileGenerator
+from ano.Arturo2.templates import JinjaTemplates
+from ano.Arturo2.vendors import Packages
+
 
 _ = i18n.language.ugettext
 
@@ -77,7 +78,7 @@ class Configuration(object):
 # +---------------------------------------------------------------------------+
 class Project(object):
     
-    BUILDDIR = ".build_ano"
+    BUILDDIR = ".build_ano2"
         
     @classmethod
     def infer(cls, environment):
@@ -149,9 +150,9 @@ class Environment(object):
     All available configurations for the given project.
     '''
     
-    def __init__(self):
+    def __init__(self, console):
         super(Environment, self).__init__()
-        self._console = Console()
+        self._console = console
         self._searchPath = None
         self._packages = None
         self._preferences = None

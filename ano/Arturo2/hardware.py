@@ -7,8 +7,9 @@
 from collections import OrderedDict
 import os
 
-from ano.Arduino15 import NamedOrderedDict
-from ano.Arduino15.parsers import KeyValueParser
+from ano.Arturo2 import NamedOrderedDict
+from ano.Arturo2.parsers import KeyValueParser
+
 
 # +---------------------------------------------------------------------------+
 # | Board
@@ -94,9 +95,3 @@ class Platform(object):
         if self._programmers is None:
             self._programmers = KeyValueParser.parse(os.path.join(self._platformPath, Platform.PROGRAMMERS_FILENAME), OrderedDict(), NamedOrderedDict, self._console)
         return self._programmers
-        
-    # +-----------------------------------------------------------------------+
-    # | PYTHON DATA MODEL
-    # +-----------------------------------------------------------------------+
-    def __getitem__(self, key):
-        return self.getBoards()[key]

@@ -7,7 +7,7 @@
 import errno
 import os
 
-from ano.Arduino15.templates import JinjaTemplates
+from ano.Arturo2.templates import JinjaTemplates
 
 
 class MakefileGenerator(object):
@@ -28,7 +28,7 @@ class MakefileGenerator(object):
         self._mkdirs(builddir)
         with open(makefilePath, 'wt') as f:
             f.write(template.render())
-            
+
     def writeMakeHex(self, targetDir=None):
         None
 

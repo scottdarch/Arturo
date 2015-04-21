@@ -6,13 +6,15 @@
 #
 
 import inspect
+import string
 import sys
 import textwrap
 
-from ano import Arduino15
+from ano import Arturo2
 import ano
-from ano.Arduino15.commands.base import Command
-from ano.Arduino15.commands.init import Init
+from ano.Arturo2.commands.base import Command
+from ano.Arturo2.commands.prebuild import Init, Version
+from ano.Arturo2.commands.query import List_boards
 
 
 def _is_command_subclass(commandClass):
@@ -21,8 +23,15 @@ def _is_command_subclass(commandClass):
     else:
         return False
 
+def _class_to_commandname(className):
+    lowername = string.lower(className)
+    return lowername.replace('_', '-')
+    
+
 def getAllCommands():
     '''
     Returns a dictionary of class names to class objects for all Command subclasses in the commands module.
     '''
-    return inspect.getmembers(sys.modules[__name__], _is_command_subclass)
+    # commands is a list of name, value pairs sorted by name
+    commands = inspect.getmembers(sys.modules[__name__], _is_command_subclass)
+    return {_class_to_commandname(name): commandClass for name, commandClass in commands}

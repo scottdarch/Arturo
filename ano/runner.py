@@ -37,7 +37,7 @@ def main():
     conf = configure()
 
     try:
-        current_command = sys.argv[1]
+        current_command = sys.argv[2]
     except IndexError:
         current_command = None
 
@@ -52,7 +52,7 @@ def main():
         cmd.setup_arg_parser(p)
         p.set_defaults(func=cmd.run, **conf.as_dict(cmd.name))
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=sys.argv[2:])
 
     try:
         run_anywhere = "init clean list-models serial version"

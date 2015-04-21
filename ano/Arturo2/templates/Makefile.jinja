@@ -24,5 +24,14 @@ MAKEINCLUDE_MAKEHEX 	:= $(BUILDDIR)/{{templates.make_hex}}
 # +----------------------------------------------------------------------------+
 # | TARGETS
 # +----------------------------------------------------------------------------+
-include $(MAKEINCLUDE_MAKEHEX)
+-include $(MAKEINCLUDE_MAKEHEX)
+
+.PHONY : all
+all:
+	# Nothing yet
+
+.PHONY : clean
+clean:
+	rm -rf $(BUILDDIR)
+
 

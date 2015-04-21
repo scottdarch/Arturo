@@ -4,11 +4,36 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
-
-from ano.Arduino15.parsers import KeyValueParser
 import os
 
+from ano.Arturo2.parsers import KeyValueParser
+
+# +---------------------------------------------------------------------------+
+# | Runnable
+# +---------------------------------------------------------------------------+
+class Runnable(object):
+    
+    __metaclass__ = ABCMeta
+    
+    @abstractmethod
+    def run(self):
+        None
+
+# +---------------------------------------------------------------------------+
+# | ArgumentVisitor
+# +---------------------------------------------------------------------------+
+class ArgumentVisitor(object):
+    
+    __metaclass__ = ABCMeta
+    
+    @abstractmethod
+    def onVisitArgParser(self, parser):
+        None
+    
+    def onVisitArgs(self, args):
+        None
 
 # +---------------------------------------------------------------------------+
 # | COMMON TYPES

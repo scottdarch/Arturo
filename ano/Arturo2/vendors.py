@@ -7,7 +7,7 @@
 import json
 import os
 
-from ano.Arduino15.hardware import Platform
+from ano.Arturo2.hardware import Platform
 
 
 # +---------------------------------------------------------------------------+
@@ -39,12 +39,6 @@ class Package(object):
                 self._platformIndex[platformMetadata['name']] = platform
         return self._platformIndex
     
-    # +-----------------------------------------------------------------------+
-    # | PYTHON DATA MODEL
-    # +-----------------------------------------------------------------------+
-    def __getitem__(self, key):
-        return self.getPlatforms()[key]
-    
 # +---------------------------------------------------------------------------+
 # | Packages
 # +---------------------------------------------------------------------------+
@@ -72,6 +66,15 @@ class Packages(object):
 
         return self._packageIndex
         
+    # +-----------------------------------------------------------------------+
+    # | PYTHON DATA MODEL
+    # +-----------------------------------------------------------------------+
+    def iteritems(self):
+        return self.getPackages().iteritems()
+
+    def __iter__(self):
+        return self.getPackages().__iter__()
+
     def __getitem__(self, key):
         return self.getPackages()[key]
 
@@ -83,7 +86,7 @@ class Packages(object):
         if self._packageMetadataIndex is not None:
             return self._packageMetadataIndex
         
-        packageMetadataPath = self._searchPath.findFirstFileOfNameOrThrow(Packages.PACKAGE_INDEX_NAMES)
+        packageMetadataPath = self._searchPath.findFirstFileOfNameOrThrow(Packages.PACKAGE_INDEX_NAMES, 'package index')
         
         # the package folders are found under a folder Packages.PACKAGES_PATH next to the packages index file
         self._packageRootPath = os.path.join(os.path.dirname(packageMetadataPath), Packages.PACKAGES_PATH)

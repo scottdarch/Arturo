@@ -16,7 +16,7 @@ def gen_data_files(package_dir, subdir):
 
 ano_package_data = gen_data_files('ano', 'make') + \
                    gen_data_files('ano', 'templates') + \
-                   gen_data_files('ano', 'Arduino15/templates') + \
+                   gen_data_files('ano', 'Arturo2/templates') + \
                    gen_data_files('ano', 'i18n')
 
 setup(
@@ -29,7 +29,7 @@ setup(
     license='MIT',
     keywords="arduino build system",
     url='http://32bits.io/Arturo',
-    packages=['ano', 'ano.commands', 'ano.Arduino15', 'ano.Arduino15.templates', 'ano.Arduino15.commands'],
+    packages=['ano', 'ano.commands', 'ano.Arturo2', 'ano.Arturo2.templates', 'ano.Arturo2.commands'],
     scripts=['bin/ano'],
     package_data={'ano': ano_package_data},
     install_requires=install_requires,
