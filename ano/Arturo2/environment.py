@@ -8,7 +8,6 @@ import os
 
 from ano import __version__, i18n
 from ano.Arturo2 import SearchPath, Preferences
-from ano.Arturo2.make import MakefileGenerator
 from ano.Arturo2.templates import JinjaTemplates
 from ano.Arturo2.vendors import Packages
 
@@ -33,7 +32,6 @@ class Configuration(object):
         self._platform = None
         self._boardName = boardName
         self._board = None
-        self._makefileGenerator = None
         self._jinjaEnv = None
         self._builddir = None
         
@@ -66,13 +64,7 @@ class Configuration(object):
         if self._builddir is None:
             self._builddir = os.path.join(self._project.getBuilddir(), self._boardName)
         return self._builddir
-    
-    def getMakefileGenerator(self):
-        if self._makefileGenerator is None:
-            self._makefileGenerator = MakefileGenerator(self, self._console)
-        return self._makefileGenerator
-        
-    
+
 # +---------------------------------------------------------------------------+
 # | Project
 # +---------------------------------------------------------------------------+
