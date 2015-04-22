@@ -8,7 +8,7 @@ from collections import OrderedDict
 import os
 
 from ano.Arturo2 import NamedOrderedDict
-from ano.Arturo2.parsers import KeyValueParser
+from ano.Arturo2.parsers import ArduinoKeyValueParser
 
 
 # +---------------------------------------------------------------------------+
@@ -41,10 +41,10 @@ class Board(NamedOrderedDict):
         if extraArgs is not None:
             platformMacros.update(extraArgs)
         
-        KeyValueParser.parse(os.path.join(self._platform.getPlatformPath(), Board.PLATFORM_FILENAME), platform, None, self._console)
+        ArduinoKeyValueParser.parse(os.path.join(self._platform.getPlatformPath(), Board.PLATFORM_FILENAME), platform, None, None, self._console)
         
         for key, value in platform.items():
-            platform[key] = KeyValueParser.expandMacros(platformMacros, key, value, False, self._console)
+            platform[key] = ArduinoKeyValueParser.expandMacros(platformMacros, key, value, False, self._console)
         
         self._boardBuildMetadata = platform
         return platform
@@ -66,10 +66,21 @@ class Platform(object):
     BOARDS_FILENAME = "boards.txt"
     PROGRAMMERS_FILENAME = "programmers.txt"
     
-    def __init__(self, rootPath, searchPath, console, platformMetadata):
+    @classmethod
+    def _makePlatformPath(cls, rootPath, platformMetadata):
+        return os.path.join(rootPath, platformMetadata['architecture'], platformMetadata['version'])
+    
+    @classmethod
+    def ifExistsPlatform(cls, rootPath, searchPath, console, platformMetadata):
+        platformPath = cls._makePlatformPath(rootPath, platformMetadata)
+        if not os.path.isdir(platformPath):
+            return None
+        else:
+            return cls(rootPath, searchPath, console, platformMetadata, platformPath)
+            
+    def __init__(self, rootPath, searchPath, console, platformMetadata, platformPath=None):
         super(Platform, self).__init__()
-        
-        self._platformPath = os.path.join(rootPath, platformMetadata['architecture'], platformMetadata['version'])
+        self._platformPath = Platform._makePlatformPath(rootPath, platformMetadata) if platformPath is None else platformPath
         self._searchPath = searchPath
         self._console = console
         self._platformMetadata = platformMetadata
@@ -78,14 +89,22 @@ class Platform(object):
         self._platformBoardFactory = PlatformBoardFactory(self, console)
         
         if not os.path.isdir(self._platformPath):
+            if console:
+                console.printDebug(platformMetadata)
             raise Exception("%s was not found" % (self._platformPath))
+
+    def getName(self):
+        return self._platformMetadata['name']
 
     def getPlatformPath(self):
         return self._platformPath
     
     def getBoards(self):
         if self._boards is None:
-            self._boards = KeyValueParser.parse(os.path.join(self._platformPath, Platform.BOARDS_FILENAME), OrderedDict(), self._platformBoardFactory, self._console)
+            self._boards = ArduinoKeyValueParser.parse(os.path.join(self._platformPath, Platform.BOARDS_FILENAME), 
+                                                OrderedDict(), 
+                                                self._platformBoardFactory, 
+                                                console=self._console)
         return self._boards
     
     def getProgrammers(self):
@@ -93,5 +112,8 @@ class Platform(object):
         Returns an OrderedDict of Programmer objects read from the programmers text file.
         '''
         if self._programmers is None:
-            self._programmers = KeyValueParser.parse(os.path.join(self._platformPath, Platform.PROGRAMMERS_FILENAME), OrderedDict(), NamedOrderedDict, self._console)
+            self._programmers = ArduinoKeyValueParser.parse(os.path.join(self._platformPath, Platform.PROGRAMMERS_FILENAME), 
+                                                     OrderedDict(), 
+                                                     NamedOrderedDict, 
+                                                     console=self._console)
         return self._programmers

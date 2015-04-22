@@ -8,7 +8,8 @@ from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 import os
 
-from ano.Arturo2.parsers import KeyValueParser
+from ano.Arturo2.parsers import ArduinoKeyValueParser
+
 
 # +---------------------------------------------------------------------------+
 # | Runnable
@@ -50,8 +51,11 @@ class NamedOrderedDict(OrderedDict):
         super(NamedOrderedDict, self).__init__()
         self['name'] = name
         
-    def __str__(self):
+    def getName(self):
         return self['name']
+
+    def __str__(self):
+        return self.getName()
 
 # +---------------------------------------------------------------------------+
 # | SearchPath
@@ -114,6 +118,6 @@ class Preferences(object):
             return self._prefs
         
         preferenceFilePath = self._searchPath.findFirstFileOfNameOrThrow(Preferences.PREFERENCE_FILE_NAMES, "preferences")
-        self._prefs = KeyValueParser.parse(preferenceFilePath, dict(), None, self._console)
+        self._prefs = ArduinoKeyValueParser.parse(preferenceFilePath, dict(), None, None, self._console)
         
         return self._prefs

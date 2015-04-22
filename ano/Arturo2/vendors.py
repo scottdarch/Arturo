@@ -7,9 +7,11 @@
 import json
 import os
 
+from ano import i18n
 from ano.Arturo2.hardware import Platform
 
 
+_ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 # | Package
 # +---------------------------------------------------------------------------+
@@ -30,13 +32,29 @@ class Package(object):
 
         self._hardwareDir = os.path.join(self._packagePath, Package.HARDWARE_DIR)
         self._platformIndex = None
+        
+    def getName(self):
+        return self._packageMetadata['name']
     
     def getPlatforms(self):
         if self._platformIndex is None:
             self._platformIndex = dict()
             for platformMetadata in self._packageMetadata['platforms']:
-                platform = Platform(self._hardwareDir, self._searchPath, self._console, platformMetadata)
-                self._platformIndex[platformMetadata['name']] = platform
+                platform = Platform.ifExistsPlatform(self._hardwareDir, self._searchPath, self._console, platformMetadata)
+                if platform:
+                    if self._console:
+                        self._console.printDebug('Found platform "{0}" ({1} version{2})'.format(platformMetadata['name'], 
+                            platformMetadata['architecture'], 
+                            platformMetadata['version']))
+                    self._platformIndex[platformMetadata['name']] = platform
+                else:
+                    #TODO: store missing platforms for a future "download-platform" command.
+                    if self._console:
+                        self._console.printWarning(_("Missing platform \"{0}\" ({1} verison {2}). You can download this platform from {3}".format(
+                            platformMetadata['name'], 
+                            platformMetadata['architecture'], 
+                            platformMetadata['version'], 
+                            platformMetadata['url'])))
         return self._platformIndex
     
 # +---------------------------------------------------------------------------+

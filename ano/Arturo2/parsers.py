@@ -7,9 +7,21 @@
 
 import re
 
-
-class KeyValueParser(object):
+class ArduinoKeyValueDiscardMenuHandler(object):
+    '''
+    Menu handler for ArduinoKeyValueParser that simply discards all menu definitions.
+    '''
+    def handleLine(self, line, key, value):
+        if (key.startswith("menu.")):
+            return True
+        else:
+            return False
     
+class ArduinoKeyValueParser(object):
+    '''
+    Parses "key=value" text files with special facilities for Arduino's configuration documents like
+    boards.txt.
+    '''
     LINECOMMENT_PATTERN = re.compile("^\s?\#")
     ONLYWHITESPACE_PATTERN = re.compile("^\s+$")
     MACRO_PATTERN = re.compile("(?<!\\\\){(\S*?)(?<!\\\\)}")
@@ -18,15 +30,15 @@ class KeyValueParser(object):
         raise Exception("static only")
     
     @classmethod
-    def parse(cls, vendorFilePath, vendorObjectCollection, vendorObjectFactory=None, console=None):
+    def parse(cls, vendorFilePath, vendorObjectCollection, vendorObjectFactory=None, menuHandler=ArduinoKeyValueDiscardMenuHandler(), console=None):
         
         with open(vendorFilePath) as vendorFile:
             for line in vendorFile:
-                if len(line) is 0 or KeyValueParser.ONLYWHITESPACE_PATTERN.match(line):
+                if len(line) is 0 or ArduinoKeyValueParser.ONLYWHITESPACE_PATTERN.match(line):
                     if console is not None:
                         console.printVerbose("Skipping empty line")
                     continue
-                if KeyValueParser.LINECOMMENT_PATTERN.match(line):
+                if ArduinoKeyValueParser.LINECOMMENT_PATTERN.match(line):
                     if console is not None:
                         console.printVerbose("Skipping comment %s" % (line))
                     continue
@@ -36,23 +48,28 @@ class KeyValueParser(object):
                 pair = [line[:firstEqual], line[firstEqual+1:].rstrip()];
                 compoundKey = pair[0].split('.')
                 value = pair[1]
-                
-                if vendorObjectFactory:
+                if menuHandler is not None and menuHandler.handleLine(line, pair[0], value):
+                    if console is not None:
+                        console.printVerbose("Found menu definition {}={}".format(pair[0], value))
+                    continue
+                if vendorObjectFactory is not None:
+                    key = compoundKey[0]
                     try:
-                        vendorObject = vendorObjectCollection[compoundKey[0]]
+                        vendorObject = vendorObjectCollection[key]
                     except KeyError:
-                        vendorObject = vendorObjectFactory(compoundKey[0])
-                        vendorObjectCollection[compoundKey[0]] = vendorObject
-                    vendorObject[pair[0][len(compoundKey[0]) + 1:]] = value
+                        vendorObject = vendorObjectFactory(key)
+                        vendorObjectCollection[key] = vendorObject
+                    vendorObject[pair[0][len(key) + 1:]] = value
                 else:
-                    vendorObjectCollection[pair[0]] = value
+                    key = pair[0]
+                    vendorObjectCollection[key] = value
         return vendorObjectCollection
 
     @classmethod
     def expandMacros(cls, dictionary, key, rawValue, elideKeysForMissingValues=False, console=None):
         expanded = ""
         pos = 0
-        match = KeyValueParser.MACRO_PATTERN.search(rawValue, pos)
+        match = ArduinoKeyValueParser.MACRO_PATTERN.search(rawValue, pos)
         while match is not None:
             pos = match.end()
             macroname = match.group(1)
@@ -69,7 +86,7 @@ class KeyValueParser(object):
                 if console is not None:
                     console.printVerbose("found macro \"%s\" => [no value]" % (macroname))
                 
-            match = KeyValueParser.MACRO_PATTERN.search(rawValue, pos)
+            match = ArduinoKeyValueParser.MACRO_PATTERN.search(rawValue, pos)
             
         expanded += rawValue[pos:]
         if console is not None:

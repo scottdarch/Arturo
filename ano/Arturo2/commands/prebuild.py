@@ -26,7 +26,7 @@ class Version(Command):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        self.getConsole().printToUserFromCommand(self, _('{} {}'.format(__app_name__, __version__)))
+        self.getConsole().printInfo(_('{0} {1}'.format(__app_name__, __version__)))
         
 # +---------------------------------------------------------------------------+
 # | Init

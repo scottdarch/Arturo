@@ -27,11 +27,21 @@ class List_boards(Command):
     # +-----------------------------------------------------------------------+
     def run(self):
         console = self.getConsole()
-        environment = self.getEnvironment()
-        packages = environment.getPackages()
-        for _, package in packages.iteritems():
-            platforms = package.getPlatforms()
-            for _, platform in platforms.iteritems():
-                boards = platform.getBoards()
-                for board in boards:
-                    console.printToUserFromCommand(self, str(board))
+        try:
+            console.pushContext()
+            environment = self.getEnvironment()
+            packages = environment.getPackages()
+            for _, package in packages.iteritems():
+                console.printInfo(package.getName())
+                console.shift()
+                platforms = package.getPlatforms()
+                for _, platform in platforms.iteritems():
+                    console.printInfo(platform.getName())
+                    boards = platform.getBoards()
+                    console.shift()
+                    for _, board in boards.iteritems():
+                        console.printInfo(board.getName())
+                    console.unshift()
+                console.unshift()
+        finally:
+            console.popContext()
