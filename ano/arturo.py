@@ -15,7 +15,7 @@ from ano.Arturo2.commands import getAllCommands
 from ano.Arturo2.commands.base import ConfiguredCommand, ProjectCommand
 from ano.Arturo2.display import Console
 from ano.Arturo2.environment import Environment
-from ano.argparsing import FlexiFormatter
+from ano.argparsing import FlexiFormatter, UnknownUserInputException
 import ano.runner
 import argparse
 
@@ -63,14 +63,17 @@ TODO: more about gnu make and the core functionality provided by arturo.
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
-        subparsers = parser.add_subparsers()
         commands = self.getCommands()
         for arg in sys.argv:
             if arg in commands:
                 self._commandName = arg
                 break;
-        commandClass = commands[self._commandName]
-        #TODO: on failure list valid commands
+        try:
+            commandClass = commands[self._commandName]
+        except KeyError:
+            raise UnknownUserInputException()
+
+        subparsers = parser.add_subparsers()
         environment = self.getEnvironment()
         
         if issubclass(commandClass, ProjectCommand):
@@ -101,18 +104,21 @@ TODO: more about gnu make and the core functionality provided by arturo.
     def run(self):
         parser = argparse.ArgumentParser(prog=__app_name__, formatter_class=FlexiFormatter, description=self.getCommandLineDescription())
     
-        self._console.onVisitArgParser(parser)
-        self.onVisitArgParser(parser)
-        
-        args = parser.parse_args()
-        
-        self.onVisitArgs(args)
-        self._console.onVisitArgs(args)
-        
         try:
-            args.func()
-        except KeyboardInterrupt:
-            print 'Terminated by user'
+            self._console.onVisitArgParser(parser)
+            self.onVisitArgParser(parser)
+
+            args = parser.parse_args()
+
+            self.onVisitArgs(args)
+            self._console.onVisitArgs(args)
+
+            try:
+                args.func()
+            except KeyboardInterrupt:
+                print 'Terminated by user'
+        except UnknownUserInputException:
+            parser.print_help()
 
 # +---------------------------------------------------------------------------+
 # | ARTURO MAIN

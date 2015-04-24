@@ -5,6 +5,12 @@ import argparse
 import re
 import textwrap
 
+class UnknownUserInputException(Exception):
+    '''
+    Thrown when input provided from command arguments is unknown, malformed, or out-of-context.
+    '''
+    pass
+
 class FlexiFormatter(argparse.RawTextHelpFormatter):
     """FlexiFormatter which respects new line formatting and wraps the rest
     
