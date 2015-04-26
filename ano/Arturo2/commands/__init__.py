@@ -14,7 +14,7 @@ from ano import Arturo2
 import ano
 from ano.Arturo2.commands.base import Command
 from ano.Arturo2.commands.prebuild import Init, Version
-from ano.Arturo2.commands.query import List_boards
+from ano.Arturo2.commands.query import List_boards, List_tools
 from ano.Arturo2.commands.makegen import Make_gen
 
 
