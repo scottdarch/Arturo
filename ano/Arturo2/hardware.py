@@ -60,7 +60,7 @@ class PlatformBoardFactory(object):
         
     def __call__(self, name):
         return Board(name, self._platform, self._console)
-        
+
 class Platform(object):
     
     BOARDS_FILENAME = "boards.txt"
@@ -71,15 +71,16 @@ class Platform(object):
         return os.path.join(rootPath, platformMetadata['architecture'], platformMetadata['version'])
     
     @classmethod
-    def ifExistsPlatform(cls, rootPath, searchPath, console, platformMetadata):
+    def ifExistsPlatform(cls, package, rootPath, searchPath, console, platformMetadata):
         platformPath = cls._makePlatformPath(rootPath, platformMetadata)
         if not os.path.isdir(platformPath):
             return None
         else:
-            return cls(rootPath, searchPath, console, platformMetadata, platformPath)
+            return cls(package, rootPath, searchPath, console, platformMetadata, platformPath)
             
-    def __init__(self, rootPath, searchPath, console, platformMetadata, platformPath=None):
+    def __init__(self, package, rootPath, searchPath, console, platformMetadata, platformPath=None):
         super(Platform, self).__init__()
+        self._package = package
         self._platformPath = Platform._makePlatformPath(rootPath, platformMetadata) if platformPath is None else platformPath
         self._searchPath = searchPath
         self._console = console
@@ -87,11 +88,20 @@ class Platform(object):
         self._boards = None
         self._programmers = None
         self._platformBoardFactory = PlatformBoardFactory(self, console)
+        self._toolsList = None
         
         if not os.path.isdir(self._platformPath):
             if console:
                 console.printDebug(platformMetadata)
             raise Exception("%s was not found" % (self._platformPath))
+
+    def getToolChain(self):
+        if self._toolsList is None:
+            self._toolsList = list()
+            for tooldeps in self._platformMetadata['toolsDependencies']:
+                package = self._package.getEnvironment().getPackages()[tooldeps['packager']]
+                self._toolsList.append(package.getToolChain(tooldeps['name'], tooldeps['version']))
+        return self._toolsList
 
     def getName(self):
         return self._platformMetadata['name']

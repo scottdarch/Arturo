@@ -4,12 +4,13 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
+import json
 import os
 
 from ano import __version__, i18n
 from ano.Arturo2 import SearchPath, Preferences
 from ano.Arturo2.templates import JinjaTemplates
-from ano.Arturo2.vendors import Packages
+from ano.Arturo2.vendors import Package
 
 
 _ = i18n.language.ugettext
@@ -142,6 +143,9 @@ class Environment(object):
     All available configurations for the given project.
     '''
     
+    PACKAGES_PATH = "packages"
+    PACKAGE_INDEX_NAMES = ['package_index.json']
+    
     def __init__(self, console):
         super(Environment, self).__init__()
         self._console = console
@@ -149,6 +153,9 @@ class Environment(object):
         self._packages = None
         self._preferences = None
         self._inferredProject = None
+        self._packageRootPath = None
+        self._packageMetadataIndex = None
+        self._packageIndex = None
         
     def getConsole(self):
         return self._console
@@ -159,9 +166,12 @@ class Environment(object):
         return self._searchPath
     
     def getPackages(self):
-        if self._packages is None:
-            self._packages = Packages(self.getSearchPath(), self.getConsole())
-        return self._packages
+        if self._packageIndex is None:
+            self._packageIndex = dict()
+            for packageName, packageMetadata in self._getPackageMetadata().iteritems():
+                self._packageIndex[packageName] = Package(self, self._packageRootPath, self._searchPath, self._console, packageMetadata)
+
+        return self._packageIndex
     
     def getPreferences(self):
         if self._preferences is None:
@@ -173,3 +183,25 @@ class Environment(object):
             self._inferredProject = Project.infer(self)
         return self._inferredProject
     
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+
+    def _getPackageMetadata(self):
+        if self._packageMetadataIndex is not None:
+            return self._packageMetadataIndex
+        
+        packageMetadataPath = self.getSearchPath().findFirstFileOfNameOrThrow(Environment.PACKAGE_INDEX_NAMES, 'package index')
+        
+        # the package folders are found under a folder Packages.PACKAGES_PATH next to the packages index file
+        self._packageRootPath = os.path.join(os.path.dirname(packageMetadataPath), Environment.PACKAGES_PATH)
+        
+        with open(packageMetadataPath, 'r') as packageMetadataFile:
+            packageMetadataCollection = json.load(packageMetadataFile)
+
+        packageMetadataList = packageMetadataCollection['packages']
+        self._packageMetadataIndex = dict()
+        for packageMetadata in packageMetadataList:
+            self._packageMetadataIndex[packageMetadata['name']] = packageMetadata
+        
+        return self._packageMetadataIndex;
