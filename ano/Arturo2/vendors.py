@@ -7,6 +7,7 @@
 import os
 
 from ano import i18n
+from ano.Arturo2 import SearchPath
 from ano.Arturo2.hardware import Platform
 from ano.Arturo2.tools import ToolChain
 
@@ -16,9 +17,6 @@ _ = i18n.language.ugettext
 # | Package
 # +---------------------------------------------------------------------------+
 class Package(object):
-    
-    HARDWARE_DIR = "hardware"
-    TOOLS_DIR = "tools"
     
     @classmethod
     def makeToolChainMultikey(cls, name, version):
@@ -36,7 +34,7 @@ class Package(object):
         if not os.path.isdir(self._packagePath):
             raise Exception("%s was not found" % (self._packagePath))
 
-        self._hardwareDir = os.path.join(self._packagePath, Package.HARDWARE_DIR)
+        self._hardwareDir = os.path.join(self._packagePath, SearchPath.ARDUINO15_HARDWARE_PATH)
         self._platformIndex = None
         
     def getName(self):

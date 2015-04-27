@@ -4,21 +4,26 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
+import os
 import platform
 import re
 
 from ano import i18n
+from ano.Arturo2 import SearchPath
 
 
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | System
+# | HostToolChain
 # +---------------------------------------------------------------------------+
-class System(object):
-    
+class HostToolChain(object):
+    '''
+    ToolChain parts that are specific to a given host environment.
+    '''
+
     def __init__(self, toolchain, systemMetadata, console):
-        super(System, self).__init__()
+        super(HostToolChain, self).__init__()
         self._host = systemMetadata['host']
         self._url = systemMetadata['url']
         self._toolchain = toolchain
@@ -29,7 +34,16 @@ class System(object):
     
     def getHost(self):
         return self._host
-    
+
+    def getPath(self):
+        packager = self._toolchain.getPackage().getName()
+        localpath = os.path.join(SearchPath.ARDUINO15_PACKAGES_PATH, 
+                                 packager, 
+                                 SearchPath.ARDUINO15_TOOLS_PATH, 
+                                 self._toolchain.getName(), 
+                                 self._toolchain.getVersion())
+        return self._toolchain.getPackage().getEnvironment().getSearchPath().findDir(localpath)
+        
     def getUrl(self):
         return self._url
 
@@ -76,7 +90,7 @@ class ToolChain(object):
         self._console = console
         self._hostSystem = None
         for system in toolChainMetadata['systems']:
-            self._systems[system['host']] = System(self, system, console) 
+            self._systems[system['host']] = system
         
     def getName(self):
         return self._name
@@ -90,7 +104,7 @@ class ToolChain(object):
     def getCurrentHostName(self):
         return platform.system().lower()
         
-    def getSystemForHost(self):
+    def getHostToolChain(self):
         if self._hostSystem == -1:
             return None
         elif self._hostSystem is not None:
@@ -102,9 +116,9 @@ class ToolChain(object):
             for machinePattern, compiledHostPatternsList in compiledHostPatterns.iteritems():
                 if machinePattern.match(machine):
                     for compiledHostPattern in compiledHostPatternsList:
-                        for systemKey in self._systems.iterkeys():
+                        for systemKey, systemMetadata in self._systems.iteritems():
                             if compiledHostPattern.match(systemKey):
-                                self._hostSystem = self._systems[systemKey]
+                                self._hostSystem = HostToolChain(self, systemMetadata, self._console)
                                 return self._hostSystem
         # mark as "not found" so we don't try to match it again.
         self._hostSystem = -1

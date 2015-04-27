@@ -41,11 +41,15 @@ class List_tools(Command):
                 for name, toolchain in toolchains.iteritems():  # @UnusedVariable
                     console.printInfo(_("{0} from {1}, version {2}.".format(toolchain.getName(), package.getName(), toolchain.getVersion())))
                     console.shift()
-                    system = toolchain.getSystemForHost()
+                    system = toolchain.getHostToolChain()
                     if system:
-                        console.printInfo(_("{0} tools are available from {1}.".format(system.getHost(), system.getUrl())))
+                        localpath = system.getPath()
+                        if localpath is None:
+                            console.printInfo(_("{0} tools are available from {1}.".format(system.getHost(), system.getUrl())))
+                        else:
+                            console.printInfo(_("{0} tools are installed under {1}".format(system.getHost(), localpath)))
                     else:
-                        console.printInfo(_("No known system for host {0}.".format(toolchain.getCurrentHostName())))
+                        console.printInfo(_("No known tools for host {0}.".format(toolchain.getCurrentHostName())))
                     console.unshift()
                 console.unshift()
         finally:
