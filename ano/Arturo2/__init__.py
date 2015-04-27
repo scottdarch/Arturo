@@ -62,6 +62,10 @@ class NamedOrderedDict(OrderedDict):
 # +---------------------------------------------------------------------------+
 class SearchPath(object):
     
+    ARDUINO15_PACKAGES_PATH = "packages"
+    ARDUINO15_TOOLS_PATH = "tools"
+    ARDUINO15_HARDWARE_PATH = "hardware"
+    
     def __init__(self):
         super(SearchPath, self).__init__()
         self._envpath = [os.path.expanduser("~/Library/Arduino15")]
@@ -88,6 +92,19 @@ class SearchPath(object):
 
         return fqfn
     
+    def findDir(self, relativepath):
+        if relativepath is None:
+            raise ValueError("relativepath argument is required.")
+
+        fqfn = None
+        for place in self._envpath:
+            possibleFqfn = os.path.join(place, relativepath)
+            if os.path.isdir(possibleFqfn):
+                fqfn = possibleFqfn
+                break
+
+        return fqfn
+        
     def __str__(self):
         return str(self._envpath)
     

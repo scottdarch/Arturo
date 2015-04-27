@@ -143,7 +143,6 @@ class Environment(object):
     All available configurations for the given project.
     '''
     
-    PACKAGES_PATH = "packages"
     PACKAGE_INDEX_NAMES = ['package_index.json']
     
     def __init__(self, console):
@@ -193,8 +192,8 @@ class Environment(object):
         
         packageMetadataPath = self.getSearchPath().findFirstFileOfNameOrThrow(Environment.PACKAGE_INDEX_NAMES, 'package index')
         
-        # the package folders are found under a folder Packages.PACKAGES_PATH next to the packages index file
-        self._packageRootPath = os.path.join(os.path.dirname(packageMetadataPath), Environment.PACKAGES_PATH)
+        # the package folders are found under a folder ARDUINO15_PACKAGES_PATH next to the packages index file
+        self._packageRootPath = os.path.join(os.path.dirname(packageMetadataPath), SearchPath.ARDUINO15_PACKAGES_PATH)
         
         with open(packageMetadataPath, 'r') as packageMetadataFile:
             packageMetadataCollection = json.load(packageMetadataFile)
