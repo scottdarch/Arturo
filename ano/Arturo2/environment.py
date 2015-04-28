@@ -71,14 +71,20 @@ class Configuration(object):
 # +---------------------------------------------------------------------------+
 class Project(object):
     
-    BUILDDIR = ".build_ano2"
-        
     @classmethod
     def infer(cls, environment):
         currentDir = os.getcwd()
         os.path.basename(currentDir)
         return Project(os.path.basename(currentDir), currentDir, environment, environment.getConsole())
     
+    @classmethod
+    def filterForSourceFiles(cls, fqFileName):
+        #TODO: develop source file filters
+        if fqFileName.endswith(".c") or fqFileName.endswith(".cpp") or fqFileName.endswith(".ino"):
+            return True
+        else:
+            return False
+
     def __init__(self, name, path, environment, console):
         super(Project, self).__init__()
         self._env = environment
@@ -104,7 +110,7 @@ class Project(object):
     
     def getBuilddir(self):
         if self._builddir is None:
-            self._builddir = os.path.join(self._path, Project.BUILDDIR)
+            self._builddir = os.path.join(self._path, SearchPath.ARTURO2_BUILDDIR_NAME)
         return self._builddir
        
     def initProjectDir(self):
@@ -133,6 +139,13 @@ class Project(object):
     
     def getConfiguration(self, packageName, platformName, boardName):
         return Configuration(self, packageName, platformName, boardName, self._env.getConsole())
+    
+    def getSourceFiles(self):
+        #TODO: find source root as {token}/{token}.ino
+        return self.getEnvironment().getSearchPath().findAll(self._path, fileFilter=Project.filterForSourceFiles, followlinks=True)
+    
+    def getIncludeFiles(self):
+        pass
         
 # +---------------------------------------------------------------------------+
 # | Environment
@@ -161,7 +174,7 @@ class Environment(object):
     
     def getSearchPath(self):
         if self._searchPath is None:
-            self._searchPath = SearchPath()
+            self._searchPath = SearchPath(self._console)
         return self._searchPath
     
     def getPackages(self):
