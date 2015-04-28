@@ -7,6 +7,7 @@
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 import os
+import re
 
 from ano.Arturo2.parsers import ArduinoKeyValueParser
 
@@ -60,54 +61,107 @@ class NamedOrderedDict(OrderedDict):
 # +---------------------------------------------------------------------------+
 # | SearchPath
 # +---------------------------------------------------------------------------+
+def fileFilterAllFiles(fqfilepath):
+        return True
+    
+def dirFilterNoDirs(fqdirpath):
+    return False
+    
 class SearchPath(object):
     
     ARDUINO15_PACKAGES_PATH = "packages"
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
+    ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15")]
     
-    def __init__(self):
+    ARTURO2_BUILDDIR_NAME = ".build_ano2"
+    
+    ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS = ["\..+", 
+                                            ARTURO2_BUILDDIR_NAME,
+                                           ]
+    
+    def __init__(self, console):
         super(SearchPath, self).__init__()
-        self._envpath = [os.path.expanduser("~/Library/Arduino15")]
+        self._envpath = list(SearchPath.ARDUINO15_PATH)
         self._envpath += os.environ['PATH'].split(":")
-        
+        self._compiledScmExcludes = []
+        self._console = console
+        for patternString in SearchPath.ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS:
+            self._compiledScmExcludes.append(re.compile(patternString))
+    
+    def __str__(self):
+        return str(self._envpath)
+
     def findFirstFileOfNameOrThrow(self, fileNames, genericName):
         for name in fileNames:
-            packageIndexPath = self.findFile(name)
+            packageIndexPath = self._findFirstOrNone(name, os.path.isfile)
             if packageIndexPath is not None:
                 return packageIndexPath
 
         raise MissingRequiredFileException(self._searchPath, fileNames, genericName)
 
     def findFile(self, filename):
-        if filename is None:
-            raise ValueError("filename argument is required.")
-
-        fqfn = None
-        for place in self._envpath:
-            possibleFqfn = os.path.join(place, filename)
-            if os.path.isfile(possibleFqfn):
-                fqfn = possibleFqfn
-                break
-
-        return fqfn
+        return self._findFirstOrNone(filename, os.path.isfile)
     
     def findDir(self, relativepath):
-        if relativepath is None:
-            raise ValueError("relativepath argument is required.")
+        return self._findFirstOrNone(relativepath, os.path.isdir)
 
-        fqfn = None
+    def findAll(self, path, fileFilter=fileFilterAllFiles, directoryFilter=dirFilterNoDirs, defaultExcludes=True, followlinks=False):
+        return self._findAllRecursive(set(), path, fileFilter, directoryFilter, defaultExcludes, followlinks)
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _isExcludedByDefault(self, name):
+        for matcher in self._compiledScmExcludes:
+            if matcher.match(name):
+                return True
+        return False
+
+    def _findAllRecursive(self, inoutResultSet, root, fileFilter, directoryFilter, defaultExcludes, followlinks, visitedMemopad=set()):
+        '''
+        Cycle safe, recursive file tree search function.
+        '''
+        visitedMemopad.add(os.path.realpath(root))
+
+        dirThings = os.listdir(root)
+
+        dirsToTraverse = []
+        for name in dirThings:
+            if self._isExcludedByDefault(name):
+                if self._console is not None:
+                    self._console.printVerbose("Skipping {} by default.".format(name))
+                continue
+
+            fullPath = os.path.join(root, name)
+            if os.path.isdir(fullPath):
+                if directoryFilter is None or directoryFilter(fullPath):
+                    inoutResultSet.add(fullPath)
+
+                if (followlinks or not os.path.islink(fullPath)) and os.path.realpath(fullPath) not in visitedMemopad:
+                    dirsToTraverse.append(fullPath)
+
+            elif fileFilter is None or fileFilter(fullPath):
+                inoutResultSet.add(fullPath)
+
+        for subdir in dirsToTraverse:
+            self._findAllRecursive(inoutResultSet, subdir, fileFilter, directoryFilter, defaultExcludes, followlinks, visitedMemopad)
+
+        return inoutResultSet
+    
+    def _findFirstOrNone(self, pathelement, compariator):
+        if pathelement is None:
+            raise ValueError("pathelement argument is required.")
+
+        foundPath = None
         for place in self._envpath:
-            possibleFqfn = os.path.join(place, relativepath)
-            if os.path.isdir(possibleFqfn):
-                fqfn = possibleFqfn
+            possiblePath = os.path.join(place, pathelement)
+            if compariator(possiblePath):
+                foundPath = possiblePath
                 break
 
-        return fqfn
-        
-    def __str__(self):
-        return str(self._envpath)
-    
+        return foundPath
+
 # +---------------------------------------------------------------------------+
 # | Preferences
 # +---------------------------------------------------------------------------+
