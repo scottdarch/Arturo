@@ -8,7 +8,7 @@ import json
 import os
 
 from ano import __version__, i18n
-from ano.Arturo2 import SearchPath, Preferences
+from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent
 from ano.Arturo2.templates import JinjaTemplates
 from ano.Arturo2.vendors import Package
 
@@ -69,6 +69,26 @@ class Configuration(object):
 # +---------------------------------------------------------------------------+
 # | Project
 # +---------------------------------------------------------------------------+
+class ProjectSourceRootAggregator(SearchPathAgent):
+    
+    ARTURO2_MAIN_FILEEXT = ("cpp", "c", "ino")
+    
+    def __init__(self, project, console):
+        super(ProjectSourceRootAggregator, self).__init__(console, followLinks=True)
+        self._project = project
+        self._console = console
+        self._sourceRoots = []
+
+    def getResults(self):
+        return self._sourceRoots
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in ProjectSourceRootAggregator.ARTURO2_MAIN_FILEEXT:
+            if containingFolderName == splitName[0]:
+                self._sourceRoots.append([parentPath, containingFolderName, filename])
+        return SearchPathAgent.KEEP_GOING
+    
 class Project(object):
     
     @classmethod
@@ -76,14 +96,6 @@ class Project(object):
         currentDir = os.getcwd()
         os.path.basename(currentDir)
         return Project(os.path.basename(currentDir), currentDir, environment, environment.getConsole())
-    
-    @classmethod
-    def filterForSourceFiles(cls, fqFileName):
-        #TODO: develop source file filters
-        if fqFileName.endswith(".c") or fqFileName.endswith(".cpp") or fqFileName.endswith(".ino"):
-            return True
-        else:
-            return False
 
     def __init__(self, name, path, environment, console):
         super(Project, self).__init__()
@@ -140,13 +152,10 @@ class Project(object):
     def getConfiguration(self, packageName, platformName, boardName):
         return Configuration(self, packageName, platformName, boardName, self._env.getConsole())
     
-    def getSourceFiles(self):
-        #TODO: find source root as {token}/{token}.ino
-        return self.getEnvironment().getSearchPath().findAll(self._path, fileFilter=Project.filterForSourceFiles, followlinks=True)
-    
-    def getIncludeFiles(self):
-        pass
-        
+    def getSourceRoots(self):
+        return self.getEnvironment().getSearchPath().scanDirs(
+                 self._path, ProjectSourceRootAggregator(self, self._console)).getResults()
+   
 # +---------------------------------------------------------------------------+
 # | Environment
 # +---------------------------------------------------------------------------+
