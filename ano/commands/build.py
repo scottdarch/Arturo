@@ -158,6 +158,7 @@ class Build(Command):
             mcu,
             '-DF_CPU=' + BoardModels.getValueForVariant(board, boardVariant, 'build', 'f_cpu'),
             '-DARDUINO=' + str(self.e.arduino_lib_version.as_int()),
+            '-DARDUINO_ARCH_AVR',
             '-I' + self.e['arduino_core_dir'],
         ]) 
         # Add additional flags as specified
