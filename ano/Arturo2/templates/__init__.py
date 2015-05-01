@@ -16,9 +16,7 @@ class JinjaTemplates(object):
     JINJASUFFIX = ".jinja"
     
     MAKEFILE_TARGETS   = "MakeTargets.mk"
-    MAKEFILE_HEX       = "MakeHex.mk"
     MAKEFILE           = "Makefile"
-    PREFERENCES        = "preferences.txt"
     
     @classmethod
     def getRelPathToTemplatesFromPackage(cls):
@@ -29,7 +27,6 @@ class JinjaTemplates(object):
         env = jinja2.Environment(loader=PackageLoader(__app_name__, cls.getRelPathToTemplatesFromPackage()))
         env.globals['templates'] = {
             'make_targets':cls.MAKEFILE_TARGETS,
-            'make_hex':cls.MAKEFILE_HEX,
             'makefile':cls.MAKEFILE
         }
         return env

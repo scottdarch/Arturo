@@ -89,7 +89,7 @@ class SearchPathAgent(object):
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         return SearchPathAgent.KEEP_GOING
     
-    def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath):
+    def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath, depth):
         return SearchPathAgent.KEEP_GOING
     
 # +---------------------------------------------------------------------------+
@@ -139,7 +139,7 @@ class SearchPath(object):
             raise ValueError("You must provide a SearchPathAgent object to use the scanDirs method.")
         parentPath = os.path.realpath(os.path.join(path, os.path.pardir))
         canonicalPath = os.path.realpath(path)
-        self._scanDirsRecursive(parentPath, path, os.path.basename(path), canonicalPath, searchAgent)
+        self._scanDirsRecursive(parentPath, path, os.path.basename(path), canonicalPath, searchAgent, 0)
         return searchAgent
 
     # +-----------------------------------------------------------------------+
@@ -151,7 +151,7 @@ class SearchPath(object):
                 return True
         return False
 
-    def _scanDirsRecursive(self, parentPath, folderPath, folderName, canonicalRoot, searchAgent):
+    def _scanDirsRecursive(self, parentPath, folderPath, folderName, canonicalRoot, searchAgent, folderDepth):
         '''
         Cycle safe, recursive file tree search function.
         '''
@@ -171,7 +171,7 @@ class SearchPath(object):
             fullPath = os.path.join(folderPath, name)
             if os.path.isdir(fullPath):
                 canonicalDir = os.path.realpath(fullPath)
-                resultOfVisit = searchAgent.onVisitDir(parentPath, folderPath, name, fullPath, canonicalDir)
+                resultOfVisit = searchAgent.onVisitDir(parentPath, folderPath, name, fullPath, canonicalDir, folderDepth)
                 if resultOfVisit != SearchPathAgent.KEEP_GOING:
                     return resultOfVisit
 
@@ -184,7 +184,7 @@ class SearchPath(object):
                     return resultOfVisit
 
         for dirPath, dirName, canonicalDirPath in dirsToTraverse:
-            result = self._scanDirsRecursive(folderPath, dirPath, dirName, canonicalDirPath, searchAgent)
+            result = self._scanDirsRecursive(folderPath, dirPath, dirName, canonicalDirPath, searchAgent, folderDepth + 1)
             if result == SearchPathAgent.DONE:
                 return result
         
@@ -220,8 +220,17 @@ class Preferences(object):
     def get(self, key, defaultValue):
         return self._getPreferences().get(key, defaultValue)
     
+    # +-----------------------------------------------------------------------+
+    # | PYTHON DATA MODEL
+    # +-----------------------------------------------------------------------+
     def __getitem__(self, key):
         return self._getPreferences()[key]
+
+    def __setitem__(self, key, value):
+        self._getPreferences()[key] = value
+
+    def __iter__(self):
+        return self._getPreferences().__iter__()
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
