@@ -4,6 +4,7 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
+
 from ano import i18n
 from ano.Arturo2.commands.base import Command
 

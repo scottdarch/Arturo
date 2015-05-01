@@ -83,8 +83,12 @@ class Console(ArgumentVisitor):
     def printWarning(self, message):
         self._printMessage(message)
         
+    def stdout(self, *tokens):
+        for token in tokens:
+            print token,
+            
     def askYesNoQuestion(self, question):
-        response = raw_input(self._indent + self._colourize(question, 'red'))
+        response = raw_input(self._indent + question + os.linesep)
         return strtobool(response)
     
     def askPickOneFromList(self, prompt, optionList):

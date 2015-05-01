@@ -8,6 +8,7 @@ import os
 
 from ano import __app_name__, __version__
 from ano.Arturo2.commands.base import Command, ProjectCommand
+from ano.Arturo2.commands.makegen import Make_gen
 from ano.Arturo2.templates import JinjaTemplates
 
 
@@ -51,6 +52,7 @@ class Init(ProjectCommand):
     # +-----------------------------------------------------------------------+
     def run(self):
         project = self.getProject()
+        console = self.getConsole()
         
         # first choose a project "main"
         sourceRoots = project.getSourceRoots()
@@ -59,29 +61,49 @@ class Init(ProjectCommand):
             projectList = list()
             for rootPath, rootName, mainSource in sourceRoots:  # @UnusedVariable
                 projectList.append([rootName, mainSource])
-            sourceRoot = sourceRoots[self._console.askPickOneFromList(_("Which project?"), projectList)]
+            sourceRoot = sourceRoots[console.askPickOneFromList(_("Which project?"), projectList)]
         else:
             sourceRoot = sourceRoots[0]
             
+
         # next use the IDE's preferences to populate our makefile
         preferences = project.getEnvironment().getPreferences()
         
-        # finally setup the top level makefile
+        # setup the top level makefile
         makefilePath = project.getMakefilePath()
         sourcePath = os.path.relpath(os.path.join(sourceRoot[0], sourceRoot[1]), os.path.dirname(makefilePath))
+        projectName = sourceRoot[1]
         
         if os.path.exists(makefilePath):
-            message = _('%s exists. Overwrite? ' % (makefilePath))
-            if not self._console.askYesNoQuestion(message):
-                return
-        jinjaEnv = project.getJinjaEnvironment()
+            message = _('%s exists. Overwrite?' % (makefilePath))
+            if console.askYesNoQuestion(message):
+                self._generateMakefile(makefilePath, preferences, projectName, sourcePath)
+
+        # finally ask if we want to (re)generate the project makefiles
+        if console.askYesNoQuestion(_("Do you want to (re)generate the project makefiles?")):
+            # generate the configuration
+            config = project.getConfiguration(preferences['target_package'], 
+                                              preferences['target_platform'], 
+                                              preferences['board'],
+                                              projectName,
+                                              sourcePath
+                                              )
+            makeGenCommand = Make_gen(self.getEnvironment(), project, config, console)
+            makeGenCommand.run()
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _generateMakefile(self, makefilePath, preferences, projectName, sourcePath):
+        
+        
+        jinjaEnv = self.getProject().getJinjaEnvironment()
         makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE)
         initRenderParams = {
                             'source' : { 'dir' : sourcePath,
-                                         'name' : sourceRoot[1],
+                                         'name' : projectName,
                                     },
                             'preferences' : preferences,
                         }
         with open(makefilePath, 'wt') as makefile:
             makefile.write(makefileTemplate.render(initRenderParams))
-            

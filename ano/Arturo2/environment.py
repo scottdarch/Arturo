@@ -19,25 +19,46 @@ _ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 # | Configuration
 # +---------------------------------------------------------------------------+
+class ConfigurationHeaderAggregator(SearchPathAgent):
+    
+    ARTURO2_HEADER_FILEEXT = ("h", "hpp")
+    
+    def __init__(self, configuration, console):
+        super(ConfigurationHeaderAggregator, self).__init__(console, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._headers = list()
+
+    def getResults(self):
+        return self._headers
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in ConfigurationHeaderAggregator.ARTURO2_HEADER_FILEEXT:
+            self._headers.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
+    
 class Configuration(object):
     '''
     An environment with package, platform, board, uploader, and other targeting parameters defined.
     '''
     
-    def __init__(self, project, packageName, platformName, boardName, projectName, preferences=None, console=None):
+    def __init__(self, project, packageName, platformName, boardName, projectName, sourceRoot, preferences=None, console=None):
         super(Configuration, self).__init__()
         self._project = project
         self._console = console
         self._packageName = packageName
         self._projectName = projectName
-        self._package = None
+        self._prefs = preferences
         self._platformName = platformName
-        self._platform = None
         self._boardName = boardName
+        self._sourcePath = os.path.join(project.getPath(), sourceRoot)
+        self._package = None
+        self._platform = None
         self._board = None
         self._jinjaEnv = None
         self._builddir = None
-        self._prefs = preferences
+        self._headers = None
         
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
@@ -49,7 +70,10 @@ class Configuration(object):
                 'preferences' : self._prefs
             }
         return self._jinjaEnv
-    
+
+    def getProject(self):
+        return self._project
+
     def getProjectName(self):
         return self._projectName
     
@@ -72,6 +96,15 @@ class Configuration(object):
         if self._builddir is None:
             self._builddir = os.path.join(self._project.getBuilddir(), self._boardName)
         return self._builddir
+    
+    def getSourcePath(self):
+        return self._sourcePath
+
+    def getHeaders(self):
+        if self._headers is None:
+            self._headers = self.getProject().getEnvironment().getSearchPath().scanDirs(
+                 self._sourcePath, ConfigurationHeaderAggregator(self, self._console)).getResults()
+        return self._headers
 
 # +---------------------------------------------------------------------------+
 # | Project
@@ -131,7 +164,10 @@ class Project(object):
         if self._builddir is None:
             self._builddir = os.path.join(self._path, SearchPath.ARTURO2_BUILDDIR_NAME)
         return self._builddir
-       
+
+    def getPath(self):
+        return self._path
+
     def getMakefilePath(self):
         return os.path.join(self._path, JinjaTemplates.MAKEFILE)
         
@@ -154,11 +190,12 @@ class Project(object):
         platformName = mergedPreferences['target_platform']
         boardName = mergedPreferences['board']
         projectName = mergedPreferences['project_name']
+        sourceRoot = mergedPreferences['dir_source']
         
-        return Configuration(self, packageName, platformName, boardName, projectName, mergedPreferences, self._env.getConsole())
+        return Configuration(self, packageName, platformName, boardName, projectName, sourceRoot, mergedPreferences, self._env.getConsole())
     
-    def getConfiguration(self, packageName, platformName, boardName, projectName):
-        return Configuration(self, packageName, platformName, boardName, projectName, None, self._env.getConsole())
+    def getConfiguration(self, packageName, platformName, boardName, projectName, sourceRoot):
+        return Configuration(self, packageName, platformName, boardName, projectName, sourceRoot, None, self._env.getConsole())
     
     def getSourceRoots(self):
         return self.getEnvironment().getSearchPath().scanDirs(

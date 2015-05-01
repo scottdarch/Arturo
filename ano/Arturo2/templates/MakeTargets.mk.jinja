@@ -5,13 +5,16 @@
 # http://32bits.io/Arturo/
 #
 
-
-BOARD := {{config.board}}
+# +----------------------------------------------------------------------------+
+# | PATHS
+# +----------------------------------------------------------------------------+
+LOCAL_DIR                       := {{local.dir}}
+LOCAL_ROOT_DIR                  := {{local.rootdir}}
 
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
-C_HEADERS := {arturo.src.headers}
+C_HEADERS                       := $(shell {{command.source_headers}})
 
 # +----------------------------------------------------------------------------+
 # | FLAGS
@@ -29,23 +32,6 @@ AR_FLAGS := \
 # +----------------------------------------------------------------------------+
 # | COMMON TARGETS
 # +----------------------------------------------------------------------------+
-.PHONY: all
-all:
-
-.PHONY: debug
-debug: CFLAGS += $(C_DEBUG_FLAGS)
-debug: CXX_FLAGS += $(CXX_DEBUG_FLAGS)
-debug: all
-
-
-.PHONY: clean
-clean: cleandocs
-    rm -rf $(BUILDDIR)
-
-# +----------------------------------------------------------------------------+
-# | DIRECTORIES AND CONFIGURATIONS
-# +----------------------------------------------------------------------------+
-
-include $(BUILDDIR)/Toolchain_{{config.target_platform}}.mk
-
-include$(BUILDDIR)/MakeHex.mk
+.PHONY: list
+list:
+	@echo $(C_HEADERS)

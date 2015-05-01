@@ -8,28 +8,27 @@
 # +----------------------------------------------------------------------------+
 # | BUILD CONFIGURATION
 # +----------------------------------------------------------------------------+
-VERSION_STRING          := {{env.version}}
-PROJECT_NAME            := {{source.name}}
-TARGET_PACKAGE          := {{preferences.target_package}}
-TARGET_PLATFORM         := {{preferences.target_platform}}
-BOARD                   := {{preferences.board}}
+VERSION_STRING                  := {{env.version}}
+PROJECT_NAME                    := {{source.name}}
+TARGET_PACKAGE                  := {{preferences.target_package}}
+TARGET_PLATFORM                 := {{preferences.target_platform}}
+BOARD                           := {{preferences.board}}
 
 # +----------------------------------------------------------------------------+
 # | DIRECTORIES AND CONFIGURATIONS
 # +----------------------------------------------------------------------------+
-DIR_BUILD               := {{project.builddir}}
-DIR_SOURCE              := {{source.dir}}
+DIR_BUILD                       := {{project.builddir}}
+DIR_SOURCE                      := {{source.dir}}
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDES
 # +----------------------------------------------------------------------------+
-MAKEINCLUDE_MAKETARGETS := $(DIR_BUILD)/{{templates.make_targets}}
-MAKEINCLUDE_MAKEHEX     := $(DIR_BUILD)/{{templates.make_hex}}
+MAKEINCLUDE_MAKETARGETS         := $(DIR_BUILD)/$(BOARD)/{{templates.make_targets}}
+MAKEINCLUDE_MAKEHEX             := $(DIR_BUILD)/$(BOARD)/{{templates.make_hex}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
 # +----------------------------------------------------------------------------+
--include $(MAKEINCLUDE_MAKEHEX)
 
 .PHONY : all
 all:
@@ -39,4 +38,5 @@ all:
 clean:
 	rm -rf $(BUILDDIR)
 
+-include $(MAKEINCLUDE_MAKETARGETS)
 
