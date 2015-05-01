@@ -10,6 +10,7 @@ import os
 import re
 
 from ano.Arturo2.parsers import ArduinoKeyValueParser
+from _pyio import __metaclass__
 
 
 # +---------------------------------------------------------------------------+
@@ -59,14 +60,41 @@ class NamedOrderedDict(OrderedDict):
         return self.getName()
 
 # +---------------------------------------------------------------------------+
+# | SearchPathAgent
+# +---------------------------------------------------------------------------+
+class SearchPathAgent(object):
+    
+    KEEP_GOING = 1
+    DONE = 0
+    DONE_WITH_THIS_DIR = 2
+    
+    __metaclass__ = ABCMeta
+    
+    def __init__(self, console, useDefaultExcludes=True, followLinks=False):
+        super(SearchPathAgent, self).__init__()
+        self._console = console
+        self._visitedDirMemopad = set()
+        self._followLinks = followLinks
+        self._useDefaultExcludes = useDefaultExcludes
+        
+    def getFollowLinks(self):
+        return self._followLinks
+
+    def getUseDefaultExcludes(self):
+        return self._useDefaultExcludes
+
+    def getVisitedDirMemopad(self):
+        return self._visitedDirMemopad
+    
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        return SearchPathAgent.KEEP_GOING
+    
+    def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath):
+        return SearchPathAgent.KEEP_GOING
+    
+# +---------------------------------------------------------------------------+
 # | SearchPath
 # +---------------------------------------------------------------------------+
-def fileFilterAllFiles(fqfilepath):
-        return True
-    
-def dirFilterNoDirs(fqdirpath):
-    return False
-    
 class SearchPath(object):
     
     ARDUINO15_PACKAGES_PATH = "packages"
@@ -106,8 +134,13 @@ class SearchPath(object):
     def findDir(self, relativepath):
         return self._findFirstOrNone(relativepath, os.path.isdir)
 
-    def findAll(self, path, fileFilter=fileFilterAllFiles, directoryFilter=dirFilterNoDirs, defaultExcludes=True, followlinks=False):
-        return self._findAllRecursive(set(), path, fileFilter, directoryFilter, defaultExcludes, followlinks)
+    def scanDirs(self, path, searchAgent):
+        if searchAgent is None or not isinstance(searchAgent, SearchPathAgent):
+            raise ValueError("You must provide a SearchPathAgent object to use the scanDirs method.")
+        parentPath = os.path.realpath(os.path.join(path, os.path.pardir))
+        canonicalPath = os.path.realpath(path)
+        self._scanDirsRecursive(parentPath, path, os.path.basename(path), canonicalPath, searchAgent)
+        return searchAgent
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
@@ -118,36 +151,45 @@ class SearchPath(object):
                 return True
         return False
 
-    def _findAllRecursive(self, inoutResultSet, root, fileFilter, directoryFilter, defaultExcludes, followlinks, visitedMemopad=set()):
+    def _scanDirsRecursive(self, parentPath, folderPath, folderName, canonicalRoot, searchAgent):
         '''
         Cycle safe, recursive file tree search function.
         '''
-        visitedMemopad.add(os.path.realpath(root))
+        visitedMemopad = searchAgent.getVisitedDirMemopad()
+        visitedMemopad.add(canonicalRoot)
 
-        dirThings = os.listdir(root)
+        dirThings = os.listdir(folderPath)
+        useDefaultExcludes = searchAgent.getUseDefaultExcludes()
 
         dirsToTraverse = []
         for name in dirThings:
-            if self._isExcludedByDefault(name):
+            if useDefaultExcludes and self._isExcludedByDefault(name):
                 if self._console is not None:
                     self._console.printVerbose("Skipping {} by default.".format(name))
                 continue
 
-            fullPath = os.path.join(root, name)
+            fullPath = os.path.join(folderPath, name)
             if os.path.isdir(fullPath):
-                if directoryFilter is None or directoryFilter(fullPath):
-                    inoutResultSet.add(fullPath)
+                canonicalDir = os.path.realpath(fullPath)
+                resultOfVisit = searchAgent.onVisitDir(parentPath, folderPath, name, fullPath, canonicalDir)
+                if resultOfVisit != SearchPathAgent.KEEP_GOING:
+                    return resultOfVisit
 
-                if (followlinks or not os.path.islink(fullPath)) and os.path.realpath(fullPath) not in visitedMemopad:
-                    dirsToTraverse.append(fullPath)
+                if (searchAgent.getFollowLinks() or not os.path.islink(fullPath)) and canonicalDir not in visitedMemopad:
+                    dirsToTraverse.append([fullPath, name, canonicalDir])
 
-            elif fileFilter is None or fileFilter(fullPath):
-                inoutResultSet.add(fullPath)
+            else:
+                resultOfVisit = searchAgent.onVisitFile(parentPath, folderPath, folderName, name, fullPath)
+                if resultOfVisit != SearchPathAgent.KEEP_GOING:
+                    return resultOfVisit
 
-        for subdir in dirsToTraverse:
-            self._findAllRecursive(inoutResultSet, subdir, fileFilter, directoryFilter, defaultExcludes, followlinks, visitedMemopad)
+        for dirPath, dirName, canonicalDirPath in dirsToTraverse:
+            result = self._scanDirsRecursive(folderPath, dirPath, dirName, canonicalDirPath, searchAgent)
+            if result == SearchPathAgent.DONE:
+                return result
+        
+        return SearchPathAgent.KEEP_GOING
 
-        return inoutResultSet
     
     def _findFirstOrNone(self, pathelement, compariator):
         if pathelement is None:

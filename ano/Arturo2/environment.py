@@ -8,7 +8,8 @@ import json
 import os
 
 from ano import __version__, i18n
-from ano.Arturo2 import SearchPath, Preferences
+from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent
+from ano.Arturo2.parsers import MakefilePropertyParser
 from ano.Arturo2.templates import JinjaTemplates
 from ano.Arturo2.vendors import Package
 
@@ -23,11 +24,12 @@ class Configuration(object):
     An environment with package, platform, board, uploader, and other targeting parameters defined.
     '''
     
-    def __init__(self, project, packageName, platformName, boardName, console):
+    def __init__(self, project, packageName, platformName, boardName, projectName, preferences=None, console=None):
         super(Configuration, self).__init__()
         self._project = project
         self._console = console
         self._packageName = packageName
+        self._projectName = projectName
         self._package = None
         self._platformName = platformName
         self._platform = None
@@ -35,6 +37,7 @@ class Configuration(object):
         self._board = None
         self._jinjaEnv = None
         self._builddir = None
+        self._prefs = preferences
         
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
@@ -42,9 +45,13 @@ class Configuration(object):
             self._jinjaEnv.globals['config'] = {
                 'board': self._boardName,
                 'target_platform' : self._platformName,
-                'target_package' : self._packageName
+                'target_package' : self._packageName,
+                'preferences' : self._prefs
             }
         return self._jinjaEnv
+    
+    def getProjectName(self):
+        return self._projectName
     
     def getPackage(self):
         if self._package is None:
@@ -69,6 +76,26 @@ class Configuration(object):
 # +---------------------------------------------------------------------------+
 # | Project
 # +---------------------------------------------------------------------------+
+class ProjectSourceRootAggregator(SearchPathAgent):
+    
+    ARTURO2_MAIN_FILEEXT = ("cpp", "c", "ino")
+    
+    def __init__(self, project, console):
+        super(ProjectSourceRootAggregator, self).__init__(console, followLinks=True)
+        self._project = project
+        self._console = console
+        self._sourceRoots = []
+
+    def getResults(self):
+        return self._sourceRoots
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in ProjectSourceRootAggregator.ARTURO2_MAIN_FILEEXT:
+            if containingFolderName == splitName[0]:
+                self._sourceRoots.append([parentPath, containingFolderName, filename])
+        return SearchPathAgent.KEEP_GOING
+    
 class Project(object):
     
     @classmethod
@@ -76,14 +103,6 @@ class Project(object):
         currentDir = os.getcwd()
         os.path.basename(currentDir)
         return Project(os.path.basename(currentDir), currentDir, environment, environment.getConsole())
-    
-    @classmethod
-    def filterForSourceFiles(cls, fqFileName):
-        #TODO: develop source file filters
-        if fqFileName.endswith(".c") or fqFileName.endswith(".cpp") or fqFileName.endswith(".ino"):
-            return True
-        else:
-            return False
 
     def __init__(self, name, path, environment, console):
         super(Project, self).__init__()
@@ -113,16 +132,8 @@ class Project(object):
             self._builddir = os.path.join(self._path, SearchPath.ARTURO2_BUILDDIR_NAME)
         return self._builddir
        
-    def initProjectDir(self):
-        makefilePath = os.path.join(self._path, JinjaTemplates.MAKEFILE)
-        if os.path.exists(makefilePath):
-            message = _('%s exists. Overwrite? ' % (makefilePath))
-            if not self._console.askYesNoQuestion(message):
-                return
-        jinjaEnv = self.getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE)
-        with open(makefilePath, 'wt') as makefile:
-            makefile.write(makefileTemplate.render())
+    def getMakefilePath(self):
+        return os.path.join(self._path, JinjaTemplates.MAKEFILE)
         
     def getName(self):
         return self._name
@@ -131,22 +142,28 @@ class Project(object):
         '''
         The configuration as last specified in preferences.
         '''
-        preferences = self._env.getPreferences();
-        packageName = preferences['target_package']
-        platformName = preferences['target_platform']
-        boardName = preferences['board']
-        return self.getConfiguration(packageName, platformName, boardName)
-    
-    def getConfiguration(self, packageName, platformName, boardName):
-        return Configuration(self, packageName, platformName, boardName, self._env.getConsole())
-    
-    def getSourceFiles(self):
-        #TODO: find source root as {token}/{token}.ino
-        return self.getEnvironment().getSearchPath().findAll(self._path, fileFilter=Project.filterForSourceFiles, followlinks=True)
-    
-    def getIncludeFiles(self):
-        pass
         
+        #TODO: handle missing preferences
+        preferences = self._env.getPreferences();
+        
+        #TODO: handle missing makefile error
+        #TODO: check makefile version against Arturo version.
+        mergedPreferences = MakefilePropertyParser.parse(os.path.join(self._path, JinjaTemplates.MAKEFILE), preferences, self._console);
+        
+        packageName = mergedPreferences['target_package']
+        platformName = mergedPreferences['target_platform']
+        boardName = mergedPreferences['board']
+        projectName = mergedPreferences['project_name']
+        
+        return Configuration(self, packageName, platformName, boardName, projectName, mergedPreferences, self._env.getConsole())
+    
+    def getConfiguration(self, packageName, platformName, boardName, projectName):
+        return Configuration(self, packageName, platformName, boardName, projectName, None, self._env.getConsole())
+    
+    def getSourceRoots(self):
+        return self.getEnvironment().getSearchPath().scanDirs(
+                 self._path, ProjectSourceRootAggregator(self, self._console)).getResults()
+   
 # +---------------------------------------------------------------------------+
 # | Environment
 # +---------------------------------------------------------------------------+

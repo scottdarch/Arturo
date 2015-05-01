@@ -7,6 +7,42 @@
 
 import re
 
+# +---------------------------------------------------------------------------+
+# | Makefile Property Parser
+# +---------------------------------------------------------------------------+
+
+class MakefilePropertyParser(object):
+    '''
+    Parses any simple name/value pairs found in a gnu makefile
+    '''
+    
+    LINECOMMENT_PATTERN = re.compile("^\s?\#")
+    ONLYWHITESPACE_PATTERN = re.compile("^\s+$")
+    KEYVALUE_PATTERN = re.compile("(\S+)\s*[\?\:]?\=\s*(\S+)")
+    
+    def __init__(self):
+        raise Exception("static only")
+    
+    @classmethod
+    def parse(cls, makefilePath, mergeWith=dict(), console=None):
+        with open(makefilePath) as makefile:
+            for line in makefile:
+                if len(line) is 0 or cls.ONLYWHITESPACE_PATTERN.match(line):
+                    if console is not None:
+                        console.printVerbose("Skipping empty line")
+                    continue
+                if cls.LINECOMMENT_PATTERN.match(line):
+                    if console is not None:
+                        console.printVerbose("Skipping comment %s" % (line))
+                    continue
+                kvmatch = cls.KEYVALUE_PATTERN.match(line)
+                if kvmatch is not None:
+                    mergeWith[kvmatch.group(1).lower()] = kvmatch.group(2)
+        return mergeWith
+    
+# +---------------------------------------------------------------------------+
+# | ArduinoKeyValueParser
+# +---------------------------------------------------------------------------+
 class ArduinoKeyValueDiscardMenuHandler(object):
     '''
     Menu handler for ArduinoKeyValueParser that simply discards all menu definitions.
