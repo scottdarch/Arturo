@@ -35,6 +35,7 @@ class Make_gen(ConfiguredCommand):
         template = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_TARGETS)
         builddir = configuration.getBuilddir()
         makefilePath = os.path.join(builddir, JinjaTemplates.MAKEFILE_TARGETS)
+        
         self._mkdirs(builddir)
         with open(makefilePath, 'wt') as f:
             f.write(template.render())

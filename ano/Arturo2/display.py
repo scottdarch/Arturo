@@ -5,10 +5,14 @@
 # http://32bits.io/Arturo/
 #
 from distutils.util import strtobool
+import os
 import string
 
+from ano import i18n
 from ano.Arturo2 import ArgumentVisitor
 
+
+_ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
 # | Console
@@ -82,6 +86,30 @@ class Console(ArgumentVisitor):
     def askYesNoQuestion(self, question):
         response = raw_input(self._indent + self._colourize(question, 'red'))
         return strtobool(response)
+    
+    def askPickOneFromList(self, prompt, optionList):
+        '''
+        @param optionList: A list of two-tuples to display to the user with a prompt to select one. The first
+                           index in the tuple is used as a succinct title and the second a breif description.
+        '''
+        listLen = len(optionList)
+        listAsString = ""
+        for x in range(listLen):
+            listAsString = listAsString + (self._indent + Console.INDENTATION + _("{} : {} - {}".format(str(x + 1), optionList[x][0], optionList[x][1])) + os.linesep)
+        commentAndList = _("{0}{1}".format(listAsString, self._indent + prompt + os.linesep))
+        responseAsInt = -1
+        while True:
+            response = raw_input(commentAndList)
+            try:
+                responseAsInt = int(response) - 1
+            except ValueError:
+                responseAsInt = -1;
+            if responseAsInt < 0 or responseAsInt >= listLen:
+                self._printMessage(_("Please enter a number between {} and {}.".format(str(1), str(listLen))))
+            else:
+                break
+        
+        return responseAsInt
 
     # +---------------------------------------------------------------------------+
     # | ArgumentVisitor
