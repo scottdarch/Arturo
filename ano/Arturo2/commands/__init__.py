@@ -12,11 +12,12 @@ import textwrap
 
 from ano import Arturo2
 import ano
+from ano.Arturo2.commands.automation import Cmd_source_headers, Cmd_source_files
 from ano.Arturo2.commands.base import Command
+from ano.Arturo2.commands.build import Preprocess
+from ano.Arturo2.commands.makegen import Make_gen
 from ano.Arturo2.commands.prebuild import Init, Version
 from ano.Arturo2.commands.query import List_boards, List_tools
-from ano.Arturo2.commands.automation import Cmd_source_headers
-from ano.Arturo2.commands.makegen import Make_gen
 
 
 def _is_command_subclass(commandClass):

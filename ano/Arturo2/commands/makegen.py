@@ -5,12 +5,11 @@
 # http://32bits.io/Arturo/
 #
 
-import errno
 import os
 
-from ano.Arturo2.commands.base import ConfiguredCommand
-from ano.Arturo2.templates import JinjaTemplates
 from ano import __app_name__
+from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
+from ano.Arturo2.templates import JinjaTemplates
 
 
 # +---------------------------------------------------------------------------+
@@ -32,20 +31,23 @@ class Make_gen(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def run(self):
         configuration = self.getConfiguration()
+        project = self.getProject()
         jinjaEnv = configuration.getJinjaEnvironment()
         template = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_TARGETS)
 
         # directories and paths
-        builddir            = configuration.getBuilddir()
-        projectPath         = self.getProject().getPath()
+        builddir            = project.getBuilddir()
+        projectPath         = project.getPath()
         localpath           = os.path.relpath(builddir, projectPath)
         rootdir             = os.path.relpath(projectPath, builddir)
         targetsMakefilePath = os.path.join(builddir, JinjaTemplates.MAKEFILE_TARGETS)
         
-        self._mkdirs(builddir)
+        mkdirs(builddir)
 
         # ano commands
         listHeadersCommand = __app_name__ + " cmd-source-headers"
+        listSourceCommand = __app_name__ + " cmd-source-files"
+        sketchPreprocessCommand = __app_name__ + " preprocess"
 
         # makefile rendering params
         initRenderParams = {
@@ -53,30 +55,12 @@ class Make_gen(ConfiguredCommand):
                                         "rootdir" : rootdir,
                                         "makefile" : JinjaTemplates.MAKEFILE,
                                     },
-                            "command" : { "source_headers" : listHeadersCommand },
+                            "command" : { "source_headers" : listHeadersCommand,
+                                          "source_files"   : listSourceCommand,
+                                          "preprocess_sketch" : sketchPreprocessCommand,
+                                    },
                             }
 
         with open(targetsMakefilePath, 'wt') as f:
             f.write(template.render(initRenderParams))
-            
-    # +-----------------------------------------------------------------------+
-    # | PRIVATE
-    # +-----------------------------------------------------------------------+
-    def _fileListToWildcards(self, filelist):
-        '''
-        @param filelist: Given a list of files return a list of wildcard arguments to find
-                         all files in the directories
-        '''
-        pass
 
-    def _mkdirs(self, path):
-        '''
-        Thanks (stack overflow)[https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python]
-        '''
-        try:
-            os.makedirs(path)
-        except OSError as exc: # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise

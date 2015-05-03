@@ -101,9 +101,12 @@ class SearchPath(object):
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
     ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15")]
-    
+
     ARTURO2_BUILDDIR_NAME = ".build_ano2"
-    
+
+    ARTURO2_SOURCE_FILEEXT = ("cpp", "c", "ino")
+    ARTURO2_HEADER_FILEEXT = ("h", "hpp")
+
     ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS = ["\..+", 
                                             ARTURO2_BUILDDIR_NAME,
                                            ]

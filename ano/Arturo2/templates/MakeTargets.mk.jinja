@@ -10,28 +10,38 @@
 # +----------------------------------------------------------------------------+
 LOCAL_DIR                       := {{local.dir}}
 LOCAL_ROOT_DIR                  := {{local.rootdir}}
+VPATH                           := $(DIR_SOURCE)
 
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
-C_HEADERS                       := $(shell {{command.source_headers}})
+CPP_HEADERS                     := $(shell {{command.source_headers}})
+C_HEADERS                       := $(filter-out %.hpp, $(CPP_HEADERS))
+ALL_SOURCE                      := $(shell {{command.source_files}})
+INO_SOURCE                      := $(filter %.ino, $(ALL_SOURCE))
+CPP_SOURCE                      := $(filter %.cpp, $(ALL_SOURCE)) \
+                                   $(addprefix $(DIR_BUILD)/$(BOARD)/, $(INO_SOURCE:.ino=.cpp))
+C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
 
 # +----------------------------------------------------------------------------+
-# | FLAGS
+# | TOOLS
 # +----------------------------------------------------------------------------+
-CFLAGS += -Wall \
-
-CXX_FLAGS += \
-
-C_DEBUG_FLAGS := -g \
-
-CXX_DEBUG_FLAGS := -g \
-
-AR_FLAGS := \
+INO_PROCESSOR                   := {{command.preprocess_sketch}}
 
 # +----------------------------------------------------------------------------+
 # | COMMON TARGETS
 # +----------------------------------------------------------------------------+
 .PHONY: list
 list:
-	@echo $(C_HEADERS)
+	@echo $(CPP_HEADERS) $(INO_SOURCE)
+
+.PHONY: clean
+clean:
+	rm -rf $(DIR_BUILD)/$(BOARD)
+
+build : $(CPP_SOURCE)
+	#done (for now)
+
+$(DIR_BUILD)/$(BOARD)/%.cpp : %.ino
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)

@@ -8,7 +8,7 @@
 # +----------------------------------------------------------------------------+
 # | BUILD CONFIGURATION
 # +----------------------------------------------------------------------------+
-VERSION_STRING                  := {{env.version}}
+ARTURO_VERSION_STRING           := {{env.version}}
 PROJECT_NAME                    := {{source.name}}
 TARGET_PACKAGE                  := {{preferences.target_package}}
 TARGET_PLATFORM                 := {{preferences.target_platform}}
@@ -23,8 +23,7 @@ DIR_SOURCE                      := {{source.dir}}
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDES
 # +----------------------------------------------------------------------------+
-MAKEINCLUDE_MAKETARGETS         := $(DIR_BUILD)/$(BOARD)/{{templates.make_targets}}
-MAKEINCLUDE_MAKEHEX             := $(DIR_BUILD)/$(BOARD)/{{templates.make_hex}}
+MAKEINCLUDE_MAKETARGETS         := $(DIR_BUILD)/{{templates.make_targets}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
@@ -34,9 +33,17 @@ MAKEINCLUDE_MAKEHEX             := $(DIR_BUILD)/$(BOARD)/{{templates.make_hex}}
 all:
 	# Nothing yet
 
-.PHONY : clean
-clean:
-	rm -rf $(BUILDDIR)
+.PHONY : init
+init:
+	@echo "init is not a valid make target. Did you mean '{{env.app_name}} init'?"
 
+.PHONY : superclean
+superclean:
+	rm -rf $(DIR_BUILD)
+
+# optional local overrides
+-include local.mk
+
+# use '{{env.app_name}} make-gen' to generate this makefile.
 -include $(MAKEINCLUDE_MAKETARGETS)
 

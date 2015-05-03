@@ -5,8 +5,24 @@
 # http://32bits.io/Arturo/
 #
 from abc import ABCMeta
+import errno
+import os
+
 from ano.Arturo2 import Runnable, ArgumentVisitor
 
+
+def mkdirs(path):
+    '''
+    Thanks (stack overflow)[https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python]
+    '''
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+            
 # +---------------------------------------------------------------------------+
 # | Command
 # +---------------------------------------------------------------------------+

@@ -10,7 +10,7 @@ from ano.Arturo2.commands.base import ConfiguredCommand
 
 
 # +---------------------------------------------------------------------------+
-# | List_source_headers
+# | Cmd_source_headers
 # +---------------------------------------------------------------------------+
 class Cmd_source_headers(ConfiguredCommand):
     
@@ -28,3 +28,23 @@ class Cmd_source_headers(ConfiguredCommand):
         projectPath = self.getProject().getPath()
         relativeHeaders = [os.path.relpath(headers[x], projectPath) for x in range(len(headers))]
         self.getConsole().stdout(*relativeHeaders)
+
+# +---------------------------------------------------------------------------+
+# | Cmd_source_files
+# +---------------------------------------------------------------------------+
+class Cmd_source_files(ConfiguredCommand):
+    
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        sources = self.getConfiguration().getSources()
+        projectPath = self.getProject().getPath()
+        relativeSource = [os.path.relpath(sources[x], projectPath) for x in range(len(sources))]
+        self.getConsole().stdout(*relativeSource)

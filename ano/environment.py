@@ -255,7 +255,7 @@ class Environment(dict):
         for boards_txt in boards_txts:
             with open(boards_txt) as f:
                 for line in f:
-                    line = line.strip()
+                    line = line._strip()
                     if not line or line.startswith('#'):
                         continue
 
@@ -378,7 +378,7 @@ Additional CPU argument required for board models available with different CPUs 
         if 'arduino_lib_version' not in self:
             with open(self['version.txt']) as f:
                 print 'Detecting Arduino software version ... ',
-                v_string = f.read().strip()
+                v_string = f.read()._strip()
                 v = Version.parse(v_string)
                 self['arduino_lib_version'] = v
                 print colorize("%s (%s)" % (v, v_string), 'green')

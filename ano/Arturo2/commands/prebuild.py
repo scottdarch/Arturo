@@ -40,13 +40,19 @@ class Init(ProjectCommand):
     Safe initialization of a project with the Arturo generated makefile. Once this command completes
     the project should be buildable using make.
     '''
-    
+    def __init__(self, environment, project, console):
+        super(Init, self).__init__(environment, project, console)
+        self._force = False
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
-        None
+        parser.add_argument("-f", "--force", action="store_true")
     
+    def onVisitArgs(self, args):
+        self._force = args.force
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -76,11 +82,11 @@ class Init(ProjectCommand):
         
         if os.path.exists(makefilePath):
             message = _('%s exists. Overwrite?' % (makefilePath))
-            if console.askYesNoQuestion(message):
+            if self._force or console.askYesNoQuestion(message):
                 self._generateMakefile(makefilePath, preferences, projectName, sourcePath)
 
         # finally ask if we want to (re)generate the project makefiles
-        if console.askYesNoQuestion(_("Do you want to (re)generate the project makefiles?")):
+        if self._force or console.askYesNoQuestion(_("Do you want to (re)generate the project makefiles?")):
             # generate the configuration
             config = project.getConfiguration(preferences['target_package'], 
                                               preferences['target_platform'], 

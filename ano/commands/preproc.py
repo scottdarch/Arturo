@@ -14,7 +14,7 @@ class Preprocess(Command):
     produce similar result:
 
         * Either #include <Arduino.h> or <WProgram.h> is prepended
-        * Function prototypes are added at the beginning of file
+        * Function _prototypes are added at the beginning of file
     """
 
     name = 'preproc'
@@ -34,9 +34,9 @@ class Preprocess(Command):
             out = open(args.output, 'wt')
 
         sketch = open(args.sketch, 'rt').read()
-        prototypes = self.prototypes(sketch)
+        _prototypes = self._prototypes(sketch)
         lines = sketch.split('\n')
-        includes, lines = self.extract_includes(lines)
+        includes, lines = self._extract_includes(lines)
 
         header = 'Arduino.h' if self.e.arduino_lib_version.major else 'WProgram.h'
         out.write('#include <%s>\n' % header)
@@ -44,19 +44,19 @@ class Preprocess(Command):
         out.write('\n'.join(includes))
         out.write('\n')
 
-        out.write('\n'.join(prototypes))
+        out.write('\n'.join(_prototypes))
         out.write('\n')
 
         out.write('#line 1 "%s"\n' % args.sketch)
         out.write('\n'.join(lines))
 
-    def prototypes(self, src):
-        src = self.collapse_braces(self.strip(src))
+    def _prototypes(self, src):
+        src = self._collapse_braces(self._strip(src))
         regex = re.compile("[\\w\\[\\]\\*]+\\s+[&\\[\\]\\*\\w\\s]+\\([&,\\[\\]\\*\\w\\s]*\\)(?=\\s*\\{)")
         matches = regex.findall(src)
         return [m + ';' for m in matches]
 
-    def extract_includes(self, src_lines):
+    def _extract_includes(self, src_lines):
         regex = re.compile("^\\s*#include\\s*[<\"](\\S+)[\">]")
         includes = []
         sketch = []
@@ -74,7 +74,7 @@ class Preprocess(Command):
 
         return includes, sketch
 
-    def collapse_braces(self, src):
+    def _collapse_braces(self, src):
         """
         Remove the contents of all top-level curly brace pairs {}.
         """
@@ -92,7 +92,7 @@ class Preprocess(Command):
         
         return ''.join(result)
 
-    def strip(self, src):
+    def _strip(self, src):
         """
         Strips comments, pre-processor directives, single- and double-quoted
         strings from a string.
