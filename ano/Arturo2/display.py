@@ -91,7 +91,7 @@ class Console(ArgumentVisitor):
         response = raw_input(self._indent + question + os.linesep)
         return strtobool(response)
     
-    def askPickOneFromList(self, prompt, optionList):
+    def askPickOneFromList(self, prompt, optionList, responseList=None):
         '''
         @param optionList: A list of two-tuples to display to the user with a prompt to select one. The first
                            index in the tuple is used as a succinct title and the second a breif description.
@@ -99,7 +99,11 @@ class Console(ArgumentVisitor):
         listLen = len(optionList)
         listAsString = ""
         for x in range(listLen):
-            listAsString = listAsString + (self._indent + Console.INDENTATION + _("{} : {} - {}".format(str(x + 1), optionList[x][0], optionList[x][1])) + os.linesep)
+            if len(optionList[x]) > 1:
+                listAsString = listAsString + (self._indent + Console.INDENTATION + _("{} : {} - {}".format(str(x + 1), optionList[x][0], optionList[x][1])) + os.linesep)
+            else:
+                listAsString = listAsString + (self._indent + Console.INDENTATION + _("{} : {}".format(str(x + 1), optionList[x][0])) + os.linesep)
+
         commentAndList = _("{0}{1}".format(listAsString, self._indent + prompt + os.linesep))
         responseAsInt = -1
         while True:
@@ -113,7 +117,10 @@ class Console(ArgumentVisitor):
             else:
                 break
         
-        return responseAsInt
+        if responseList is not None:
+            return responseList[responseAsInt]
+        else:
+            return responseAsInt
 
     # +---------------------------------------------------------------------------+
     # | ArgumentVisitor

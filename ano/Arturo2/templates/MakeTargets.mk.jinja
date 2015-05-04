@@ -5,11 +5,14 @@
 # http://32bits.io/Arturo/
 #
 
+-include {{local.toolchainmakefile}}
+
 # +----------------------------------------------------------------------------+
 # | PATHS
 # +----------------------------------------------------------------------------+
 LOCAL_DIR                       := {{local.dir}}
 LOCAL_ROOT_DIR                  := {{local.rootdir}}
+OBJ_DIR                         := obj
 VPATH                           := $(DIR_SOURCE)
 
 # +----------------------------------------------------------------------------+
@@ -22,6 +25,7 @@ INO_SOURCE                      := $(filter %.ino, $(ALL_SOURCE))
 CPP_SOURCE                      := $(filter %.cpp, $(ALL_SOURCE)) \
                                    $(addprefix $(DIR_BUILD)/$(BOARD)/, $(INO_SOURCE:.ino=.cpp))
 C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
+
 
 # +----------------------------------------------------------------------------+
 # | TOOLS
@@ -42,6 +46,11 @@ clean:
 build : $(CPP_SOURCE)
 	#done (for now)
 
+$(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/%.o : %.cpp
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	{{platform['recipe.cpp.o.pattern']}}
+
 $(DIR_BUILD)/$(BOARD)/%.cpp : %.ino
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)
+

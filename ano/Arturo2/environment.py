@@ -83,7 +83,7 @@ class Configuration(object):
                 'board': self._boardName,
                 'target_platform' : self._platformName,
                 'target_package' : self._packageName,
-                'preferences' : self._prefs
+                'preferences' : self._prefs,
             }
         return self._jinjaEnv
 
@@ -95,7 +95,7 @@ class Configuration(object):
     
     def getPackage(self):
         if self._package is None:
-            self._package = self._project.getEnvironment().getPackage()[self._packageName]
+            self._package = self._project.getEnvironment().getPackages()[self._packageName]
         return self._package
     
     def getPlatform(self):

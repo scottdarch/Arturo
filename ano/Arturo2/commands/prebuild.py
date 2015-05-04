@@ -6,7 +6,7 @@
 #
 import os
 
-from ano import __app_name__, __version__
+from ano import __app_name__, __version__, __lib_name__
 from ano.Arturo2.commands.base import Command, ProjectCommand
 from ano.Arturo2.commands.makegen import Make_gen
 from ano.Arturo2.templates import JinjaTemplates
@@ -30,7 +30,7 @@ class Version(Command):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        self.getConsole().printInfo(_('{} {}'.format(__app_name__, __version__)))
+        self.getConsole().printInfo(_('{0} {1} (using lib{2})'.format(__app_name__, __version__, __lib_name__)))
         
 # +---------------------------------------------------------------------------+
 # | Init

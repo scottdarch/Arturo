@@ -10,7 +10,9 @@ import re
 
 from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
 
-
+# +---------------------------------------------------------------------------+
+# | Preprocess
+# +---------------------------------------------------------------------------+
 class Preprocess(ConfiguredCommand):
     """
     Preprocess an .ino sketch file and produce ready-to-compile .cpp source.
@@ -71,6 +73,7 @@ class Preprocess(ConfiguredCommand):
         hasExt = self._re_extension.search(sketchBasename)
         if hasExt is not None:
             sketchBasename = sketchBasename[:hasExt.start(0)]
+
         outputFile = os.path.join(outputPath, sketchBasename + ".cpp")
         
         with open(outputFile, 'wt') as out:

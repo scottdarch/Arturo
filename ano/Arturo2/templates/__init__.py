@@ -15,6 +15,7 @@ class JinjaTemplates(object):
     
     JINJASUFFIX = ".jinja"
     
+    MAKEFILE_TOOLCHAIN = "ToolChain.mk"
     MAKEFILE_TARGETS   = "MakeTargets.mk"
     MAKEFILE           = "Makefile"
     
@@ -26,6 +27,7 @@ class JinjaTemplates(object):
     def createJinjaEnvironmentForTemplates(cls):
         env = jinja2.Environment(loader=PackageLoader(__app_name__, cls.getRelPathToTemplatesFromPackage()))
         env.globals['templates'] = {
+            'make_toolchain':cls.MAKEFILE_TOOLCHAIN,
             'make_targets':cls.MAKEFILE_TARGETS,
             'makefile':cls.MAKEFILE
         }
