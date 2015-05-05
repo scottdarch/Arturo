@@ -46,6 +46,7 @@ class Build(Command):
     default_cflags = ''
     default_cxxflags = '-fno-exceptions'
     default_ldflags = '-Os --gc-sections'
+    default_arch = 'AVR'
 
     def setup_arg_parser(self, parser):
         super(Build, self).setup_arg_parser(parser)
@@ -110,6 +111,12 @@ class Build(Command):
                             'being invoked directly (i.e. the `-Wl,\' prefix '
                             'should be omitted). Default: "%(default)s".')
 
+        parser.add_argument('--arch', metavar='ARCH',
+                            default=self.default_arch,
+                            help='Specifies the architecture to be passed '
+                            'during compilation as  -DARDUINO_ARCH_<ARCH>. '
+                            'Default: "%(default)s".')
+
         parser.add_argument('-v', '--verbose', default=False, action='store_true',
                             help='Verbose make output')
 
@@ -158,7 +165,7 @@ class Build(Command):
             mcu,
             '-DF_CPU=' + BoardModels.getValueForVariant(board, boardVariant, 'build', 'f_cpu'),
             '-DARDUINO=' + str(self.e.arduino_lib_version.as_int()),
-            '-DARDUINO_ARCH_AVR',
+            '-DARDUINO_ARCH_' + args.arch.upper(),
             '-I' + self.e['arduino_core_dir'],
         ]) 
         # Add additional flags as specified
