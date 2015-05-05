@@ -106,9 +106,13 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
     # +-----------------------------------------------------------------------+
     def _resolveRecipeMacros(self, recipe, macro):
         if macro == "includes":
-            #TODO return list of "-I include.h"
-            raise KeyError()
-        
+            if recipe.startswith("cpp."):
+                return "$(CPP_HEADERS_W_I)"
+            elif recipe.startswith("c."):
+                return "$(C_HEADERS_W_I)"
+            else:
+                raise KeyError()
+
         if recipe == "cpp.o":
             if macro == "object_file":
                 return "$@"
