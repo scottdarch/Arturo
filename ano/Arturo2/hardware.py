@@ -9,11 +9,36 @@ import os
 
 from ano.Arturo2 import NamedOrderedDict
 from ano.Arturo2.parsers import ArduinoKeyValueParser
+from _pyio import __metaclass__
+from abc import ABCMeta, abstractmethod
+from ano import __lib_name__, __version__
 
-
+# +---------------------------------------------------------------------------+
+# | BoardMacroResolver
+# +---------------------------------------------------------------------------+
+class BoardMacroResolver:
+    '''
+    Functor type used by the Board's processBuildInfo method to expand Arduino15 style macro strings.
+    '''
+    __metaclass__ = ABCMeta
+    
+    @abstractmethod
+    def __call__(self, namespace, macro):
+        '''
+        Invoked by a macro expansion routine with an Arduino15 style macro (e.g.
+        {compiler.path}).
+        
+        @param namespace: A namespace within which the macro is unique.
+        @param macro: The macro name without the enclosing curly braces.
+        @return: text to replace the macro with.
+        @raise KeyError: If this resolver could not expand the macro.
+        '''
+        pass
+    
 # +---------------------------------------------------------------------------+
 # | Board
 # +---------------------------------------------------------------------------+
+
 class Board(NamedOrderedDict):
     
     PLATFORM_FILENAME = "platform.txt"
@@ -22,32 +47,73 @@ class Board(NamedOrderedDict):
         super(Board, self).__init__(name)
         self._platform = platform
         self._console = console
-        self._boardBuildMetadata = None
-        #TODO: populate this
-        self._buildVariables = dict()
+        self._rawPlatformData = None
 
-    def getBuildInfo(self, extraArgs=None):
+    def getPlatform(self):
+        return self._platform
+
+    def processBuildInfo(self, unexpandedMacroResolver=None, elideKeysForMissingValues=False):
         '''
-        Returns an OrdredDict of platform data for the board
+        Process the key/value data found in this board's platform.txt file expanding the Arduino15 style
+        macros (e.g. {this.is.a.macro}) using a chain of macro resolvers.
+        
+        @param unexpandedMacroResolver: A BoardMacroResolver to be invoked if the build-in resolver
+                                        is unable to expand a macro.
+        @param elideKeysForMissingValues: If True then any macros that are not expanded will have the macro
+                                          keys removed from the final output. If False then the macro keys
+                                          will remain unexpanded (i.e. "{not.found.macro}" if not elideKeysForMissingValues else "")
         '''
-        if self._boardBuildMetadata is not None:
-            return self._boardBuildMetadata
-    
-        platform = OrderedDict()
+        if self._rawPlatformData is None:
+            self._rawPlatformData = OrderedDict()
+            ArduinoKeyValueParser.parse(os.path.join(self._platform.getPlatformPath(), Board.PLATFORM_FILENAME), self._rawPlatformData, None, None, self._console)
+
+        boardBuildMetadata = OrderedDict(self._rawPlatformData)
+        macroResolverChain = BoardPlatformMacroResolver(self, boardBuildMetadata, unexpandedMacroResolver, self._console)
         
-        platformMacros = self._buildVariables.copy()
-        platformMacros.update(self)
+        for key, value in boardBuildMetadata.items():
+            boardBuildMetadata[key] = ArduinoKeyValueParser.expandMacros(key, macroResolverChain, value, elideKeysForMissingValues, self._console)
         
-        if extraArgs is not None:
-            platformMacros.update(extraArgs)
+        return boardBuildMetadata
+
+
+class BoardPlatformMacroResolver(BoardMacroResolver):
+    '''
+    BoardMacroResolver used as the first responder for all Arduino15 style macros found by the Board::processBuildInfo
+    method.
+    '''
+    def __init__(self, board, boardBuildMetadata, nextResolver=None, console=None):
+        self._boardBuildMetadata = boardBuildMetadata
+        self._board = board
+        self._nextResolver = nextResolver
+        self._console = console
+
+    def __call__(self, namespace, macro):
+        if macro == "software":
+            return __lib_name__.upper()
         
-        ArduinoKeyValueParser.parse(os.path.join(self._platform.getPlatformPath(), Board.PLATFORM_FILENAME), platform, None, None, self._console)
-        
-        for key, value in platform.items():
-            platform[key] = ArduinoKeyValueParser.expandMacros(platformMacros, key, value, False, self._console)
-        
-        self._boardBuildMetadata = platform
-        return platform
+        if macro == "runtime.ide.version":
+            return __version__
+
+        try:
+            return self._board[macro]
+        except KeyError:
+            pass
+
+        try:
+            return self._boardBuildMetadata[macro]
+        except KeyError:
+            pass
+
+        try:
+            return self._board.getPlatform().getMetaData(macro)
+        except KeyError:
+            pass
+
+        if self._nextResolver is not None:
+            return self._nextResolver(namespace, macro)
+        else:
+            raise KeyError()
+
 
 # +---------------------------------------------------------------------------+
 # | Platform
@@ -95,6 +161,9 @@ class Platform(object):
                 console.printDebug(platformMetadata)
             raise Exception("%s was not found" % (self._platformPath))
 
+    def getPackage(self):
+        return self._package
+
     def getToolChain(self):
         if self._toolsList is None:
             self._toolsList = list()
@@ -127,3 +196,6 @@ class Platform(object):
                                                      NamedOrderedDict, 
                                                      console=self._console)
         return self._programmers
+
+    def getMetaData(self, key):
+        return self._platformMetadata[key]

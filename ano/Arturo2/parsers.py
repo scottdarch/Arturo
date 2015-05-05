@@ -102,7 +102,7 @@ class ArduinoKeyValueParser(object):
         return vendorObjectCollection
 
     @classmethod
-    def expandMacros(cls, dictionary, key, rawValue, elideKeysForMissingValues=False, console=None):
+    def expandMacros(cls, macroNamespace, lookupFunction, rawValue, elideKeysForMissingValues=False, console=None):
         expanded = ""
         pos = 0
         match = ArduinoKeyValueParser.MACRO_PATTERN.search(rawValue, pos)
@@ -110,7 +110,7 @@ class ArduinoKeyValueParser(object):
             pos = match.end()
             macroname = match.group(1)
             try :
-                expansion = dictionary[macroname]
+                expansion = lookupFunction(macroNamespace, macroname)
                 expanded += rawValue[match.pos:match.start()] + expansion
                 if console is not None:
                     console.printVerbose("found macro \"%s\" => \"%s\"" % (macroname, expansion))
@@ -129,6 +129,6 @@ class ArduinoKeyValueParser(object):
             console.printVerbose("    raw      = %s" % (rawValue))
             console.printVerbose("    expanded = %s" % (expanded))
         
-        dictionary[key] = expanded
+        #dictionary[key] = expanded
         
         return expanded

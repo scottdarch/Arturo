@@ -7,7 +7,7 @@
 import json
 import os
 
-from ano import __version__, i18n
+from ano import __version__, i18n, __app_name__
 from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent
 from ano.Arturo2.parsers import MakefilePropertyParser
 from ano.Arturo2.templates import JinjaTemplates
@@ -20,9 +20,7 @@ _ = i18n.language.ugettext
 # | Configuration
 # +---------------------------------------------------------------------------+
 class ConfigurationHeaderAggregator(SearchPathAgent):
-    
-    ARTURO2_HEADER_FILEEXT = ("h", "hpp")
-    
+
     def __init__(self, configuration, console):
         super(ConfigurationHeaderAggregator, self).__init__(console, followLinks=True)
         self._configuration = configuration
@@ -34,10 +32,27 @@ class ConfigurationHeaderAggregator(SearchPathAgent):
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
-        if len(splitName) == 2 and splitName[1] in ConfigurationHeaderAggregator.ARTURO2_HEADER_FILEEXT:
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
             self._headers.append(fqFilename)
         return SearchPathAgent.KEEP_GOING
-    
+
+class ConfigurationSourceAggregator(SearchPathAgent):
+
+    def __init__(self, configuration, console):
+        super(ConfigurationSourceAggregator, self).__init__(console, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._sources = list()
+
+    def getResults(self):
+        return self._sources
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
+            self._sources.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
+
 class Configuration(object):
     '''
     An environment with package, platform, board, uploader, and other targeting parameters defined.
@@ -59,6 +74,7 @@ class Configuration(object):
         self._jinjaEnv = None
         self._builddir = None
         self._headers = None
+        self._sources = None
         
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
@@ -67,7 +83,7 @@ class Configuration(object):
                 'board': self._boardName,
                 'target_platform' : self._platformName,
                 'target_package' : self._packageName,
-                'preferences' : self._prefs
+                'preferences' : self._prefs,
             }
         return self._jinjaEnv
 
@@ -79,7 +95,7 @@ class Configuration(object):
     
     def getPackage(self):
         if self._package is None:
-            self._package = self._project.getEnvironment().getPackage()[self._packageName]
+            self._package = self._project.getEnvironment().getPackages()[self._packageName]
         return self._package
     
     def getPlatform(self):
@@ -106,12 +122,16 @@ class Configuration(object):
                  self._sourcePath, ConfigurationHeaderAggregator(self, self._console)).getResults()
         return self._headers
 
+    def getSources(self):
+        if self._sources is None:
+            self._sources = self.getProject().getEnvironment().getSearchPath().scanDirs(
+                 self._sourcePath, ConfigurationSourceAggregator(self, self._console)).getResults()
+        return self._sources
+
 # +---------------------------------------------------------------------------+
 # | Project
 # +---------------------------------------------------------------------------+
 class ProjectSourceRootAggregator(SearchPathAgent):
-    
-    ARTURO2_MAIN_FILEEXT = ("cpp", "c", "ino")
     
     def __init__(self, project, console):
         super(ProjectSourceRootAggregator, self).__init__(console, followLinks=True)
@@ -124,7 +144,7 @@ class ProjectSourceRootAggregator(SearchPathAgent):
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
-        if len(splitName) == 2 and splitName[1] in ProjectSourceRootAggregator.ARTURO2_MAIN_FILEEXT:
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
             if containingFolderName == splitName[0]:
                 self._sourceRoots.append([parentPath, containingFolderName, filename])
         return SearchPathAgent.KEEP_GOING
@@ -153,7 +173,8 @@ class Project(object):
         if self._jinjaEnv is None:
             self._jinjaEnv = JinjaTemplates.createJinjaEnvironmentForTemplates()
             self._jinjaEnv.globals['env'] = {
-                'version':__version__
+                'version':__version__,
+                'app_name':__app_name__,
             }
             self._jinjaEnv.globals['project'] = {
                 'builddir':os.path.relpath(self.getBuilddir())

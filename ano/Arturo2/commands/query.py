@@ -5,8 +5,10 @@
 # http://32bits.io/Arturo/
 #
 
+import re
+
 from ano import i18n
-from ano.Arturo2.commands.base import Command
+from ano.Arturo2.commands.base import Command, ProjectCommand
 
 
 _ = i18n.language.ugettext
@@ -100,5 +102,69 @@ class List_boards(Command):
                     console.unshift()
                     console.unshift()
                 console.unshift()
+        finally:
+            console.popContext()
+
+# +---------------------------------------------------------------------------+
+# | list-platform-data
+# +---------------------------------------------------------------------------+
+class List_platform_data(ProjectCommand):
+    '''
+    List all known board types.
+    This command will probably go away. We are working towards a more complete
+    query syntax that may be encapsulated in a single Query command.
+    '''
+    def __init__(self, environment, project, console):
+        super(List_platform_data, self).__init__(environment, project, console)
+        self._filter = None
+        self._package = None
+        self._platform = None
+        self._board = None
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("--filter")
+        parser.add_argument("--package")
+        parser.add_argument("--platform")
+        parser.add_argument("--board")
+
+    def onVisitArgs(self, args):
+        self._filter = re.compile(args.filter)
+        self._package = args.package.lower() if args.package else None
+        self._platform = args.platform.lower() if args.platform else None
+        self._board = args.board.lower() if args.board else None
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        console = self.getConsole()
+        try:
+            console.pushContext()
+            environment = self.getEnvironment()
+            packages = environment.getPackages()
+            packageList = [[key] for key in packages.keys()]
+            package = console.askPickOneFromList(_("Select a package"), packageList, responseList=packages.values()) \
+                if self._package is None else packages[self._package]
+            
+            platforms = package.getPlatforms()
+            platformList = [[platform] for platform in platforms.keys()]
+            
+            platform = console.askPickOneFromList(_("Select a platform"), platformList, responseList=platforms.values()) \
+                if self._platform is None else platforms[self._platform]
+            
+            boards = platform.getBoards()
+            
+            boardList = [[board] for board in boards.keys()]
+            
+            board = console.askPickOneFromList(_("Select a board"), boardList, responseList=boards.values()) \
+                if self._board is None else boards[self._board]
+            
+            buildInfo = board.getBuildInfo()
+            for key, value in buildInfo.iteritems():
+                if self._filter is None or self._filter.search(key):
+                    console.printInfo(_("{0:<40} - {1}".format(key, value)))
         finally:
             console.popContext()

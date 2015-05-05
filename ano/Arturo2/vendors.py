@@ -52,7 +52,10 @@ class Package(object):
         return self._toolChainsDict
     
     def getToolChain(self, name, version):
-        return self.getToolChains()[Package.makeToolChainMultikey(name, version)]
+        return self.getToolChainByNameAndVerison(Package.makeToolChainMultikey(name, version))
+    
+    def getToolChainByNameAndVerison(self, nameAndVersion):
+        return self.getToolChains()[nameAndVersion]
     
     def getPlatforms(self):
         if self._platformIndex is None:
@@ -64,11 +67,11 @@ class Package(object):
                         self._console.printDebug('Found platform "{0}" ({1} version{2})'.format(platformMetadata['name'], 
                             platformMetadata['architecture'], 
                             platformMetadata['version']))
-                    self._platformIndex[platformMetadata['name']] = platform
+                    self._platformIndex[platformMetadata['architecture']] = platform
                 else:
                     #TODO: store missing platforms for a future "download-platform" command.
                     if self._console:
-                        self._console.printWarning(_("Missing platform \"{0}\" ({1} verison {2}). You can download this platform from {3}".format(
+                        self._console.printVerbose(_("Missing platform \"{0}\" ({1} verison {2}). You can download this platform from {3}".format(
                             platformMetadata['name'], 
                             platformMetadata['architecture'], 
                             platformMetadata['version'], 

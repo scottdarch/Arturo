@@ -73,7 +73,7 @@ class FlexiFormatter(argparse.RawTextHelpFormatter):
                 sub_indent = indent
             
             # Textwrap will do all the hard work for us
-            line = self._whitespace_matcher.sub(' ', line).strip()
+            line = self._whitespace_matcher.sub(' ', line)._strip()
             new_lines = textwrap.wrap(
                 text=line,
                 width=width,
