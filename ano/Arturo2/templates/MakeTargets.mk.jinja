@@ -5,7 +5,7 @@
 # http://32bits.io/Arturo/
 #
 
-include $(DIR_BUILD)/{{local.toolchainmakefile}}
+-include $(DIR_BUILD)/{{local.toolchainmakefile}}
 
 # +----------------------------------------------------------------------------+
 # | PATHS
@@ -19,7 +19,7 @@ VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)
 # | SOURCE
 # +----------------------------------------------------------------------------+
 CPP_HEADERS                     := $(shell {{command.source_headers}})
-CPP_HEADERS_W_I					:= $(addprefix -I ,$(CPP_HEADERS))
+CPP_HEADERS_W_I					:= $(addprefix -I \", $(addsuffix \", $(CPP_HEADERS)))
 C_HEADERS                       := $(filter-out %.hpp, $(CPP_HEADERS))
 C_HEADERS_W_I                   := $(addprefix -I ,$(C_HEADERS))
 ALL_SOURCE                      := $(shell {{command.source_files}})
@@ -40,7 +40,7 @@ INO_PROCESSOR                   := {{command.preprocess_sketch}}
 # +----------------------------------------------------------------------------+
 .PHONY: list
 list:
-	@echo $(CPP_HEADERS) $(INO_SOURCE)
+	@echo $(CPP_HEADERS_W_I) $(INO_SOURCE)
 
 .PHONY: clean
 clean:

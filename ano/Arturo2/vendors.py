@@ -10,6 +10,7 @@ from ano import i18n
 from ano.Arturo2 import SearchPath
 from ano.Arturo2.hardware import Platform
 from ano.Arturo2.tools import ToolChain
+from collections import OrderedDict
 
 
 _ = i18n.language.ugettext
@@ -18,10 +19,6 @@ _ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 class Package(object):
     
-    @classmethod
-    def makeToolChainMultikey(cls, name, version):
-        return "{}-{}".format(name.lower(), version.lower())
-    
     def __init__(self, environment, rootPath, searchPath, console, packageMetaData):
         super(Package, self).__init__()
         self._environment = environment
@@ -29,6 +26,7 @@ class Package(object):
         self._searchPath = searchPath
         self._console = console
         self._packageMetadata = packageMetaData
+        # dictionary (name) of dictionary (version) of ToolChain objects.
         self._toolChainsDict = None
 
         if not os.path.isdir(self._packagePath):
@@ -47,16 +45,48 @@ class Package(object):
         if not self._toolChainsDict:
             self._toolChainsDict = dict()
             for toolchainMetadata in self._packageMetadata['tools']:
-                self._toolChainsDict[Package.makeToolChainMultikey(toolchainMetadata['name'], toolchainMetadata['version'])] = \
-                    ToolChain(self, toolchainMetadata, self._console)
+                toolchainName = toolchainMetadata['name']
+                toolchainVersionName = toolchainMetadata['version']
+                try:
+                    toolchainVersionsDict = self._toolChainsDict[toolchainName]
+                except KeyError:
+                    toolchainVersionsDict = dict()
+                    self._toolChainsDict[toolchainName] = toolchainVersionsDict
+                toolchainVersionsDict[toolchainVersionName] = ToolChain(self, toolchainMetadata, self._console)
+            # Now go back through and sort the verion collections
+            for name, versions in self._toolChainsDict.iteritems():
+                self._toolChainsDict[name] = OrderedDict(sorted(versions.items(), reverse=True))
         return self._toolChainsDict
     
     def getToolChain(self, name, version):
-        return self.getToolChainByNameAndVerison(Package.makeToolChainMultikey(name, version))
+        return self.getToolChains()[name][version]
     
     def getToolChainByNameAndVerison(self, nameAndVersion):
-        return self.getToolChains()[nameAndVersion]
+        '''
+        Tries to parse the provided string using non-standard name-version macro key. For example the Intel
+        platform.txt has the following macro:
+        
+            {runtime.tools.i586-poky-linux-uclibc-1.6.2+1.0.path}
     
+        In this case getToolChainByNameAndVersion should be called with "i586-poky-linux-uclibc-1.6.2+1.0"
+        as an argument which should parse out to { "name" : "i586-poky-linux-uclibc", "version": 1.6.2+1.0 }.
+        We assume that the last hyphen is the delinator.
+        '''
+        lastHyphen = nameAndVersion.rfind('-')
+        if lastHyphen == -1:
+            raise ValueError("{} is not a hyphenated name-value string.".format(nameAndVersion))
+
+        name = nameAndVersion[:lastHyphen]
+        version = nameAndVersion[lastHyphen+1:]
+        
+        return self.getToolChain(name, version)
+    
+    def getToolChainLatestVersion(self, name):
+        versions = self.getToolChains()[name]
+        for version in versions.itervalues():
+            return version
+        return None
+        
     def getPlatforms(self):
         if self._platformIndex is None:
             self._platformIndex = dict()

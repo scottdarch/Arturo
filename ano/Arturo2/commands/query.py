@@ -37,23 +37,24 @@ class List_tools(Command):
             console.pushContext()
             environment = self.getEnvironment()
             packages = environment.getPackages()
-            for name, package in packages.iteritems():  # @UnusedVariable
+            for package in packages.itervalues():
                 console.printInfo(package.getName())
                 console.shift()
                 toolchains = package.getToolChains()
-                for name, toolchain in toolchains.iteritems():  # @UnusedVariable
-                    console.printInfo(_("{0} from {1}, version {2}.".format(toolchain.getName(), package.getName(), toolchain.getVersion())))
-                    console.shift()
-                    system = toolchain.getHostToolChain()
-                    if system:
-                        localpath = system.getPath()
-                        if localpath is None:
-                            console.printInfo(_("{0} tools are available from {1}.".format(system.getHost(), system.getUrl())))
+                for versions in toolchains.itervalues():
+                    for toolchain in versions.itervalues():
+                        console.printInfo(_("{0} from {1}, version {2}.".format(toolchain.getName(), package.getName(), toolchain.getVersion())))
+                        console.shift()
+                        system = toolchain.getHostToolChain()
+                        if system:
+                            localpath = system.getPath()
+                            if localpath is None:
+                                console.printInfo(_("{0} tools are available from {1}.".format(system.getHost(), system.getUrl())))
+                            else:
+                                console.printInfo(_("{0} tools are installed under {1}".format(system.getHost(), localpath)))
                         else:
-                            console.printInfo(_("{0} tools are installed under {1}".format(system.getHost(), localpath)))
-                    else:
-                        console.printInfo(_("No known tools for host {0}.".format(toolchain.getCurrentHostName())))
-                    console.unshift()
+                            console.printInfo(_("No known tools for host {0}.".format(toolchain.getCurrentHostName())))
+                        console.unshift()
                 console.unshift()
         finally:
             console.popContext()

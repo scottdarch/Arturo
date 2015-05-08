@@ -123,8 +123,14 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
             
     def _resolveToolsMacro(self, macro):
         if macro.endswith(".path"):
-            self._requiredLocalPaths['toolchainpath'] = self.getConfiguration().getPackage().getToolChainByNameAndVerison(macro[:-5]).getHostToolChain().getPath()
+            package = self.getConfiguration().getPackage()
+            key = macro[:-5]
+            try:
+                toolchain = package.getToolChainByNameAndVerison(key)
+            except (KeyError, ValueError):
+                toolchain = package.getToolChainLatestVersion(key)
+
+            self._requiredLocalPaths['toolchainpath'] = toolchain.getHostToolChain().getPath()
             return "$(LOCAL_TOOLCHAIN_PATH)"
         else:
             raise KeyError()
-    
