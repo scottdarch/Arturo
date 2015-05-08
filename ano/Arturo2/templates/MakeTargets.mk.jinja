@@ -5,7 +5,7 @@
 # http://32bits.io/Arturo/
 #
 
--include {{local.toolchainmakefile}}
+-include $(DIR_BUILD)/{{local.toolchainmakefile}}
 
 # +----------------------------------------------------------------------------+
 # | PATHS
@@ -13,19 +13,22 @@
 LOCAL_DIR                       := {{local.dir}}
 LOCAL_ROOT_DIR                  := {{local.rootdir}}
 OBJ_DIR                         := obj
-VPATH                           := $(DIR_SOURCE)
+VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)
 
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
 CPP_HEADERS                     := $(shell {{command.source_headers}})
+CPP_HEADERS_W_I					:= $(addprefix -I \", $(addsuffix \", $(CPP_HEADERS)))
 C_HEADERS                       := $(filter-out %.hpp, $(CPP_HEADERS))
+C_HEADERS_W_I                   := $(addprefix -I ,$(C_HEADERS))
 ALL_SOURCE                      := $(shell {{command.source_files}})
 INO_SOURCE                      := $(filter %.ino, $(ALL_SOURCE))
 CPP_SOURCE                      := $(filter %.cpp, $(ALL_SOURCE)) \
-                                   $(addprefix $(DIR_BUILD)/$(BOARD)/, $(INO_SOURCE:.ino=.cpp))
+                                   $(INO_SOURCE:.ino=.cpp)
 C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
-
+OBJ_FILES						:= $(addprefix $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/, $(CPP_SOURCE:.cpp=.o)) \
+                                   $(addprefix $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/, $(C_SOURCE:.c=.o))
 
 # +----------------------------------------------------------------------------+
 # | TOOLS
@@ -37,13 +40,13 @@ INO_PROCESSOR                   := {{command.preprocess_sketch}}
 # +----------------------------------------------------------------------------+
 .PHONY: list
 list:
-	@echo $(CPP_HEADERS) $(INO_SOURCE)
+	@echo $(CPP_HEADERS_W_I) $(INO_SOURCE)
 
 .PHONY: clean
 clean:
 	rm -rf $(DIR_BUILD)/$(BOARD)
 
-build : $(CPP_SOURCE)
+build : $(OBJ_FILES)
 	#done (for now)
 
 $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/%.o : %.cpp

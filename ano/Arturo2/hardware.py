@@ -4,14 +4,16 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
-from collections import OrderedDict
-import os
-
-from ano.Arturo2 import NamedOrderedDict
-from ano.Arturo2.parsers import ArduinoKeyValueParser
 from _pyio import __metaclass__
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
+import os
+from string import upper
+
 from ano import __lib_name__, __version__
+from ano.Arturo2 import NamedOrderedDict, SearchPathAgent, SearchPath
+from ano.Arturo2.parsers import ArduinoKeyValueParser
+
 
 # +---------------------------------------------------------------------------+
 # | BoardMacroResolver
@@ -48,10 +50,17 @@ class Board(NamedOrderedDict):
         self._platform = platform
         self._console = console
         self._rawPlatformData = None
+        self._core = None
 
     def getPlatform(self):
         return self._platform
 
+    def getCore(self):
+        if self._core is None:
+            coreName = self['build.core']
+            self._core = self.getPlatform().getCores()[coreName]
+        return self._core
+    
     def processBuildInfo(self, unexpandedMacroResolver=None, elideKeysForMissingValues=False):
         '''
         Process the key/value data found in this board's platform.txt file expanding the Arduino15 style
@@ -108,12 +117,64 @@ class BoardPlatformMacroResolver(BoardMacroResolver):
             return self._board.getPlatform().getMetaData(macro)
         except KeyError:
             pass
+        
+        # Anything prefixed with "build" should either be handled in platform.txt itself or should
+        # come from the configured platform metadata.
+        if macro.startswith('build.'):
+            try:
+                return self._board.getPlatform().getMetaData(macro[6:])
+            except KeyError:
+                pass
 
         if self._nextResolver is not None:
             return self._nextResolver(namespace, macro)
         else:
             raise KeyError()
 
+# +---------------------------------------------------------------------------+
+# | Core
+# +---------------------------------------------------------------------------+
+class CoreHeaderAggregator(SearchPathAgent):
+
+    def __init__(self, configuration, console):
+        super(CoreHeaderAggregator, self).__init__(console, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._headers = list()
+
+    def getResults(self):
+        return self._headers
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
+            self._headers.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
+    
+class Core(object):
+    
+    def __init__(self, name, path, platform, console):
+        super(Core, self).__init__()
+        self._name = name
+        self._path = path
+        self._console = console
+        self._platform = platform
+        self._headers = None
+
+    def getName(self):
+        return self._name
+
+    def getPlatform(self):
+        return self._platform
+
+    def getPath(self):
+        return self._path
+    
+    def getHeaders(self):
+        if self._headers is None:
+            self._headers = self.getPlatform().getPackage().getEnvironment().getSearchPath().scanDirs(
+                 self._path, CoreHeaderAggregator(self, self._console)).getResults()
+        return self._headers
 
 # +---------------------------------------------------------------------------+
 # | Platform
@@ -131,6 +192,10 @@ class Platform(object):
     
     BOARDS_FILENAME = "boards.txt"
     PROGRAMMERS_FILENAME = "programmers.txt"
+    CORES_FOLDER = "cores"
+    ARDUINO15_KNOWN_METADATA_ALIASES = { 
+                                        "arch": ("architecture", upper),
+                                    }
     
     @classmethod
     def _makePlatformPath(cls, rootPath, platformMetadata):
@@ -155,6 +220,7 @@ class Platform(object):
         self._programmers = None
         self._platformBoardFactory = PlatformBoardFactory(self, console)
         self._toolsList = None
+        self._cores = None
         
         if not os.path.isdir(self._platformPath):
             if console:
@@ -174,6 +240,9 @@ class Platform(object):
 
     def getName(self):
         return self._platformMetadata['name']
+
+    def getArchitecture(self):
+        return self._platformMetadata['architecture']
 
     def getPlatformPath(self):
         return self._platformPath
@@ -198,4 +267,28 @@ class Platform(object):
         return self._programmers
 
     def getMetaData(self, key):
-        return self._platformMetadata[key]
+        try:
+            return self._platformMetadata[key]
+        except KeyError as e:
+            alias = Platform.ARDUINO15_KNOWN_METADATA_ALIASES.get(key)
+            if alias is not None:
+                value = self._platformMetadata[alias[0]]
+                transform = alias[1]
+                if transform is None:
+                    return value
+                else:
+                    return transform(value)
+                
+            else:
+                raise e
+
+    def getCores(self):
+        if self._cores is None:
+            self._cores = dict()
+            coresdir = os.path.join(self.getPlatformPath(), Platform.CORES_FOLDER)
+            for item in os.listdir(coresdir):
+                coreitempath = os.path.join(coresdir, item)
+                if os.path.isdir(coreitempath):
+                    self._cores[item] = Core(item, coreitempath, self, self._console)
+
+        return self._cores

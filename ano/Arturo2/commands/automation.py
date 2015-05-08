@@ -25,7 +25,11 @@ class Cmd_source_headers(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def run(self):
         headers = self.getConfiguration().getHeaders()
+        core = self.getConfiguration().getBoard().getCore();
+        headers += core.getHeaders()
+
         projectPath = self.getProject().getPath()
+        
         relativeHeaders = [os.path.relpath(headers[x], projectPath) for x in range(len(headers))]
         self.getConsole().stdout(*relativeHeaders)
 
