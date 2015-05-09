@@ -9,7 +9,7 @@ The original ino contributors did a fantastic job but they decided they no longe
 had time to maintain this tool. I asked them if they wanted me to take over ino
 but they preferred that I fork it. And so Arturo was born.
 
-Unfortunatly the Arduino IDE completely changed 3p integration in verison 1.6.2 and Arturo is currently broken
+Unfortunatly the Arduino IDE completely changed 3p integration in version 1.6.2 and Arturo is currently broken
 for this version. I will try to fix this but it will require a significant rewrite and could take some time.
 
 Stay tuned for more details and changes. I do plan on going through the existing
@@ -20,7 +20,7 @@ testers as I'm doing all this work on a mac.
 
 ## Installing Arturo
 
-Clone this repo, cd Arturo, make install.
+Clone this repo, `cd Arturo`, `make install`. On Linux you may need to use `sudo make install`.
 
 Remember that the Arturo command is ```ano```. It should not conflict in any way
 with ino and you can install the two side-by-side (please file any issues if this
