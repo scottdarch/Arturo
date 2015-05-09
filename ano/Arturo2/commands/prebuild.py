@@ -63,7 +63,7 @@ class Init(ProjectCommand):
         # first choose a project "main"
         sourceRoots = project.getSourceRoots()
         sourceRoot = None
-        if len(sourceRoots) > 0:
+        if len(sourceRoots) > 1:
             projectList = list()
             for rootPath, rootName, mainSource in sourceRoots:  # @UnusedVariable
                 projectList.append([rootName, mainSource])

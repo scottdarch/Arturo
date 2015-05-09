@@ -59,6 +59,14 @@ class NamedOrderedDict(OrderedDict):
     def __str__(self):
         return self.getName()
 
+
+class KeySortedDict(OrderedDict):
+    
+    def __init__(self, ascending=True):
+        super(KeySortedDict, self).__init__()
+        self._ascending = ascending
+
+
 # +---------------------------------------------------------------------------+
 # | SearchPathAgent
 # +---------------------------------------------------------------------------+
@@ -95,12 +103,45 @@ class SearchPathAgent(object):
 # +---------------------------------------------------------------------------+
 # | SearchPath
 # +---------------------------------------------------------------------------+
+class Arduino15PackageSearchPathAgent(SearchPathAgent):
+    '''
+    SearchPathAgent that looks for the Arduino15 standard "[token]/[token].[extension]" pattern
+    used to signify both sketch folders (e.g. sketch/sketch.ino) or library folders
+    (e.g. library/library.h).
+    '''
+
+    __metaclass__ = ABCMeta
+    
+    def __init__(self, extensionSet, console, useDefaultExcludes=True, followLinks=False):
+        super(Arduino15PackageSearchPathAgent, self).__init__(console, useDefaultExcludes, followLinks)
+        self._console = console
+        self._extensionSet = extensionSet
+
+    def getResults(self):
+        return self._packages
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in self._extensionSet:
+            if containingFolderName == splitName[0]:
+                return self.onVisitPackage(parentPath, rootPath, containingFolderName, filename)
+        return SearchPathAgent.KEEP_GOING
+
+    @abstractmethod
+    def onVisitPackage(self, parentPath, rootPath, packageName, filename):
+        pass
+
+
+# +---------------------------------------------------------------------------+
+# | SearchPath
+# +---------------------------------------------------------------------------+
 class SearchPath(object):
     
     ARDUINO15_PACKAGES_PATH = "packages"
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
     ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15")]
+    ARDUINO15_LIBRARY_FOLDER_NAMES = ("lib", "libraries")
 
     ARTURO2_BUILDDIR_NAME = ".build_ano2"
 

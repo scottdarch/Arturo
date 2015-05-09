@@ -8,7 +8,7 @@
 import re
 
 from ano import i18n
-from ano.Arturo2.commands.base import Command, ProjectCommand
+from ano.Arturo2.commands.base import Command, ProjectCommand, ConfiguredCommand
 
 
 _ = i18n.language.ugettext
@@ -58,6 +58,51 @@ class List_tools(Command):
                 console.unshift()
         finally:
             console.popContext()
+
+# +---------------------------------------------------------------------------+
+# | list-boards
+# +---------------------------------------------------------------------------+
+class List_libraries(ConfiguredCommand):
+    '''
+    List all known libraries
+    '''
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        console = self.getConsole()
+        try:
+            console.pushContext()
+            console.printInfo(_("System Libraries"))
+            environment = self.getEnvironment()
+            libraries = environment.getLibraries()
+            console.shift()
+            for libraryName, library in libraries.iteritems():
+                libraryVersions = library.getVersions()
+                if len(libraryVersions) > 1:
+                    console.printInfo(libraryName)
+                    console.shift()
+                    for libraryVersion in library.getVersions().itervalues():
+                        console.printInfo("- {0}".format(libraryVersion['version']))
+                    console.unshift()
+                else:
+                    for libraryVersion in library.getVersions().itervalues():
+                        console.printInfo(_("{0} - {1}".format(libraryName, libraryVersion['version'])))
+                        break;
+
+            console.unshift()
+            console.printInfo(_("Project Libraries"))
+
+        finally:
+            console.popContext()
+
 
 # +---------------------------------------------------------------------------+
 # | list-boards

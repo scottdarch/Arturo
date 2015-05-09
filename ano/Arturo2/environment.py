@@ -8,7 +8,9 @@ import json
 import os
 
 from ano import __version__, i18n, __app_name__
-from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent
+from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent, Arduino15PackageSearchPathAgent, \
+    KeySortedDict
+from ano.Arturo2.libraries import Library
 from ano.Arturo2.parsers import MakefilePropertyParser
 from ano.Arturo2.templates import JinjaTemplates
 from ano.Arturo2.vendors import Package
@@ -131,10 +133,15 @@ class Configuration(object):
 # +---------------------------------------------------------------------------+
 # | Project
 # +---------------------------------------------------------------------------+
-class ProjectSourceRootAggregator(SearchPathAgent):
+class ProjectSourceRootAggregator(Arduino15PackageSearchPathAgent):
+    '''
+    SearchPathAgent that looks for the Arduino15 "[token]/[token].[extension]" pattern
+    used to signify both sketch folders (e.g. sketch/sketch.ino) or library folders
+    (e.g. library/library.h).
+    '''
     
     def __init__(self, project, console):
-        super(ProjectSourceRootAggregator, self).__init__(console, followLinks=True)
+        super(ProjectSourceRootAggregator, self).__init__(SearchPath.ARTURO2_SOURCE_FILEEXT, console, followLinks=True)
         self._project = project
         self._console = console
         self._sourceRoots = []
@@ -142,13 +149,12 @@ class ProjectSourceRootAggregator(SearchPathAgent):
     def getResults(self):
         return self._sourceRoots
 
-    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
-        splitName = filename.split('.')
-        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
-            if containingFolderName == splitName[0]:
-                self._sourceRoots.append([parentPath, containingFolderName, filename])
+    def onVisitPackage(self, parentPath, rootPath, packageName, filename):
+        if os.path.basename(parentPath) not in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
+            self._sourceRoots.append([parentPath, packageName, filename])
         return SearchPathAgent.KEEP_GOING
-    
+
+
 class Project(object):
     
     @classmethod
@@ -232,6 +238,7 @@ class Environment(object):
     '''
     
     PACKAGE_INDEX_NAMES = ['package_index.json']
+    LIBRARY_INDEX_NAMES = ['library_index.json']
     
     def __init__(self, console):
         super(Environment, self).__init__()
@@ -242,8 +249,11 @@ class Environment(object):
         self._inferredProject = None
         self._packageRootPath = None
         self._packageMetadataIndex = None
+        self._libraryMetadataIndex = None
         self._packageIndex = None
-        
+        self._libraryIndex = None
+
+
     def getConsole(self):
         return self._console
     
@@ -269,10 +279,45 @@ class Environment(object):
         if self._inferredProject is None:
             self._inferredProject = Project.infer(self)
         return self._inferredProject
+
+    def getLibraries(self):
+        if self._libraryIndex is None:
+            self._libraryIndex = dict()
+            for libraryName, libraryVersions in self._getLibraryMetadata().iteritems():
+                self._libraryIndex[libraryName] = Library(self, libraryName, self._searchPath, self._console, libraryVersions)
+
+        return self._libraryIndex
     
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
+    def _getLibraryMetadata(self):
+        if self._libraryMetadataIndex is not None:
+            return self._libraryMetadataIndex
+        
+        libraryMetadataPath = self.getSearchPath().findFirstFileOfNameOrThrow(Environment.LIBRARY_INDEX_NAMES, 'library index')
+        
+        # the package folders are found under a folder ARDUINO15_PACKAGES_PATH next to the packages index file
+        if self._packageRootPath is None:
+            self._packageRootPath = os.path.join(os.path.dirname(libraryMetadataPath), SearchPath.ARDUINO15_PACKAGES_PATH)
+        
+        with open(libraryMetadataPath, 'r') as libraryMetadataFile:
+            libraryMetadataCollection = json.load(libraryMetadataFile)
+
+        libraryMetadataList = libraryMetadataCollection['libraries']
+        self._libraryMetadataIndex = dict()
+        for libraryMetadata in libraryMetadataList:
+            libraryName = libraryMetadata['name']
+            try:
+                libraryVersions = self._libraryMetadataIndex[libraryName]
+            except KeyError:
+                libraryVersions = KeySortedDict(ascending=False)
+                self._libraryMetadataIndex[libraryName] = libraryVersions
+            
+            libraryVersions[libraryMetadata['version']] = libraryMetadata
+        
+        return self._libraryMetadataIndex;
+
 
     def _getPackageMetadata(self):
         if self._packageMetadataIndex is not None:
@@ -281,7 +326,8 @@ class Environment(object):
         packageMetadataPath = self.getSearchPath().findFirstFileOfNameOrThrow(Environment.PACKAGE_INDEX_NAMES, 'package index')
         
         # the package folders are found under a folder ARDUINO15_PACKAGES_PATH next to the packages index file
-        self._packageRootPath = os.path.join(os.path.dirname(packageMetadataPath), SearchPath.ARDUINO15_PACKAGES_PATH)
+        if self._packageRootPath is None:
+            self._packageRootPath = os.path.join(os.path.dirname(packageMetadataPath), SearchPath.ARDUINO15_PACKAGES_PATH)
         
         with open(packageMetadataPath, 'r') as packageMetadataFile:
             packageMetadataCollection = json.load(packageMetadataFile)

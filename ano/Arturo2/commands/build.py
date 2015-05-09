@@ -173,6 +173,7 @@ class Cmd_source_headers(ConfiguredCommand):
             headerFolders.add(os.path.relpath(os.path.dirname(header), projectPath))
         self.getConsole().stdout(*headerFolders)
 
+
 # +---------------------------------------------------------------------------+
 # | Cmd_source_files
 # +---------------------------------------------------------------------------+
