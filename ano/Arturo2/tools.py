@@ -35,6 +35,9 @@ class HostToolChain(object):
     def getHost(self):
         return self._host
 
+    def exists(self):
+        return (self.getPath() is not None)
+
     def getPath(self):
         packager = self._toolchain.getPackage().getName()
         localpath = os.path.join(SearchPath.ARDUINO15_PACKAGES_PATH, 

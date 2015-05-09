@@ -51,6 +51,7 @@ class Board(NamedOrderedDict):
         self._console = console
         self._rawPlatformData = None
         self._core = None
+        self._variant = None
 
     def getPlatform(self):
         return self._platform
@@ -61,6 +62,19 @@ class Board(NamedOrderedDict):
             self._core = self.getPlatform().getCores()[coreName]
         return self._core
     
+    def getVariant(self):
+        if self._variant == -1:
+            return None
+        if self._variant is None:
+            try:
+                variantName = self['build.variant']
+            except KeyError:
+                self._console.printVerbose("Board {} does not have a variant.".format(self.getName()))
+                self._variant = -1
+                return None
+            self._variant = self.getPlatform().getVariants()[variantName]
+        return self._variant
+
     def processBuildInfo(self, unexpandedMacroResolver=None, elideKeysForMissingValues=False):
         '''
         Process the key/value data found in this board's platform.txt file expanding the Arduino15 style
@@ -177,6 +191,14 @@ class Core(object):
         return self._headers
 
 # +---------------------------------------------------------------------------+
+# | Variant
+# +---------------------------------------------------------------------------+
+class Variant(Core):
+    
+    def __init__(self, name, path, platform, console):
+        super(Variant, self).__init__(name, path, platform, console)
+
+# +---------------------------------------------------------------------------+
 # | Platform
 # +---------------------------------------------------------------------------+
 class PlatformBoardFactory(object):
@@ -193,6 +215,7 @@ class Platform(object):
     BOARDS_FILENAME = "boards.txt"
     PROGRAMMERS_FILENAME = "programmers.txt"
     CORES_FOLDER = "cores"
+    VARIANTS_FOLDER = "variants"
     ARDUINO15_KNOWN_METADATA_ALIASES = { 
                                         "arch": ("architecture", upper),
                                     }
@@ -221,6 +244,7 @@ class Platform(object):
         self._platformBoardFactory = PlatformBoardFactory(self, console)
         self._toolsList = None
         self._cores = None
+        self._variants = None
         
         if not os.path.isdir(self._platformPath):
             if console:
@@ -292,3 +316,14 @@ class Platform(object):
                     self._cores[item] = Core(item, coreitempath, self, self._console)
 
         return self._cores
+
+    def getVariants(self):
+        if self._variants is None:
+            self._variants = dict()
+            variantsdir = os.path.join(self.getPlatformPath(), Platform.VARIANTS_FOLDER)
+            for item in os.listdir(variantsdir):
+                variantitempath = os.path.join(variantsdir, item)
+                if os.path.isdir(variantitempath):
+                    self._variants[item] = Variant(item, variantitempath, self, self._console)
+
+        return self._variants

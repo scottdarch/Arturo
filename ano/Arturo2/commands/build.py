@@ -93,7 +93,7 @@ class Preprocess(ConfiguredCommand):
                 out.write('\n'.join(prototypes))
                 out.write('\n')
         
-                out.write('#line 1 "%s"\n' % sketch)
+                out.write('/* line 1 "%s" */\n' % sketch)
                 out.write('\n'.join(lines))
 
     def _prototypes(self, src):
@@ -142,3 +142,54 @@ class Preprocess(ConfiguredCommand):
         strings from a string.
         """
         return self._re_strip.sub(' ', src)
+
+
+# +---------------------------------------------------------------------------+
+# | Cmd_source_headers
+# +---------------------------------------------------------------------------+
+class Cmd_source_headers(ConfiguredCommand):
+    
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        configuration = self.getConfiguration()
+        headers = configuration.getHeaders()
+        core = configuration.getBoard().getCore();
+        headers += core.getHeaders()
+        variant = configuration.getBoard().getVariant()
+        headers += variant.getHeaders()
+        
+        projectPath = self.getProject().getPath()
+        
+        headerFolders = set()
+        for header in headers:
+            headerFolders.add(os.path.relpath(os.path.dirname(header), projectPath))
+        self.getConsole().stdout(*headerFolders)
+
+# +---------------------------------------------------------------------------+
+# | Cmd_source_files
+# +---------------------------------------------------------------------------+
+class Cmd_source_files(ConfiguredCommand):
+    
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        sources = self.getConfiguration().getSources()
+        projectPath = self.getProject().getPath()
+        relativeSource = [os.path.relpath(sources[x], projectPath) for x in range(len(sources))]
+        self.getConsole().stdout(*relativeSource)
+
