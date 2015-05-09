@@ -30,8 +30,10 @@ class Cmd_source_headers(ConfiguredCommand):
 
         projectPath = self.getProject().getPath()
         
-        relativeHeaders = [os.path.relpath(headers[x], projectPath) for x in range(len(headers))]
-        self.getConsole().stdout(*relativeHeaders)
+        headerFolders = set()
+        for header in headers:
+            headerFolders.add(os.path.relpath(os.path.dirname(header), projectPath))
+        self.getConsole().stdout(*headerFolders)
 
 # +---------------------------------------------------------------------------+
 # | Cmd_source_files

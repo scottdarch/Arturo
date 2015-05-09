@@ -86,6 +86,13 @@ class Package(object):
         for version in versions.itervalues():
             return version
         return None
+    
+    def getToolChainLatestAvailableVersion(self, name):
+        versions = self.getToolChains()[name]
+        for version in versions.itervalues():
+            if version.getHostToolChain().exists():
+                return version
+        return None
         
     def getPlatforms(self):
         if self._platformIndex is None:

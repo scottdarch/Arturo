@@ -53,8 +53,8 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         projectPath             = project.getPath()
         localpath               = os.path.relpath(builddir, projectPath)
         rootdir                 = os.path.relpath(projectPath, builddir)
-        targetsMakefilePath     = os.path.join(builddir, JinjaTemplates.MAKEFILE_TARGETS)
-        toolchainMakefilePath   = os.path.join(builddir, JinjaTemplates.MAKEFILE_TOOLCHAIN)
+        targetsMakefilePath     = JinjaTemplates.MAKEFILE_TARGETS
+        toolchainMakefilePath   = os.path.join(builddir, JinjaTemplates.MAKEFILE_LOCALPATHS)
         
         mkdirs(builddir)
         
@@ -71,11 +71,11 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
                             "local" : { "dir" : localpath,
                                         "rootdir" : rootdir,
                                         "makefile" : JinjaTemplates.MAKEFILE,
-                                        "toolchainmakefile" : JinjaTemplates.MAKEFILE_TOOLCHAIN
+                                        "toolchainmakefile" : JinjaTemplates.MAKEFILE_LOCALPATHS
                                     },
                             "command" : { "source_headers" : listHeadersCommand,
                                           "source_files"   : listSourceCommand,
-                                          "preprocess_sketch" : sketchPreprocessCommand,
+                                          "preprocess_sketch" : sketchPreprocessCommand
                                     },
                             'platform' : boardBuildInfo,
                             }
@@ -84,11 +84,9 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
             f.write(makefileTemplate.render(initRenderParams))
         
         if len(self._requiredLocalPaths):
-            # TODO: message this to the user. They have to understand not to checkin the toolchain makefile
-            # as it is highly host environment specific.
             self._console.printVerbose("This makefile requires local paths.")
             
-            toolchainTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_TOOLCHAIN)
+            toolchainTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_LOCALPATHS)
             
             toolchainRenderParams = {
                                      "local" : self._requiredLocalPaths,
@@ -98,7 +96,7 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
                 f.write(toolchainTemplate.render(toolchainRenderParams))
 
         elif os.path.exists(toolchainMakefilePath):
-            if self._console.askYesNoQuestion(_("Toolchain makefile {0} appears to be obsolete. Delete it?".format(toolchainMakefilePath))):
+            if self._console.askYesNoQuestion(_("Local paths makefile {0} appears to be obsolete. Delete it?".format(toolchainMakefilePath))):
                 os.remove(toolchainMakefilePath)
 
     # +-----------------------------------------------------------------------+
@@ -125,12 +123,23 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         if macro.endswith(".path"):
             package = self.getConfiguration().getPackage()
             key = macro[:-5]
+            makeKey = "LOCAL_TOOLCHAIN_PATH_{}".format(key.upper().replace('-', '_'))
             try:
                 toolchain = package.getToolChainByNameAndVerison(key)
             except (KeyError, ValueError):
-                toolchain = package.getToolChainLatestVersion(key)
+                toolchain = package.getToolChainLatestAvailableVersion(key)
 
-            self._requiredLocalPaths['toolchainpath'] = toolchain.getHostToolChain().getPath()
-            return "$(LOCAL_TOOLCHAIN_PATH)"
+            hosttoolchain = toolchain.getHostToolChain()
+            if hosttoolchain.exists():
+                try:
+                    toolchainsmake = self._requiredLocalPaths['toolchains']
+                    toolchainsmake = "{}{}{}={}".format(toolchainsmake, "\n", makeKey, hosttoolchain.getPath())
+                except KeyError:
+                    toolchainsmake = "{}={}".format(makeKey, hosttoolchain.getPath())
+                self._requiredLocalPaths['toolchains'] = toolchainsmake
+            else:
+                self.getConsole().printWarning(_("WARNING: No host tools installed for {0}-{1} on this platform. Builds will probably fail.").format(toolchain.getName(), toolchain.getVersion()))
+
+            return "$({})".format(makeKey)
         else:
             raise KeyError()
