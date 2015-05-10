@@ -9,7 +9,7 @@ import os
 
 from ano import __version__, i18n, __app_name__
 from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent, Arduino15PackageSearchPathAgent, \
-    KeySortedDict
+    KeySortedDict, ConfigurationHeaderAggregator, ConfigurationSourceAggregator
 from ano.Arturo2.libraries import Library
 from ano.Arturo2.parsers import MakefilePropertyParser
 from ano.Arturo2.templates import JinjaTemplates
@@ -21,40 +21,6 @@ _ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 # | Configuration
 # +---------------------------------------------------------------------------+
-class ConfigurationHeaderAggregator(SearchPathAgent):
-
-    def __init__(self, configuration, console):
-        super(ConfigurationHeaderAggregator, self).__init__(console, followLinks=True)
-        self._configuration = configuration
-        self._console = console
-        self._headers = list()
-
-    def getResults(self):
-        return self._headers
-
-    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
-        splitName = filename.split('.')
-        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
-            self._headers.append(fqFilename)
-        return SearchPathAgent.KEEP_GOING
-
-class ConfigurationSourceAggregator(SearchPathAgent):
-
-    def __init__(self, configuration, console):
-        super(ConfigurationSourceAggregator, self).__init__(console, followLinks=True)
-        self._configuration = configuration
-        self._console = console
-        self._sources = list()
-
-    def getResults(self):
-        return self._sources
-
-    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
-        splitName = filename.split('.')
-        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
-            self._sources.append(fqFilename)
-        return SearchPathAgent.KEEP_GOING
-
 class Configuration(object):
     '''
     An environment with package, platform, board, uploader, and other targeting parameters defined.
@@ -171,6 +137,7 @@ class Project(object):
         self._name = name;
         self._builddir = None
         self._jinjaEnv = None
+        self._libraries = None
      
     def getEnvironment(self):
         return self._env
@@ -227,7 +194,14 @@ class Project(object):
     def getSourceRoots(self):
         return self.getEnvironment().getSearchPath().scanDirs(
                  self._path, ProjectSourceRootAggregator(self, self._console)).getResults()
-   
+
+    def getLibraries(self):
+        if self._libraries is None:
+            self._libraries = self.getEnvironment().getLibrariesFor(self.getPath())
+
+        return self._libraries
+
+
 # +---------------------------------------------------------------------------+
 # | Environment
 # +---------------------------------------------------------------------------+
@@ -281,13 +255,26 @@ class Environment(object):
         return self._inferredProject
 
     def getLibraries(self):
+        #TODO: search environment for any libraries on the system path
         if self._libraryIndex is None:
             self._libraryIndex = dict()
             for libraryName, libraryVersions in self._getLibraryMetadata().iteritems():
-                self._libraryIndex[libraryName] = Library(self, libraryName, self._searchPath, self._console, libraryVersions)
+                self._libraryIndex[libraryName] = Library(libraryName, self, self._console, libraryVersions)
 
         return self._libraryIndex
     
+    def getLibrariesFor(self, path):
+        #TODO: de-dupe environment libraries
+        libraries = dict()
+        for foldername in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
+            librariesDir = os.path.join(path, foldername)
+            if os.path.isdir(librariesDir):
+                for item in os.listdir(librariesDir):
+                    libraryDir = os.path.join(librariesDir, item)
+                    if os.path.isdir(libraryDir):
+                        libraries[item] = Library.fromDir(self, libraryDir, self._console)
+        return libraries
+
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+

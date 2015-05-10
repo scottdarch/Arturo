@@ -77,31 +77,44 @@ class List_libraries(ConfiguredCommand):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
+        config = self.getConfiguration()
         console = self.getConsole()
         try:
             console.pushContext()
+
             console.printInfo(_("System Libraries"))
-            environment = self.getEnvironment()
-            libraries = environment.getLibraries()
             console.shift()
-            for libraryName, library in libraries.iteritems():
-                libraryVersions = library.getVersions()
-                if len(libraryVersions) > 1:
-                    console.printInfo(libraryName)
-                    console.shift()
-                    for libraryVersion in library.getVersions().itervalues():
-                        console.printInfo("- {0}".format(libraryVersion['version']))
-                    console.unshift()
-                else:
-                    for libraryVersion in library.getVersions().itervalues():
-                        console.printInfo(_("{0} - {1}".format(libraryName, libraryVersion['version'])))
-                        break;
-
+            self._emitLibraryList(self.getEnvironment().getLibraries())
             console.unshift()
-            console.printInfo(_("Project Libraries"))
 
+            console.printInfo(_("Platform Libraries"))
+            console.shift()
+            self._emitLibraryList(config.getPlatform().getLibraries())
+            console.unshift()
+
+            console.printInfo(_("Project Libraries"))
+            console.shift()
+            self._emitLibraryList(config.getProject().getLibraries())
         finally:
             console.popContext()
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _emitLibraryList(self, librariesDict):
+        console = self.getConsole()
+        for libraryName, library in librariesDict.iteritems():
+            libraryVersions = library.getVersions()
+            if len(libraryVersions) > 1:
+                console.printInfo(libraryName)
+                console.shift()
+                for libraryVersion in library.getVersions().itervalues():
+                    console.printInfo("- {0}".format(libraryVersion['version']))
+                console.unshift()
+            else:
+                for libraryVersion in library.getVersions().itervalues():
+                    console.printInfo(_("{0} - {1}".format(libraryName, libraryVersion['version'])))
+                    break;
 
 
 # +---------------------------------------------------------------------------+

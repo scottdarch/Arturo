@@ -61,6 +61,9 @@ class NamedOrderedDict(OrderedDict):
 
 
 class KeySortedDict(OrderedDict):
+    '''
+    TODO: implement me
+    '''
     
     def __init__(self, ascending=True):
         super(KeySortedDict, self).__init__()
@@ -101,7 +104,7 @@ class SearchPathAgent(object):
         return SearchPathAgent.KEEP_GOING
     
 # +---------------------------------------------------------------------------+
-# | SearchPath
+# | UTILITY AGENTS AND AGGREGATORS
 # +---------------------------------------------------------------------------+
 class Arduino15PackageSearchPathAgent(SearchPathAgent):
     '''
@@ -130,6 +133,42 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
     @abstractmethod
     def onVisitPackage(self, parentPath, rootPath, packageName, filename):
         pass
+
+
+class ConfigurationHeaderAggregator(SearchPathAgent):
+
+    def __init__(self, configuration, console):
+        super(ConfigurationHeaderAggregator, self).__init__(console, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._headers = list()
+
+    def getResults(self):
+        return self._headers
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
+            self._headers.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
+
+
+class ConfigurationSourceAggregator(SearchPathAgent):
+
+    def __init__(self, configuration, console):
+        super(ConfigurationSourceAggregator, self).__init__(console, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._sources = list()
+
+    def getResults(self):
+        return self._sources
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
+            self._sources.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
 
 
 # +---------------------------------------------------------------------------+

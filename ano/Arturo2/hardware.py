@@ -12,6 +12,7 @@ from string import upper
 
 from ano import __lib_name__, __version__
 from ano.Arturo2 import NamedOrderedDict, SearchPathAgent, SearchPath
+from ano.Arturo2.libraries import Library
 from ano.Arturo2.parsers import ArduinoKeyValueParser
 
 
@@ -245,6 +246,7 @@ class Platform(object):
         self._toolsList = None
         self._cores = None
         self._variants = None
+        self._libraries = None
         
         if not os.path.isdir(self._platformPath):
             if console:
@@ -327,3 +329,10 @@ class Platform(object):
                     self._variants[item] = Variant(item, variantitempath, self, self._console)
 
         return self._variants
+
+    def getLibraries(self):
+        if self._libraries is None:
+            self._libraries = self._package.getEnvironment().getLibrariesFor(self._platformPath)
+
+        return self._libraries
+
