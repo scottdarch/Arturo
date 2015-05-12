@@ -81,6 +81,7 @@ class Preprocess(ConfiguredCommand):
             with open(sketch, 'rt') as sketchFile:
                 sketch = sketchFile.read()
                 prototypes = self._prototypes(sketch)
+                #TODO: handle windows line endings, optionally.
                 lines = sketch.split('\n')
                 includes, lines = self._extract_includes(lines)
         
@@ -93,7 +94,7 @@ class Preprocess(ConfiguredCommand):
                 out.write('\n'.join(prototypes))
                 out.write('\n')
         
-                out.write('/* line 1 "%s" */\n' % sketch)
+                out.write('// line 1 %s\n' % sketch)
                 out.write('\n'.join(lines))
 
     def _prototypes(self, src):

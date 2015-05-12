@@ -51,6 +51,10 @@ clean:
 build : $(OBJ_FILES)
 	#done (for now)
 
+$(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/%.o : %.cpp
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	{{platform['recipe.cpp.o.pattern']}}
+
 %.o : %.cpp
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}

@@ -138,6 +138,7 @@ class Project(object):
         self._builddir = None
         self._jinjaEnv = None
         self._libraries = None
+        
      
     def getEnvironment(self):
         return self._env
@@ -191,9 +192,15 @@ class Project(object):
     def getConfiguration(self, packageName, platformName, boardName, projectName, sourceRoot):
         return Configuration(self, packageName, platformName, boardName, projectName, sourceRoot, None, self._env.getConsole())
     
-    def getSourceRoots(self):
-        return self.getEnvironment().getSearchPath().scanDirs(
+    def getSourceRoots(self, treatAsSourceFolders=None):
+        sourceRoots = self.getEnvironment().getSearchPath().scanDirs(
                  self._path, ProjectSourceRootAggregator(self, self._console)).getResults()
+        if treatAsSourceFolders is not None:
+            for forcedSource in treatAsSourceFolders:
+                forcedSourceProjectPath = os.path.join(self._path, forcedSource)
+                if os.path.isdir(forcedSourceProjectPath):
+                    sourceRoots.append([self._path, forcedSource, None])
+        return sourceRoots
 
     def getLibraries(self):
         if self._libraries is None:
