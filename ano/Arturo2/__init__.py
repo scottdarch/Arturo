@@ -81,12 +81,13 @@ class SearchPathAgent(object):
     
     __metaclass__ = ABCMeta
     
-    def __init__(self, console, useDefaultExcludes=True, followLinks=False):
+    def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
         super(SearchPathAgent, self).__init__()
         self._console = console
         self._visitedDirMemopad = set()
         self._followLinks = followLinks
         self._useDefaultExcludes = useDefaultExcludes
+        self._exclusions = exclusions
         
     def getFollowLinks(self):
         return self._followLinks
@@ -97,6 +98,9 @@ class SearchPathAgent(object):
     def getVisitedDirMemopad(self):
         return self._visitedDirMemopad
     
+    def getExclusions(self):
+        return self._exclusions
+
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         return SearchPathAgent.KEEP_GOING
     
@@ -115,8 +119,8 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
 
     __metaclass__ = ABCMeta
     
-    def __init__(self, extensionSet, console, useDefaultExcludes=True, followLinks=False):
-        super(Arduino15PackageSearchPathAgent, self).__init__(console, useDefaultExcludes, followLinks)
+    def __init__(self, extensionSet, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
+        super(Arduino15PackageSearchPathAgent, self).__init__(console, exclusions, useDefaultExcludes, followLinks)
         self._console = console
         self._extensionSet = extensionSet
 
@@ -137,8 +141,8 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
 
 class ConfigurationHeaderAggregator(SearchPathAgent):
 
-    def __init__(self, configuration, console):
-        super(ConfigurationHeaderAggregator, self).__init__(console, followLinks=True)
+    def __init__(self, configuration, console, exclusions=None):
+        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
         self._console = console
         self._headers = list()
@@ -155,8 +159,8 @@ class ConfigurationHeaderAggregator(SearchPathAgent):
 
 class ConfigurationSourceAggregator(SearchPathAgent):
 
-    def __init__(self, configuration, console):
-        super(ConfigurationSourceAggregator, self).__init__(console, followLinks=True)
+    def __init__(self, configuration, console, exclusions=None):
+        super(ConfigurationSourceAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
         self._console = console
         self._sources = list()
@@ -186,6 +190,8 @@ class SearchPath(object):
 
     ARTURO2_SOURCE_FILEEXT = ("cpp", "c", "ino")
     ARTURO2_HEADER_FILEEXT = ("h", "hpp")
+    ARTURO2_PROJECT_SOURCE_FOLDERS = ("src", ".")
+    ARTURO2_LIBRARY_EXAMPLE_FOLDERS = ("examples")
 
     ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS = ["\..+", 
                                             ARTURO2_BUILDDIR_NAME,
@@ -242,6 +248,7 @@ class SearchPath(object):
         visitedMemopad.add(canonicalRoot)
 
         dirThings = os.listdir(folderPath)
+        exclusions = searchAgent.getExclusions()
         useDefaultExcludes = searchAgent.getUseDefaultExcludes()
 
         dirsToTraverse = []
@@ -249,6 +256,11 @@ class SearchPath(object):
             if useDefaultExcludes and self._isExcludedByDefault(name):
                 if self._console is not None:
                     self._console.printVerbose("Skipping {} by default.".format(name))
+                continue
+            
+            if exclusions is not None and name in exclusions:
+                if self._console is not None:
+                    self._console.printVerbose("Skipping {} by exclusion rule.".format(name))
                 continue
 
             fullPath = os.path.join(folderPath, name)

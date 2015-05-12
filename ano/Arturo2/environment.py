@@ -106,8 +106,8 @@ class ProjectSourceRootAggregator(Arduino15PackageSearchPathAgent):
     (e.g. library/library.h).
     '''
     
-    def __init__(self, project, console):
-        super(ProjectSourceRootAggregator, self).__init__(SearchPath.ARTURO2_SOURCE_FILEEXT, console, followLinks=True)
+    def __init__(self, project, console, exclusions=None):
+        super(ProjectSourceRootAggregator, self).__init__(SearchPath.ARTURO2_SOURCE_FILEEXT, console, exclusions=exclusions, followLinks=True)
         self._project = project
         self._console = console
         self._sourceRoots = []
@@ -194,7 +194,7 @@ class Project(object):
     
     def getSourceRoots(self, treatAsSourceFolders=None):
         sourceRoots = self.getEnvironment().getSearchPath().scanDirs(
-                 self._path, ProjectSourceRootAggregator(self, self._console)).getResults()
+                 self._path, ProjectSourceRootAggregator(self, self._console, exclusions=SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES)).getResults()
         if treatAsSourceFolders is not None:
             for forcedSource in treatAsSourceFolders:
                 forcedSourceProjectPath = os.path.join(self._path, forcedSource)
@@ -204,7 +204,12 @@ class Project(object):
 
     def getLibraries(self):
         if self._libraries is None:
-            self._libraries = self.getEnvironment().getLibrariesFor(self.getPath())
+            # treat anything in a "libarary" folder under the project path as a library
+            projectPath = self.getPath()
+            forceTreatAsLibraries = list()
+            for folderName in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
+                forceTreatAsLibraries.append(os.path.join(projectPath, folderName))
+            self._libraries = self.getEnvironment().getLibrariesFor(projectPath, forceTreatAsLibraries)
 
         return self._libraries
 
@@ -270,7 +275,7 @@ class Environment(object):
 
         return self._libraryIndex
     
-    def getLibrariesFor(self, path):
+    def getLibrariesFor(self, path, forcedLibrariesPaths=None):
         #TODO: de-dupe environment libraries
         libraries = dict()
         for foldername in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
@@ -279,7 +284,20 @@ class Environment(object):
                 for item in os.listdir(librariesDir):
                     libraryDir = os.path.join(librariesDir, item)
                     if os.path.isdir(libraryDir):
-                        libraries[item] = Library.fromDir(self, libraryDir, self._console)
+                        try:
+                            library = Library.fromDir(self, libraryDir, self._console)
+                        except ValueError as e:
+                            if forcedLibrariesPaths is None:
+                                raise e
+
+                            prefixList = list(forcedLibrariesPaths)
+                            prefixList.append(libraryDir)
+                            if os.path.commonprefix(prefixList) in forcedLibrariesPaths:
+                                # Any folder under a "forced path" is considered a library.
+                                library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir)
+                            else:
+                                raise e
+                        libraries[library.getName()] = library
         return libraries
 
     # +-----------------------------------------------------------------------+
