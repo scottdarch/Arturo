@@ -7,7 +7,7 @@
 # http://32bits.io/Arturo/
 #
 
-from ano.arturo import main
+from arturo.ano import main
 
 if __name__ == '__main__':
     main()

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# TODO: remove 'ano' from package naming. Base should be 'arturo'
 
 from setuptools import setup
-from ano import __version__, __app_name__
+
+from arturo import __version__, __app_name__, __lib_name__
+
 
 install_requires = open("requirements.txt").read().split('\n')
 readme_content = open("README.md").read()
@@ -15,13 +16,12 @@ def gen_data_files(package_dir, subdir):
         results.extend([os.path.join(root, f)[len(package_dir)+1:] for f in files])
     return results
 
-ano_package_data = gen_data_files(__app_name__, 'make') + \
-                   gen_data_files(__app_name__, 'templates') + \
-                   gen_data_files(__app_name__, 'Arturo2/templates') + \
-                   gen_data_files(__app_name__, 'i18n')
+package_data =  gen_data_files(__lib_name__, 'commands') + \
+                gen_data_files(__lib_name__, 'templates') + \
+                gen_data_files(__lib_name__, 'i18n')
 
 setup(
-    name=__app_name__,
+    name=__lib_name__,
     version=__version__,
     description='Command line toolkit for working with Arduino hardware',
     long_description=readme_content,
@@ -30,9 +30,9 @@ setup(
     license='MIT',
     keywords="arduino build system",
     url='http://32bits.io/Arturo',
-    packages=['ano', 'ano.commands', 'ano.Arturo2', 'ano.Arturo2.templates', 'ano.Arturo2.commands'],
-    scripts=['bin/ano'],
-    package_data={__app_name__: ano_package_data},
+    packages=[__lib_name__, __lib_name__ + '.commands', __lib_name__ + '.templates', __lib_name__ + '.i18n'],
+    scripts=['bin/' + __app_name__],
+    package_data={__lib_name__: package_data},
     install_requires=install_requires,
     classifiers=[
         "Development Status :: 3 - Alpha",
