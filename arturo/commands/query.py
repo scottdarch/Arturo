@@ -7,8 +7,8 @@
 
 import re
 
-from ano import i18n
-from ano.Arturo2.commands.base import Command, ProjectCommand, ConfiguredCommand
+from arturo import i18n
+from arturo.commands.base import Command, ProjectCommand, ConfiguredCommand
 
 
 _ = i18n.language.ugettext

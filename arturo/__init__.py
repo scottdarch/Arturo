@@ -9,8 +9,12 @@ from collections import OrderedDict
 import os
 import re
 
-from ano.Arturo2.parsers import ArduinoKeyValueParser
-from _pyio import __metaclass__
+from arturo import parsers
+
+
+__app_name__ = 'ano'
+__lib_name__ = 'arturo'
+__version__ = '2.0.0'
 
 
 # +---------------------------------------------------------------------------+
@@ -307,7 +311,7 @@ class SearchPath(object):
 # +---------------------------------------------------------------------------+
 class Preferences(object):
     
-    PREFERENCE_FILE_NAMES = ["preferences.txt", "ano.ini", ".anorc"]
+    PREFERENCE_FILE_NAMES = ["preferences.txt", "arturo.ini", ".anorc"]
     
     def __init__(self, searchPath, console):
         super(Preferences, self).__init__()
@@ -338,6 +342,6 @@ class Preferences(object):
             return self._prefs
         
         preferenceFilePath = self._searchPath.findFirstFileOfNameOrThrow(Preferences.PREFERENCE_FILE_NAMES, "preferences")
-        self._prefs = ArduinoKeyValueParser.parse(preferenceFilePath, dict(), None, None, self._console)
+        self._prefs = parsers.ArduinoKeyValueParser.parse(preferenceFilePath, dict(), None, None, self._console)
         
         return self._prefs

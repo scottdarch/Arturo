@@ -7,13 +7,13 @@
 import json
 import os
 
-from ano import __version__, i18n, __app_name__
-from ano.Arturo2 import SearchPath, Preferences, SearchPathAgent, Arduino15PackageSearchPathAgent, \
-    KeySortedDict, ConfigurationHeaderAggregator, ConfigurationSourceAggregator
-from ano.Arturo2.libraries import Library
-from ano.Arturo2.parsers import MakefilePropertyParser
-from ano.Arturo2.templates import JinjaTemplates
-from ano.Arturo2.vendors import Package
+from arturo import SearchPath, Preferences, SearchPathAgent, Arduino15PackageSearchPathAgent, \
+    KeySortedDict, ConfigurationHeaderAggregator, ConfigurationSourceAggregator, __lib_name__
+from arturo import __version__, i18n, __app_name__
+from arturo.libraries import Library
+from arturo.parsers import MakefilePropertyParser
+from arturo.templates import JinjaTemplates
+from arturo.vendors import Package
 
 
 _ = i18n.language.ugettext
@@ -146,9 +146,11 @@ class Project(object):
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
             self._jinjaEnv = JinjaTemplates.createJinjaEnvironmentForTemplates()
+            #TODO: inject app name since apps other than ano might use arturo
             self._jinjaEnv.globals['env'] = {
                 'version':__version__,
                 'app_name':__app_name__,
+                'lib_name':__lib_name__
             }
             self._jinjaEnv.globals['project'] = {
                 'builddir':os.path.relpath(self.getBuilddir())

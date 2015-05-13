@@ -8,8 +8,8 @@ import os
 import platform
 import re
 
-from ano import i18n
-from ano.Arturo2 import SearchPath
+from arturo import SearchPath
+from arturo import i18n
 
 
 _ = i18n.language.ugettext

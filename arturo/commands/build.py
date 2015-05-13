@@ -7,8 +7,10 @@
 
 import os
 import re
-from ano import i18n
-from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
+
+from arturo import i18n
+from arturo.commands.base import ConfiguredCommand, mkdirs
+
 
 _ = i18n.language.ugettext
 

@@ -4,13 +4,13 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
+from collections import OrderedDict
 import os
 
-from ano import i18n
-from ano.Arturo2 import SearchPath
-from ano.Arturo2.hardware import Platform
-from ano.Arturo2.tools import ToolChain
-from collections import OrderedDict
+from arturo import SearchPath
+from arturo import i18n
+from arturo.hardware import Platform
+from arturo.tools import ToolChain
 
 
 _ = i18n.language.ugettext

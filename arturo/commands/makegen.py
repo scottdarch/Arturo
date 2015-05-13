@@ -5,12 +5,16 @@
 # http://32bits.io/Arturo/
 #
 
+
+
+
 import os
 
-from ano import __app_name__, i18n
-from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
-from ano.Arturo2.templates import JinjaTemplates
-from ano.Arturo2.hardware import BoardMacroResolver
+from arturo import __app_name__, i18n
+from arturo.commands.base import ConfiguredCommand, mkdirs
+from arturo.hardware import BoardMacroResolver
+from arturo.templates import JinjaTemplates
+
 
 _ = i18n.language.ugettext
 
@@ -64,7 +68,7 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         
         mkdirs(builddir)
         
-        # ano commands
+        # arturo commands
         listHeadersCommand = __app_name__ + " cmd-source-headers"
         listSourceCommand = __app_name__ + " cmd-source-files"
         sketchPreprocessCommand = __app_name__ + " preprocess"

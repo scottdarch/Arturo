@@ -6,11 +6,11 @@
 #
 import os
 
-from ano import __app_name__, __version__, __lib_name__, i18n
-from ano.Arturo2 import MissingRequiredFileException
-from ano.Arturo2.commands.base import Command, ProjectCommand
-from ano.Arturo2.commands.makegen import Make_gen
-from ano.Arturo2.templates import JinjaTemplates
+from arturo import __app_name__, __version__, __lib_name__, i18n, MissingRequiredFileException
+from arturo.commands.base import Command, ProjectCommand
+from arturo.commands.makegen import Make_gen
+from arturo.templates import JinjaTemplates
+
 
 _ = i18n.language.ugettext
 
@@ -19,7 +19,7 @@ _ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 class Version(Command):
     '''
-    Get versioning information for Arturo/ano.
+    Get versioning information for Arturo/arturo.
     '''
 
     # +-----------------------------------------------------------------------+

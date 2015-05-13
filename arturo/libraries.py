@@ -8,7 +8,7 @@ from __builtin__ import classmethod
 import os
 import re
 
-from ano.Arturo2 import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, KeySortedDict, parsers, \
+from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, KeySortedDict, parsers, \
     ConfigurationHeaderAggregator
 
 

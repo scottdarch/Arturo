@@ -6,7 +6,7 @@
 #
 import os
 
-from ano import __app_name__
+from arturo import __app_name__, __lib_name__
 import jinja2
 from jinja2.loaders import PackageLoader
 
@@ -21,11 +21,11 @@ class JinjaTemplates(object):
     
     @classmethod
     def getRelPathToTemplatesFromPackage(cls):
-        return os.path.relpath(os.path.dirname(__file__), __app_name__)
+        return os.path.relpath(os.path.dirname(__file__), __lib_name__)
     
     @classmethod
     def createJinjaEnvironmentForTemplates(cls):
-        env = jinja2.Environment(loader=PackageLoader(__app_name__, cls.getRelPathToTemplatesFromPackage()))
+        env = jinja2.Environment(loader=PackageLoader(__lib_name__, cls.getRelPathToTemplatesFromPackage()))
         env.globals['templates'] = {
             'make_toolchain':cls.MAKEFILE_LOCALPATHS,
             'make_targets':cls.MAKEFILE_TARGETS,

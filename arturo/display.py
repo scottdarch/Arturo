@@ -8,8 +8,8 @@ from distutils.util import strtobool
 import os
 import string
 
-from ano import i18n
-from ano.Arturo2 import ArgumentVisitor
+from arturo import ArgumentVisitor
+from arturo import i18n
 
 
 _ = i18n.language.ugettext

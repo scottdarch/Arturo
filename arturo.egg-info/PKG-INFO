@@ -1,0 +1,27 @@
+Metadata-Version: 1.1
+Name: arturo
+Version: 2.0.0
+Summary: Command line toolkit for working with Arduino hardware
+Home-page: http://32bits.io/Arturo
+Author: Victor Nakoryakov, Amperka Team: Scott Dixon, Arturo Team
+Author-email: scottd.nerd+arturo@gmail.com
+License: MIT
+Description: ![Arturo Logo](docs/ArturoLogo.png)
+        
+        ## Arturo 2
+        
+        > A command-line tool for MCU firmware development
+        
+        This branch is under active development and is not yet functional. Use
+        master until v2 is ready.
+        
+        <img src="docs/Toscanini.png" alt="Arturo Toscanini" height="150" width="147"/>
+        
+Keywords: arduino build system
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Software Development :: Embedded Systems

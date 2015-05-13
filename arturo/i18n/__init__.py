@@ -10,10 +10,11 @@
 # Thanks to (Maemo)[https://wiki.maemo.org/Internationalize_a_Python_application] for this snippit and the
 # tutorial
 
-import os
-import locale
 import gettext
-from ano import __app_name__
+import locale
+import os
+
+from arturo import __lib_name__
 
 
 def _init_i18n():
@@ -35,9 +36,9 @@ def _init_i18n():
 
     # Lets tell those details to gettext
     gettext.install(True, localedir=None, unicode=1)
-    gettext.find(__app_name__, mo_location)
-    gettext.textdomain (__app_name__)
-    gettext.bind_textdomain_codeset(__app_name__, "UTF-8")
-    return gettext.translation(__app_name__, mo_location, languages=languages, fallback=True)
+    gettext.find(__lib_name__, mo_location)
+    gettext.textdomain (__lib_name__)
+    gettext.bind_textdomain_codeset(__lib_name__, "UTF-8")
+    return gettext.translation(__lib_name__, mo_location, languages=languages, fallback=True)
 
 language = _init_i18n()

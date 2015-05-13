@@ -10,12 +10,11 @@
 import argparse
 import sys
 
-from ano import i18n, __app_name__
-from ano.Arturo2 import ArgumentVisitor, Runnable
-from ano.Arturo2.commands import getAllCommands
-from ano.Arturo2.commands.base import ConfiguredCommand, ProjectCommand, UnknownUserInputException
-from ano.Arturo2.display import Console
-from ano.Arturo2.environment import Environment
+from arturo import i18n, __app_name__, ArgumentVisitor, Runnable
+from arturo.commands import getAllCommands
+from arturo.commands.base import UnknownUserInputException, ProjectCommand, ConfiguredCommand
+from arturo.display import Console
+from arturo.environment import Environment
 
 
 _ = i18n.language.ugettext

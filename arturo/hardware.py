@@ -10,9 +10,9 @@ from collections import OrderedDict
 import os
 from string import upper
 
-from ano import __lib_name__, __version__
-from ano.Arturo2 import NamedOrderedDict, SearchPathAgent, SearchPath
-from ano.Arturo2.parsers import ArduinoKeyValueParser
+from arturo import NamedOrderedDict, SearchPathAgent, SearchPath
+from arturo import __lib_name__, __version__
+from arturo.parsers import ArduinoKeyValueParser
 
 
 # +---------------------------------------------------------------------------+

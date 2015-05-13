@@ -14,6 +14,7 @@
 # | BUILD VARIABLES
 # +---------------------------------------------------------------------------+
 APP_NAME                     := ano
+LIB_NAME                     := arturo
 APP_VERSION                  := 2.0.0
 LOCALES                      += en_US \
 
@@ -31,17 +32,17 @@ PIP                         ?= pip
 # | BUILD LOCATIONS
 # +---------------------------------------------------------------------------+
 BUILDDIR                    := build
-PYTHON_SOURCE_FOLDER        := $(APP_NAME)
+PYTHON_SOURCE_FOLDER        := $(LIB_NAME)
 INTERMEDIATES_FOLDER        := .intermediates
 TRANSLATIONS_INTERMEDIATES  := $(INTERMEDIATES_FOLDER)/pots
 TRANSLATIONS_DIR            := $(PYTHON_SOURCE_FOLDER)/i18n
-EGG_FOLDER                  := $(APP_NAME).egg-info
+EGG_FOLDER                  := $(LIB_NAME).egg-info
 DIST_FOLDER                 := dist
 
 # +---------------------------------------------------------------------------+
 # | BUILD ARTIFACTS
 # +---------------------------------------------------------------------------+
-TRANSLATEFILENAME           := $(APP_NAME)_strings
+TRANSLATEFILENAME           := $(LIB_NAME)_strings
 PYTHON_SOURCE               := $(wildcard $(PYTHON_SOURCE_FOLDER)/*.py) \
                                $(wildcard $(PYTHON_SOURCE_FOLDER)/**/*.py) \
                                $(wildcard $(PYTHON_SOURCE_FOLDER)/**/**/*.py) \
@@ -49,7 +50,7 @@ PYTHON_SOURCE               := $(wildcard $(PYTHON_SOURCE_FOLDER)/*.py) \
 APP_SCRIPT                  := $(BUILDDIR)/scripts-$(PYTHON_VERSION)/$(APP_NAME)
 MOFILES                     := $(addprefix $(TRANSLATIONS_DIR)/, $(addsuffix .mo, $(LOCALES)))
 SETUP_SCRIPT                := setup.py
-EGG_FILE                    := $(DIST_FOLDER)/$(APP_NAME)-$(APP_VERSION)-py$(PYTHON_VERSION).egg
+EGG_FILE                    := $(DIST_FOLDER)/$(LIB_NAME)-$(APP_VERSION)-py$(PYTHON_VERSION).egg
 
 # +---------------------------------------------------------------------------+
 # | BUILD TARGETS
@@ -78,7 +79,7 @@ translate: $(MOFILES)
 
 .PHONY : uninstall
 uninstall:
-	env $(PIP) uninstall $(APP_NAME)
+	env $(PIP) uninstall $(LIB_NAME)
 
 # +---------------------------------------------------------------------------+
 # | BUILD RECIPES

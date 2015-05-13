@@ -9,7 +9,7 @@ import errno
 import os
 import string
 
-from ano.Arturo2 import Runnable, ArgumentVisitor
+from arturo import Runnable, ArgumentVisitor
 
 
 class UnknownUserInputException(Exception):
