@@ -7,11 +7,12 @@
 
 import os
 
-from ano import __app_name__
+from ano import __app_name__, i18n
 from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
 from ano.Arturo2.templates import JinjaTemplates
 from ano.Arturo2.hardware import BoardMacroResolver
 
+_ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
 # | Make_gen
@@ -20,7 +21,12 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
     '''
     (Re)Generate makefiles for a given configuration.
     '''
-    
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefiles for the project.'.format(__app_name__)))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+

@@ -7,8 +7,10 @@
 
 import os
 import re
-
+from ano import i18n
 from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
+
+_ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
 # | Preprocess
@@ -45,7 +47,13 @@ class Preprocess(ConfiguredCommand):
         
         self._sketches = None
         self._outputDir = None
-        
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Transform an Arduino sketch (ino) into valid cpp.'))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
@@ -81,6 +89,7 @@ class Preprocess(ConfiguredCommand):
             with open(sketch, 'rt') as sketchFile:
                 sketch = sketchFile.read()
                 prototypes = self._prototypes(sketch)
+                #TODO: handle windows line endings, optionally.
                 lines = sketch.split('\n')
                 includes, lines = self._extract_includes(lines)
         
@@ -93,7 +102,7 @@ class Preprocess(ConfiguredCommand):
                 out.write('\n'.join(prototypes))
                 out.write('\n')
         
-                out.write('/* line 1 "%s" */\n' % sketch)
+                out.write('// line 1 %s\n' % sketch)
                 out.write('\n'.join(lines))
 
     def _prototypes(self, src):
@@ -150,6 +159,12 @@ class Preprocess(ConfiguredCommand):
 class Cmd_source_headers(ConfiguredCommand):
     
     # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of headers suitable for consumption by gnu make.'))
+
+    # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
@@ -166,6 +181,12 @@ class Cmd_source_headers(ConfiguredCommand):
         variant = configuration.getBoard().getVariant()
         headers += variant.getHeaders()
         
+        for library in configuration.getPlatform().getLibraries().itervalues():
+            headers += library.getHeaders()
+
+        for library in configuration.getProject().getLibraries().itervalues():
+            headers += library.getHeaders()
+        
         projectPath = self.getProject().getPath()
         
         headerFolders = set()
@@ -173,11 +194,18 @@ class Cmd_source_headers(ConfiguredCommand):
             headerFolders.add(os.path.relpath(os.path.dirname(header), projectPath))
         self.getConsole().stdout(*headerFolders)
 
+
 # +---------------------------------------------------------------------------+
 # | Cmd_source_files
 # +---------------------------------------------------------------------------+
 class Cmd_source_files(ConfiguredCommand):
     
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of source files suitable for consumption by gnu make.'))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+

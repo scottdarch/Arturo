@@ -245,6 +245,7 @@ class Platform(object):
         self._toolsList = None
         self._cores = None
         self._variants = None
+        self._libraries = None
         
         if not os.path.isdir(self._platformPath):
             if console:
@@ -327,3 +328,10 @@ class Platform(object):
                     self._variants[item] = Variant(item, variantitempath, self, self._console)
 
         return self._variants
+
+    def getLibraries(self):
+        if self._libraries is None:
+            self._libraries = self._package.getEnvironment().getLibrariesFor(self._platformPath)
+
+        return self._libraries
+

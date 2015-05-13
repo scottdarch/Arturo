@@ -38,6 +38,9 @@ class ArgumentVisitor(object):
     def onVisitArgs(self, args):
         None
 
+    def onVisitSubParserArgs(self, outSubparserArgs):
+        None
+
 # +---------------------------------------------------------------------------+
 # | COMMON TYPES
 # +---------------------------------------------------------------------------+
@@ -59,6 +62,17 @@ class NamedOrderedDict(OrderedDict):
     def __str__(self):
         return self.getName()
 
+
+class KeySortedDict(OrderedDict):
+    '''
+    TODO: implement me
+    '''
+    
+    def __init__(self, ascending=True):
+        super(KeySortedDict, self).__init__()
+        self._ascending = ascending
+
+
 # +---------------------------------------------------------------------------+
 # | SearchPathAgent
 # +---------------------------------------------------------------------------+
@@ -70,12 +84,13 @@ class SearchPathAgent(object):
     
     __metaclass__ = ABCMeta
     
-    def __init__(self, console, useDefaultExcludes=True, followLinks=False):
+    def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
         super(SearchPathAgent, self).__init__()
         self._console = console
         self._visitedDirMemopad = set()
         self._followLinks = followLinks
         self._useDefaultExcludes = useDefaultExcludes
+        self._exclusions = exclusions
         
     def getFollowLinks(self):
         return self._followLinks
@@ -86,12 +101,83 @@ class SearchPathAgent(object):
     def getVisitedDirMemopad(self):
         return self._visitedDirMemopad
     
+    def getExclusions(self):
+        return self._exclusions
+
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         return SearchPathAgent.KEEP_GOING
     
     def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath, depth):
         return SearchPathAgent.KEEP_GOING
     
+# +---------------------------------------------------------------------------+
+# | UTILITY AGENTS AND AGGREGATORS
+# +---------------------------------------------------------------------------+
+class Arduino15PackageSearchPathAgent(SearchPathAgent):
+    '''
+    SearchPathAgent that looks for the Arduino15 standard "[token]/[token].[extension]" pattern
+    used to signify both sketch folders (e.g. sketch/sketch.ino) or library folders
+    (e.g. library/library.h).
+    '''
+
+    __metaclass__ = ABCMeta
+    
+    def __init__(self, extensionSet, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
+        super(Arduino15PackageSearchPathAgent, self).__init__(console, exclusions, useDefaultExcludes, followLinks)
+        self._console = console
+        self._extensionSet = extensionSet
+
+    def getResults(self):
+        return self._packages
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in self._extensionSet:
+            if containingFolderName == splitName[0]:
+                return self.onVisitPackage(parentPath, rootPath, containingFolderName, filename)
+        return SearchPathAgent.KEEP_GOING
+
+    @abstractmethod
+    def onVisitPackage(self, parentPath, rootPath, packageName, filename):
+        pass
+
+
+class ConfigurationHeaderAggregator(SearchPathAgent):
+
+    def __init__(self, configuration, console, exclusions=None):
+        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._headers = list()
+
+    def getResults(self):
+        return self._headers
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
+            self._headers.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
+
+
+class ConfigurationSourceAggregator(SearchPathAgent):
+
+    def __init__(self, configuration, console, exclusions=None):
+        super(ConfigurationSourceAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
+        self._configuration = configuration
+        self._console = console
+        self._sources = list()
+
+    def getResults(self):
+        return self._sources
+
+    def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
+        splitName = filename.split('.')
+        if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
+            self._sources.append(fqFilename)
+        return SearchPathAgent.KEEP_GOING
+
+
 # +---------------------------------------------------------------------------+
 # | SearchPath
 # +---------------------------------------------------------------------------+
@@ -101,11 +187,14 @@ class SearchPath(object):
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
     ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15")]
+    ARDUINO15_LIBRARY_FOLDER_NAMES = ("lib", "libraries")
 
     ARTURO2_BUILDDIR_NAME = ".build_ano2"
 
     ARTURO2_SOURCE_FILEEXT = ("cpp", "c", "ino")
     ARTURO2_HEADER_FILEEXT = ("h", "hpp")
+    ARTURO2_PROJECT_SOURCE_FOLDERS = ("src", ".")
+    ARTURO2_LIBRARY_EXAMPLE_FOLDERS = ("examples")
 
     ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS = ["\..+", 
                                             ARTURO2_BUILDDIR_NAME,
@@ -162,6 +251,7 @@ class SearchPath(object):
         visitedMemopad.add(canonicalRoot)
 
         dirThings = os.listdir(folderPath)
+        exclusions = searchAgent.getExclusions()
         useDefaultExcludes = searchAgent.getUseDefaultExcludes()
 
         dirsToTraverse = []
@@ -169,6 +259,11 @@ class SearchPath(object):
             if useDefaultExcludes and self._isExcludedByDefault(name):
                 if self._console is not None:
                     self._console.printVerbose("Skipping {} by default.".format(name))
+                continue
+            
+            if exclusions is not None and name in exclusions:
+                if self._console is not None:
+                    self._console.printVerbose("Skipping {} by exclusion rule.".format(name))
                 continue
 
             fullPath = os.path.join(folderPath, name)

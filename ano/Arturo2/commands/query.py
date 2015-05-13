@@ -8,7 +8,7 @@
 import re
 
 from ano import i18n
-from ano.Arturo2.commands.base import Command, ProjectCommand
+from ano.Arturo2.commands.base import Command, ProjectCommand, ConfiguredCommand
 
 
 _ = i18n.language.ugettext
@@ -22,6 +22,12 @@ class List_tools(Command):
     This command will probably go away. We are working towards a more complete
     query syntax that may be encapsulated in a single Query command.
     '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('List all known tools available in the environment.'))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
@@ -62,12 +68,81 @@ class List_tools(Command):
 # +---------------------------------------------------------------------------+
 # | list-boards
 # +---------------------------------------------------------------------------+
+class List_libraries(ConfiguredCommand):
+    '''
+    List all known libraries
+    '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('List all known Arduino libraries available in the environment.'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        config = self.getConfiguration()
+        console = self.getConsole()
+        try:
+            console.pushContext()
+
+            console.printInfo(_("System Libraries"))
+            console.shift()
+            self._emitLibraryList(self.getEnvironment().getLibraries())
+            console.unshift()
+
+            console.printInfo(_("Platform Libraries"))
+            console.shift()
+            self._emitLibraryList(config.getPlatform().getLibraries())
+            console.unshift()
+
+            console.printInfo(_("Project Libraries"))
+            console.shift()
+            self._emitLibraryList(config.getProject().getLibraries())
+        finally:
+            console.popContext()
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _emitLibraryList(self, librariesDict):
+        console = self.getConsole()
+        for libraryName, library in librariesDict.iteritems():
+            libraryVersions = library.getVersions()
+            if len(libraryVersions) > 1:
+                console.printInfo(libraryName)
+                console.shift()
+                for libraryVersion in library.getVersions().itervalues():
+                    console.printInfo("- {0}".format(libraryVersion['version']))
+                console.unshift()
+            else:
+                for libraryVersion in library.getVersions().itervalues():
+                    console.printInfo(_("{0} - {1}".format(libraryName, libraryVersion['version'])))
+                    break;
+
+
+# +---------------------------------------------------------------------------+
+# | list-boards
+# +---------------------------------------------------------------------------+
 class List_boards(Command):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
     query syntax that may be encapsulated in a single Query command.
     '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('List all known board types defined in the environment.'))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
@@ -123,6 +198,12 @@ class List_platform_data(ProjectCommand):
         self._board = None
 
     # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Interactive query to list build data available for boards.'))
+
+    # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
@@ -132,7 +213,7 @@ class List_platform_data(ProjectCommand):
         parser.add_argument("--board")
 
     def onVisitArgs(self, args):
-        self._filter = re.compile(args.filter)
+        self._filter = re.compile(args.filter) if args.filter else None
         self._package = args.package.lower() if args.package else None
         self._platform = args.platform.lower() if args.platform else None
         self._board = args.board.lower() if args.board else None
@@ -163,7 +244,7 @@ class List_platform_data(ProjectCommand):
             board = console.askPickOneFromList(_("Select a board"), boardList, responseList=boards.values()) \
                 if self._board is None else boards[self._board]
             
-            buildInfo = board.getBuildInfo()
+            buildInfo = board.processBuildInfo()
             for key, value in buildInfo.iteritems():
                 if self._filter is None or self._filter.search(key):
                     console.printInfo(_("{0:<40} - {1}".format(key, value)))

@@ -16,7 +16,7 @@ from ano.Arturo2.commands.base import Command
 from ano.Arturo2.commands.build import Preprocess, Cmd_source_headers, Cmd_source_files
 from ano.Arturo2.commands.makegen import Make_gen
 from ano.Arturo2.commands.prebuild import Init, Version
-from ano.Arturo2.commands.query import List_boards, List_tools, List_platform_data
+from ano.Arturo2.commands.query import List_boards, List_tools, List_platform_data, List_libraries
 
 
 def _is_command_subclass(commandClass):
@@ -25,10 +25,6 @@ def _is_command_subclass(commandClass):
     else:
         return False
 
-def _class_to_commandname(className):
-    lowername = string.lower(className)
-    return lowername.replace('_', '-')
-    
 
 def getAllCommands():
     '''
@@ -36,4 +32,4 @@ def getAllCommands():
     '''
     # commands is a list of name, value pairs sorted by name
     commands = inspect.getmembers(sys.modules[__name__], _is_command_subclass)
-    return {_class_to_commandname(name): commandClass for name, commandClass in commands}
+    return {Command.command_class_to_commandname(commandClass): commandClass for name, commandClass in commands}  # @UnusedVariable
