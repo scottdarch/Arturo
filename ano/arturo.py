@@ -7,17 +7,15 @@
 # http://32bits.io/Arturo/
 #
 
+import argparse
 import sys
 
 from ano import i18n, __app_name__
 from ano.Arturo2 import ArgumentVisitor, Runnable
 from ano.Arturo2.commands import getAllCommands
-from ano.Arturo2.commands.base import ConfiguredCommand, ProjectCommand
+from ano.Arturo2.commands.base import ConfiguredCommand, ProjectCommand, UnknownUserInputException
 from ano.Arturo2.display import Console
 from ano.Arturo2.environment import Environment
-from ano.argparsing import UnknownUserInputException
-import ano.runner
-import argparse
 
 
 _ = i18n.language.ugettext
@@ -122,10 +120,7 @@ TODO: more about gnu make and the core functionality provided by arturo.
 # | ARTURO MAIN
 # +---------------------------------------------------------------------------+
 def main():
-    if len(sys.argv) >= 2 and sys.argv[1] in ('-v1', '--version1'):
-        ano.runner.main()
-    else:
-        ArturoCommandLine(Console()).run()
+    ArturoCommandLine(Console()).run()
         
 if __name__ == "__main__" :
     main()

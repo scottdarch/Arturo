@@ -1,8 +1,0 @@
-
-{% set src_build_dir = e.build_dir|pjoin(e.src_dir|basename) %}
-
-{% macro iquote(source) %}{% if source.path.startswith(src_build_dir) %}-iquote {{e.src_dir|pjoin(source.path|relative_to(src_build_dir))|dirname}} {% endif %}{% endmacro %}
-
-{#
-vim:noexpandtab filetype=jinja
-#}

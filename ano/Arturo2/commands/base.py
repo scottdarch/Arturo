@@ -12,6 +12,13 @@ import string
 from ano.Arturo2 import Runnable, ArgumentVisitor
 
 
+class UnknownUserInputException(Exception):
+    '''
+    Thrown when input provided from command arguments is unknown, malformed, or out-of-context.
+    '''
+    pass
+
+
 def mkdirs(path):
     '''
     Thanks (stack overflow)[https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python]
