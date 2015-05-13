@@ -4,9 +4,10 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 import errno
 import os
+import string
 
 from ano.Arturo2 import Runnable, ArgumentVisitor
 
@@ -22,7 +23,7 @@ def mkdirs(path):
             pass
         else:
             raise
-            
+
 # +---------------------------------------------------------------------------+
 # | Command
 # +---------------------------------------------------------------------------+
@@ -32,23 +33,29 @@ class Command(ArgumentVisitor, Runnable):
     '''
     
     __metaclass__ = ABCMeta
-        
+    
+    @classmethod
+    def command_class_to_commandname(cls, commandType):
+        lowername = string.lower(commandType.__name__)
+        return lowername.replace('_', '-')
+
     def __init__(self, environment, console):
         super(Command, self).__init__()
         self._env = environment
         self._console = console
+
+    def getCommandName(self):
+        return Command.command_class_to_commandname(self.__class__)
+
+    @abstractmethod
+    def add_parser(self, subparsers):
+        pass
 
     def getConsole(self):
         return self._console
 
     def getEnvironment(self):
         return self._env
-
-    # +-----------------------------------------------------------------------+
-    # | ARGPARSE API
-    # +-----------------------------------------------------------------------+
-    def getHelpText(self):
-        return None
 
 # +---------------------------------------------------------------------------+
 # | ProjectCommand

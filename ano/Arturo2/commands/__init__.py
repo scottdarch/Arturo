@@ -25,10 +25,6 @@ def _is_command_subclass(commandClass):
     else:
         return False
 
-def _class_to_commandname(className):
-    lowername = string.lower(className)
-    return lowername.replace('_', '-')
-    
 
 def getAllCommands():
     '''
@@ -36,4 +32,4 @@ def getAllCommands():
     '''
     # commands is a list of name, value pairs sorted by name
     commands = inspect.getmembers(sys.modules[__name__], _is_command_subclass)
-    return {_class_to_commandname(name): commandClass for name, commandClass in commands}
+    return {Command.command_class_to_commandname(commandClass): commandClass for name, commandClass in commands}  # @UnusedVariable

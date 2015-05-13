@@ -15,7 +15,7 @@ from ano.Arturo2.commands import getAllCommands
 from ano.Arturo2.commands.base import ConfiguredCommand, ProjectCommand
 from ano.Arturo2.display import Console
 from ano.Arturo2.environment import Environment
-from ano.argparsing import FlexiFormatter, UnknownUserInputException
+from ano.argparsing import UnknownUserInputException
 import ano.runner
 import argparse
 
@@ -88,7 +88,7 @@ TODO: more about gnu make and the core functionality provided by arturo.
         else:
             command = commandClass(environment, self._console)
             
-        p = subparsers.add_parser(self._commandName, formatter_class=FlexiFormatter, help=command.getHelpText())
+        p = command.add_parser(subparsers)
         command.onVisitArgParser(p)
         p.set_defaults(func=command.run)
         
@@ -102,7 +102,7 @@ TODO: more about gnu make and the core functionality provided by arturo.
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        parser = argparse.ArgumentParser(prog=__app_name__, formatter_class=FlexiFormatter, description=self.getCommandLineDescription())
+        parser = argparse.ArgumentParser(prog=__app_name__, description=self.getCommandLineDescription())
     
         try:
             self._console.onVisitArgParser(parser)
@@ -113,10 +113,8 @@ TODO: more about gnu make and the core functionality provided by arturo.
             self.onVisitArgs(args)
             self._console.onVisitArgs(args)
 
-            try:
-                args.func()
-            except KeyboardInterrupt:
-                print 'Terminated by user'
+            args.func()
+
         except UnknownUserInputException:
             parser.print_help()
 

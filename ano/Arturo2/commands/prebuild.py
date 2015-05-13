@@ -6,12 +6,13 @@
 #
 import os
 
-from ano import __app_name__, __version__, __lib_name__
+from ano import __app_name__, __version__, __lib_name__, i18n
 from ano.Arturo2 import MissingRequiredFileException
 from ano.Arturo2.commands.base import Command, ProjectCommand
 from ano.Arturo2.commands.makegen import Make_gen
 from ano.Arturo2.templates import JinjaTemplates
 
+_ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
 # | Version
@@ -20,13 +21,19 @@ class Version(Command):
     '''
     Get versioning information for Arturo/ano.
     '''
-    
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Print {} version information then exit.'.format(__app_name__)))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         None
-    
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -46,6 +53,12 @@ class Init(ProjectCommand):
     def __init__(self, environment, project, console):
         super(Init, self).__init__(environment, project, console)
         self._force = False
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Initialize a project for use with {} and its makefiles.'.format(__app_name__)))
 
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor

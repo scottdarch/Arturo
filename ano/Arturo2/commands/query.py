@@ -23,6 +23,12 @@ class List_tools(Command):
     query syntax that may be encapsulated in a single Query command.
     '''
     # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('List all known tools available in the environment.'))
+
+    # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
@@ -66,6 +72,11 @@ class List_libraries(ConfiguredCommand):
     '''
     List all known libraries
     '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('List all known Arduino libraries available in the environment.'))
 
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
@@ -127,6 +138,12 @@ class List_boards(Command):
     query syntax that may be encapsulated in a single Query command.
     '''
     # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('List all known board types defined in the environment.'))
+
+    # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
@@ -181,6 +198,12 @@ class List_platform_data(ProjectCommand):
         self._board = None
 
     # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Interactive query to list build data available for boards.'))
+
+    # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
@@ -190,7 +213,7 @@ class List_platform_data(ProjectCommand):
         parser.add_argument("--board")
 
     def onVisitArgs(self, args):
-        self._filter = re.compile(args.filter)
+        self._filter = re.compile(args.filter) if args.filter else None
         self._package = args.package.lower() if args.package else None
         self._platform = args.platform.lower() if args.platform else None
         self._board = args.board.lower() if args.board else None
@@ -221,7 +244,7 @@ class List_platform_data(ProjectCommand):
             board = console.askPickOneFromList(_("Select a board"), boardList, responseList=boards.values()) \
                 if self._board is None else boards[self._board]
             
-            buildInfo = board.getBuildInfo()
+            buildInfo = board.processBuildInfo()
             for key, value in buildInfo.iteritems():
                 if self._filter is None or self._filter.search(key):
                     console.printInfo(_("{0:<40} - {1}".format(key, value)))

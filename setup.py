@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# TODO: remove 'ano' from package naming. Base should be 'arturo'
 
 from setuptools import setup
 from ano import __version__, __app_name__
@@ -14,10 +15,10 @@ def gen_data_files(package_dir, subdir):
         results.extend([os.path.join(root, f)[len(package_dir)+1:] for f in files])
     return results
 
-ano_package_data = gen_data_files('ano', 'make') + \
-                   gen_data_files('ano', 'templates') + \
-                   gen_data_files('ano', 'Arturo2/templates') + \
-                   gen_data_files('ano', 'i18n')
+ano_package_data = gen_data_files(__app_name__, 'make') + \
+                   gen_data_files(__app_name__, 'templates') + \
+                   gen_data_files(__app_name__, 'Arturo2/templates') + \
+                   gen_data_files(__app_name__, 'i18n')
 
 setup(
     name=__app_name__,
@@ -31,10 +32,10 @@ setup(
     url='http://32bits.io/Arturo',
     packages=['ano', 'ano.commands', 'ano.Arturo2', 'ano.Arturo2.templates', 'ano.Arturo2.commands'],
     scripts=['bin/ano'],
-    package_data={'ano': ano_package_data},
+    package_data={__app_name__: ano_package_data},
     install_requires=install_requires,
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",

@@ -7,8 +7,10 @@
 
 import os
 import re
-
+from ano import i18n
 from ano.Arturo2.commands.base import ConfiguredCommand, mkdirs
+
+_ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
 # | Preprocess
@@ -45,7 +47,13 @@ class Preprocess(ConfiguredCommand):
         
         self._sketches = None
         self._outputDir = None
-        
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Transform an Arduino sketch (ino) into valid cpp.'))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
@@ -151,6 +159,12 @@ class Preprocess(ConfiguredCommand):
 class Cmd_source_headers(ConfiguredCommand):
     
     # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of headers suitable for consumption by gnu make.'))
+
+    # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
@@ -186,6 +200,12 @@ class Cmd_source_headers(ConfiguredCommand):
 # +---------------------------------------------------------------------------+
 class Cmd_source_files(ConfiguredCommand):
     
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of source files suitable for consumption by gnu make.'))
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+

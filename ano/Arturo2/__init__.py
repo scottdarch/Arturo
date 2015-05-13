@@ -38,6 +38,9 @@ class ArgumentVisitor(object):
     def onVisitArgs(self, args):
         None
 
+    def onVisitSubParserArgs(self, outSubparserArgs):
+        None
+
 # +---------------------------------------------------------------------------+
 # | COMMON TYPES
 # +---------------------------------------------------------------------------+
