@@ -143,7 +143,7 @@ class Environment(dict):
     def hex_path(self):
         return os.path.join(self.build_dir, self.hex_filename)
 
-    def _find(self, key, items, places, human_name, join, multi):
+    def _find(self, key, items, places, human_name, join, multi, optional):
         """
         Search for file-system entry with any name passed in `items` on
         all paths provided in `places`. Use `key` as a cache key.
@@ -191,23 +191,27 @@ class Environment(dict):
             return results
 
         print colorize('FAILED', 'red')
-        raise Abort("%s not found. Searched in following places: %s" %
-                    (human_name, ''.join(['\n  - ' + p for p in places])))
+        if not optional:
+            raise Abort("%s not found. Searched in following places: %s" %
+                        (human_name, ''.join(['\n  - ' + p for p in places])))
+        else:
+            self[key] = None
+            return results
 
-    def find_dir(self, key, items, places, human_name=None, multi=False):
-        return self._find(key, items or ['.'], places, human_name, join=False, multi=multi)
+    def find_dir(self, key, items, places, human_name=None, multi=False, optional=False):
+        return self._find(key, items or ['.'], places, human_name, join=False, multi=multi, optional=optional)
 
     def find_file(self, key, items=None, places=None, human_name=None, multi=False):
-        return self._find(key, items or [key], places, human_name, join=True, multi=multi)
+        return self._find(key, items or [key], places, human_name, join=True, multi=multi, optional=False)
 
     def find_tool(self, key, items, places=None, human_name=None, multi=False):
         return self.find_file(key, items, places or ['$PATH'], human_name, multi=multi)
 
-    def find_arduino_dir(self, key, dirname_parts, items=None, human_name=None, multi=False):
-        return self.find_dir(key, items, self.arduino_dist_places(dirname_parts), human_name, multi=multi)
+    def find_arduino_dir(self, key, dirname_parts, items=None, human_name=None, multi=False, optional=False):
+        return self.find_dir(key, items, self.arduino_dist_places(dirname_parts), human_name, multi=multi, optional=optional)
 
-    def find_arduino_user_dir(self, key, dirname_parts, items=None, human_name=None, multi=False):
-        return self.find_dir(key, items, self.arduino_user_places(dirname_parts), human_name, multi=multi)
+    def find_arduino_user_dir(self, key, dirname_parts, items=None, human_name=None, multi=False, optional=False):
+        return self.find_dir(key, items, self.arduino_user_places(dirname_parts), human_name, multi=multi, optional=optional)
 
     def find_arduino_file(self, key, dirname_parts, items=None, human_name=None, multi=False):
         return self.find_file(key, items, self.arduino_dist_places(dirname_parts), human_name, multi=multi)
