@@ -134,13 +134,13 @@ class Build(Command):
                             human_name='Arduino variants directory')
 
         self.e.find_arduino_dir('arduino_core_libraries_dir', [os.path.join(board['_coredir'], 'libraries')],
-                                human_name='Arduino core libraries')
+                                human_name='Arduino core libraries', optional=True)
 
         self.e.find_arduino_dir('arduino_libraries_dir', ['libraries'],
-                                human_name='Arduino standard libraries')
+                                human_name='Arduino standard libraries', optional=True)
 
         self.e.find_arduino_user_dir('arduino_user_libraries_dir', ['libraries'],
-                                human_name='Arduino user libraries')
+                                human_name='Arduino user libraries', optional=True)
 
         toolset = [
             ('make', args.make),
