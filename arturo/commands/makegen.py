@@ -41,7 +41,11 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
     # | BoardMacroResolver
     # +-----------------------------------------------------------------------+
     def __call__(self, namespace, macro):
-        if macro.startswith("runtime.tools."):
+        if macro == "build.project_name":
+            return "$(PROJECT_NAME)"
+        elif macro == "build.path":
+            return "$(DIR_BUILD)/$(BOARD)"
+        elif macro.startswith("runtime.tools."):
             return self._resolveToolsMacro(macro[14:])
         elif namespace.startswith("recipe.") and namespace.endswith(".pattern"):
             return self._resolveRecipeMacros(namespace[7:-8], macro)
@@ -126,6 +130,16 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
                 return "$@"
             elif macro == "source_file":
                 return "$<"
+        elif recipe == "ar":
+            if macro == "object_file":
+                return "$?"
+            elif macro == "archive_file":
+                return "$(notdir $@)"
+        elif recipe == "c.combine":
+            if macro == "object_files":
+                return "$(OBJ_FILES)"
+            elif macro == "archive_file":
+                return "$(notdir $<)"
 
         raise KeyError()
             

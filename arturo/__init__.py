@@ -15,6 +15,9 @@ from arturo import parsers
 __app_name__ = 'ano'
 __lib_name__ = 'arturo'
 __version__ = '2.0.0'
+# some libraries have coded against -DARDUINO as an integer. We use this both to supply an integer
+# and to use newer branches where the "1.0.x" line was handled by this macro (e.g. #if ARDUINO > 100).
+__version_num__ = 200
 
 
 # +---------------------------------------------------------------------------+

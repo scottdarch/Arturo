@@ -245,6 +245,7 @@ class List_platform_data(ProjectCommand):
                 if self._board is None else boards[self._board]
             
             buildInfo = board.processBuildInfo()
+            console.printInfo(board.getPath())
             for key, value in buildInfo.iteritems():
                 if self._filter is None or self._filter.search(key):
                     console.printInfo(_("{0:<40} - {1}".format(key, value)))

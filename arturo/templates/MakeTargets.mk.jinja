@@ -38,7 +38,7 @@ OBJ_FILES						:= $(addprefix $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/, $(CPP_SOURCE:.c
 INO_PROCESSOR                   := {{command.preprocess_sketch}}
 
 # +----------------------------------------------------------------------------+
-# | COMMON TARGETS
+# | PHONY TARGETS
 # +----------------------------------------------------------------------------+
 .PHONY: list
 list:
@@ -48,8 +48,16 @@ list:
 clean:
 	rm -rf $(DIR_BUILD)/$(BOARD)
 
-build : $(OBJ_FILES)
+build : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf
 	#done (for now)
+
+# +----------------------------------------------------------------------------+
+# | BUILD TARGETS
+# +----------------------------------------------------------------------------+
+
+$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
+	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)
 
 $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/%.o : %.cpp
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -59,6 +67,9 @@ $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)/%.o : %.cpp
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
 
-$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
-	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)
+$(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a : $(OBJ_FILES)
+	{{platform['recipe.ar.pattern']}}
+
+$(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a
+	{{platform['recipe.c.combine.pattern']}}
+

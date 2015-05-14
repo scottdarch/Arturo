@@ -47,6 +47,10 @@ PYTHON_SOURCE               := $(wildcard $(PYTHON_SOURCE_FOLDER)/*.py) \
                                $(wildcard $(PYTHON_SOURCE_FOLDER)/**/*.py) \
                                $(wildcard $(PYTHON_SOURCE_FOLDER)/**/**/*.py) \
 
+JINJA_SOURCE                := $(wildcard $(PYTHON_SOURCE_FOLDER)/*.jinja) \
+                               $(wildcard $(PYTHON_SOURCE_FOLDER)/**/*.jinja) \
+                               $(wildcard $(PYTHON_SOURCE_FOLDER)/**/**/*.jinja) \
+
 APP_SCRIPT                  := $(BUILDDIR)/scripts-$(PYTHON_VERSION)/$(APP_NAME)
 MOFILES                     := $(addprefix $(TRANSLATIONS_DIR)/, $(addsuffix .mo, $(LOCALES)))
 SETUP_SCRIPT                := setup.py
@@ -97,7 +101,7 @@ $(TRANSLATIONS_DIR)/%.mo : $(TRANSLATIONS_INTERMEDIATES)/%.po
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	$(MSGFMT) $^ --output-file=$@
 
-$(APP_SCRIPT) : $(SETUP_SCRIPT) $(PYTHON_SOURCE)
+$(APP_SCRIPT) : $(SETUP_SCRIPT) $(PYTHON_SOURCE) $(JINJA_SOURCE)
 	env $(PYTHON) $< build
 	@# python setuptools doesn't update the modified when copying the python source so we have to touch it
 	@# to keep from rebuilding it every time.
