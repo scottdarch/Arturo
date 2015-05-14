@@ -1,6 +1,0 @@
-jinja2
-pyserial
-configobj
-ordereddict
-argparse
-glob2
