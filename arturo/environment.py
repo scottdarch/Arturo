@@ -275,9 +275,12 @@ class Environment(object):
             for libraryName, libraryVersions in self._getLibraryMetadata().iteritems():
                 self._libraryIndex[libraryName] = Library(libraryName, self, self._console, libraryVersions)
 
+            for searchPath in self.getSearchPath().getPaths():
+                self._libraryIndex.update(self.getLibrariesFor(searchPath, continueOnError=True))
+
         return self._libraryIndex
     
-    def getLibrariesFor(self, path, forcedLibrariesPaths=None):
+    def getLibrariesFor(self, path, forcedLibrariesPaths=None, continueOnError=False):
         #TODO: de-dupe environment libraries
         libraries = dict()
         for foldername in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
@@ -289,16 +292,20 @@ class Environment(object):
                         try:
                             library = Library.fromDir(self, libraryDir, self._console)
                         except ValueError as e:
-                            if forcedLibrariesPaths is None:
-                                raise e
+                            if forcedLibrariesPaths:
+                                prefixList = list(forcedLibrariesPaths)
+                                prefixList.append(libraryDir)
+                                if os.path.commonprefix(prefixList) in forcedLibrariesPaths:
+                                    # Any folder under a "forced path" is considered a library.
+                                    library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir)
+                                    continue
 
-                            prefixList = list(forcedLibrariesPaths)
-                            prefixList.append(libraryDir)
-                            if os.path.commonprefix(prefixList) in forcedLibrariesPaths:
-                                # Any folder under a "forced path" is considered a library.
-                                library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir)
+                            if continueOnError:
+                                self.getConsole().printDebug(_("{} was not a well-formed library.".format(libraryDir)))
+                                continue
                             else:
                                 raise e
+
                         libraries[library.getName()] = library
         return libraries
 

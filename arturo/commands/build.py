@@ -183,6 +183,9 @@ class Cmd_source_headers(ConfiguredCommand):
         variant = configuration.getBoard().getVariant()
         headers += variant.getHeaders()
         
+        for library in self.getEnvironment().getLibraries().itervalues():
+            headers += library.getHeaders()
+
         for library in configuration.getPlatform().getLibraries().itervalues():
             headers += library.getHeaders()
 

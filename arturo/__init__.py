@@ -190,7 +190,12 @@ class SearchPath(object):
     ARDUINO15_PACKAGES_PATH = "packages"
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
-    ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15")]
+    ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15"),
+                      os.path.expanduser("~/Documents/Arduino"),
+                      os.path.expanduser("~/Arduino"),
+                      os.path.expanduser(os.path.join("~", "My Documents", "Arduino"))
+                    ]
+
     ARDUINO15_LIBRARY_FOLDER_NAMES = ("lib", "libraries")
 
     ARTURO2_BUILDDIR_NAME = ".build_ano2"
@@ -215,6 +220,9 @@ class SearchPath(object):
     
     def __str__(self):
         return str(self._envpath)
+
+    def getPaths(self):
+        return self._envpath
 
     def findFirstFileOfNameOrThrow(self, fileNames, genericName):
         for name in fileNames:
