@@ -12,7 +12,7 @@ import textwrap
 
 import arturo
 from arturo.commands.base import Command
-from arturo.commands.build import Preprocess, Cmd_source_headers, Cmd_source_files
+from arturo.commands.build import Preprocess, Cmd_source_headers, Cmd_source_files, Cmd_d_to_Ad, Cmd_mkdirs
 from arturo.commands.makegen import Make_gen
 from arturo.commands.prebuild import Init, Version
 from arturo.commands.query import List_boards, List_tools, List_platform_data, List_libraries

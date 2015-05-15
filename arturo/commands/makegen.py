@@ -76,20 +76,24 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         listHeadersCommand = __app_name__ + " cmd-source-headers"
         listSourceCommand = __app_name__ + " cmd-source-files"
         sketchPreprocessCommand = __app_name__ + " preprocess"
+        commandDtoAd = __app_name__ + " cmd-d-to-ad --dpath"
+        mkdirsCommand = __app_name__ + " cmd-mkdirs --path"
 
         # makefile rendering params
         self._requiredLocalPaths = dict()
         boardBuildInfo = board.processBuildInfo(self)
         
         initRenderParams = {
-                            "local" : { "dir" : localpath,
-                                        "rootdir" : rootdir,
-                                        "makefile" : JinjaTemplates.MAKEFILE,
-                                        "toolchainmakefile" : JinjaTemplates.MAKEFILE_LOCALPATHS
+                            "local" : { "dir"                 : localpath,
+                                        "rootdir"             : rootdir,
+                                        "makefile"            : JinjaTemplates.MAKEFILE,
+                                        "toolchainmakefile"   : JinjaTemplates.MAKEFILE_LOCALPATHS,
                                     },
-                            "command" : { "source_headers" : listHeadersCommand,
-                                          "source_files"   : listSourceCommand,
-                                          "preprocess_sketch" : sketchPreprocessCommand
+                            "command" : { "source_headers"    : listHeadersCommand,
+                                          "source_files"      : listSourceCommand,
+                                          "preprocess_sketch" : sketchPreprocessCommand,
+                                          "d_to_ad"           : commandDtoAd,
+                                          "mkdirs"            : mkdirsCommand,
                                     },
                             'platform' : boardBuildInfo,
                             }

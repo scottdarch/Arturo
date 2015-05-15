@@ -39,13 +39,10 @@ class ArgumentVisitor(object):
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def onVisitArgParser(self, parser):
+    def onVisitArgParser(self, subparsers):
         None
     
     def onVisitArgs(self, args):
-        None
-
-    def onVisitSubParserArgs(self, outSubparserArgs):
         None
 
 # +---------------------------------------------------------------------------+

@@ -171,7 +171,7 @@ class Cmd_source_headers(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         None
-    
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -226,3 +226,80 @@ class Cmd_source_files(ConfiguredCommand):
         relativeSource = [os.path.relpath(sources[x], projectPath) for x in range(len(sources))]
         self.getConsole().stdout(*relativeSource)
 
+# +---------------------------------------------------------------------------+
+# | Cmd_mkdirs
+# +---------------------------------------------------------------------------+
+class Cmd_mkdirs(ConfiguredCommand):
+    '''
+    portable version of mkdir -p
+    '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('portable version of mkdir -p'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("--path")
+
+    def onVisitArgs(self, args):
+        self._path = getattr(args, "path")
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        mkdirs(self._path)
+        
+# +---------------------------------------------------------------------------+
+# | Cmd_d_to_Ad
+# +---------------------------------------------------------------------------+
+class Cmd_d_to_Ad(ConfiguredCommand):
+    '''
+    see http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/ for details on this command.
+    '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('convert a gnu .d file into Arturo dependencies.'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("--dpath")
+
+    def onVisitArgs(self, args):
+        self._dpath = getattr(args, "dpath")
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        #TODO: parse header dependencies in .d.
+        #TODO: find libraries for headers
+        #TODO: generate library rules "BlueFun.o : $(LIB_PATH)/$(LIB_NAME).a"
+        dpath = self._dpath
+        if not os.path.isfile(dpath):
+            self.getConsole().printDebug("{} was not found.".format(dpath))
+            return
+        adpath = re.sub("\.d$", ".Ad", dpath)
+        removecommentsPattern = re.compile("^\s*#.*")
+        removeTargetInfo = re.compile("^[^:]*:\s*")
+        removeLineContinuations = re.compile("\s*\\\\?\n$")
+        isempty = re.compile("^$")
+        with open(adpath, "w") as adfile:
+            with open(dpath, "r") as dfile:
+                for line in dfile:
+                    adfile.write(line)
+            with open(dpath, "r") as dfile:
+                for line in dfile:
+                    line = removecommentsPattern.sub("", line)
+                    line = removeTargetInfo.sub("", line)
+                    line = removeLineContinuations.sub("", line)
+                    if not isempty.match(line):
+                        adfile.write(line + ":\n")
