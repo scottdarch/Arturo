@@ -38,6 +38,19 @@ class Library(object):
     PROPERTIES_FILE = "library.properties"
     # Pattern to match a string which is either a major.minor version or a major.minor.patch version.
     VERSION_NUMBER_PATTERN = re.compile('^(\d+\.){1,2}\d$')
+    
+    IMPLIED_LIBRARY_VERSION = "1.0"
+
+    @classmethod
+    def libNameAndVersion(cls, libraryName):
+        lastDash = libraryName.rfind('-')
+        if lastDash == -1:
+            return (libraryName, cls.IMPLIED_LIBRARY_VERSION)
+        else:
+            if Library.VERSION_NUMBER_PATTERN.match(libraryName[lastDash+1:]):
+                return (libraryName[:lastDash], libraryName[lastDash+1:])
+            else:
+                return (libraryName, cls.IMPLIED_LIBRARY_VERSION)
 
     @classmethod
     def fromDir(cls, environment, fqLibraryDir, console):
@@ -66,17 +79,9 @@ class Library(object):
         self._headers = None
         self._environment = environment
         self._console = console
-        synthenticVersion = "1.0"
-        lastDash = libraryName.rfind('-')
-        if lastDash == -1:
-            self._name = libraryName
-        else:
-            if Library.VERSION_NUMBER_PATTERN.match(libraryName[lastDash+1:]):
-                synthenticVersion = libraryName[lastDash+1:]
-                self._name = libraryName[:lastDash]
-            else:
-                self._name = libraryName
-                
+        nameAndVersion = Library.libNameAndVersion(libraryName)
+        self._name = nameAndVersion[0]
+        synthenticVersion = nameAndVersion[1]
             
         if libraryVersions is None:
             self._libraryVersions = KeySortedDict()

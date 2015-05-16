@@ -10,6 +10,8 @@ import re
 
 from arturo import i18n
 from arturo.commands.base import ConfiguredCommand, mkdirs
+from arturo.libraries import Library
+from pip._vendor.pkg_resources import require
 
 
 _ = i18n.language.ugettext
@@ -183,15 +185,9 @@ class Cmd_source_headers(ConfiguredCommand):
         variant = configuration.getBoard().getVariant()
         headers += variant.getHeaders()
         
-        for library in self.getEnvironment().getLibraries().itervalues():
+        for library in configuration.getLibraries().itervalues():
             headers += library.getHeaders()
 
-        for library in configuration.getPlatform().getLibraries().itervalues():
-            headers += library.getHeaders()
-
-        for library in configuration.getProject().getLibraries().itervalues():
-            headers += library.getHeaders()
-        
         projectPath = self.getProject().getPath()
         
         headerFolders = set()
@@ -257,10 +253,14 @@ class Cmd_mkdirs(ConfiguredCommand):
 # +---------------------------------------------------------------------------+
 # | Cmd_d_to_Ad
 # +---------------------------------------------------------------------------+
-class Cmd_d_to_Ad(ConfiguredCommand):
+class Cmd_d_to_ad(ConfiguredCommand):
     '''
     see http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/ for details on this command.
     '''
+    
+    ADFILE_EXTENSION = ".ad"
+    LIBDEP_EXTENSION = "alib"
+    
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
@@ -272,34 +272,67 @@ class Cmd_d_to_Ad(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         parser.add_argument("--dpath")
+        parser.add_argument("--adpath", default=None)
 
     def onVisitArgs(self, args):
         self._dpath = getattr(args, "dpath")
+        self._adpath = getattr(args, "adpath")
 
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        #TODO: parse header dependencies in .d.
-        #TODO: find libraries for headers
-        #TODO: generate library rules "BlueFun.o : $(LIB_PATH)/$(LIB_NAME).a"
         dpath = self._dpath
         if not os.path.isfile(dpath):
             self.getConsole().printDebug("{} was not found.".format(dpath))
             return
-        adpath = re.sub("\.d$", ".Ad", dpath)
+        adpath = re.sub("\.d$", Cmd_d_to_ad.ADFILE_EXTENSION, dpath) if self._adpath is None else self._adpath
         removecommentsPattern = re.compile("^\s*#.*")
-        removeTargetInfo = re.compile("^[^:]*:\s*")
         removeLineContinuations = re.compile("\s*\\\\?\n$")
+        endswithDotEh = re.compile("\.h$")
         isempty = re.compile("^$")
+        buildTarget = None
         with open(adpath, "w") as adfile:
             with open(dpath, "r") as dfile:
                 for line in dfile:
                     adfile.write(line)
+
             with open(dpath, "r") as dfile:
+                possibleLibraryDependencies = dict()
                 for line in dfile:
-                    line = removecommentsPattern.sub("", line)
-                    line = removeTargetInfo.sub("", line)
-                    line = removeLineContinuations.sub("", line)
-                    if not isempty.match(line):
-                        adfile.write(line + ":\n")
+                    # Find the first recipe line in the .d file and 
+                    # save the build target for later dependency generation.
+                    # reset the line to the target's dependencies and continue.
+                    if buildTarget is None:
+                        recipe = line.split(":")
+                        if len(recipe) == 2:
+                            buildTarget = recipe[0]
+                            line = recipe[1]
+
+                    items = line.split(' ')
+                    for item in items:
+                        item = removecommentsPattern.sub("", item)
+                        item = removeLineContinuations.sub("", item)
+                        if not isempty.match(item):
+                            if endswithDotEh.search(item):
+                                nameAndVersion = Library.libNameAndVersion(os.path.basename(os.path.dirname(os.path.realpath(item))))
+                                if nameAndVersion in possibleLibraryDependencies:
+                                    versions = possibleLibraryDependencies[nameAndVersion[0]]
+                                else:
+                                    versions = set()
+                                    possibleLibraryDependencies[nameAndVersion[0]] = versions
+                                versions.add(nameAndVersion[1])
+                            adfile.write(item + ":\n")
+            libraries = self.getConfiguration().getLibraries()
+            for libname, library in libraries.iteritems():
+                if libname in possibleLibraryDependencies:
+                    versions = possibleLibraryDependencies[libname]
+                    if len(versions) > 1:
+                        raise RuntimeError(_("{} required {} different versions of the {} library.".format(buildTarget, len(versions), libname)))
+                    self._emitLibraryDependency(buildTarget, library, versions.pop(), adfile)
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _emitLibraryDependency(self, buildTarget, library, version, dfile):
+        dfile.write("{} : {}-{}.{}\n".format(buildTarget, library.getName(), version, Cmd_d_to_ad.LIBDEP_EXTENSION))

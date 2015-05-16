@@ -43,6 +43,7 @@ class Configuration(object):
         self._builddir = None
         self._headers = None
         self._sources = None
+        self._libraries = None
         
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
@@ -54,6 +55,9 @@ class Configuration(object):
                 'preferences' : self._prefs,
             }
         return self._jinjaEnv
+
+    def getEnvironment(self):
+        return self._project.getEnvironment()
 
     def getProject(self):
         return self._project
@@ -95,6 +99,14 @@ class Configuration(object):
             self._sources = self.getProject().getEnvironment().getSearchPath().scanDirs(
                  self._sourcePath, ConfigurationSourceAggregator(self, self._console)).getResults()
         return self._sources
+
+    def getLibraries(self):
+        if self._libraries is None:
+            self._libraries = dict()
+            self._libraries.update(self.getEnvironment().getLibraries())
+            self._libraries.update(self.getPlatform().getLibraries())
+            self._libraries.update(self.getProject().getLibraries())
+        return self._libraries
 
 # +---------------------------------------------------------------------------+
 # | Project

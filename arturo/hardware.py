@@ -11,7 +11,7 @@ import os
 from string import upper
 
 from arturo import NamedOrderedDict, SearchPathAgent, SearchPath, __version_num__
-from arturo import __lib_name__, __version__
+from arturo import __lib_name__
 from arturo.parsers import ArduinoKeyValueParser
 
 
