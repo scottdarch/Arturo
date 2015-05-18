@@ -41,6 +41,7 @@ class Build(Command):
     default_cxx = 'avr-g++'
     default_ar = 'avr-ar'
     default_objcopy = 'avr-objcopy'
+    default_memsize= 'avr-size'
 
     default_cppflags = '-ffunction-sections -fdata-sections -g -Os -w'
     default_cflags = ''
@@ -70,6 +71,11 @@ class Build(Command):
                             help='Specifies the compiler used for C++ files. '
                             'If a full path is not given, searches in Arduino '
                             'directories before PATH. Default: "%(default)s".')
+
+        parser.add_argument('--memsize', metavar='MEMSIZE',
+                            default=self.default_memsize,
+                            help='Specifies the tool used to determine memory '
+                            ' size. Default: "%(default)s".')
 
         parser.add_argument('--ar', metavar='AR',
                             default=self.default_ar,
@@ -148,6 +154,7 @@ class Build(Command):
             ('cxx', args.cxx),
             ('ar', args.ar),
             ('objcopy', args.objcopy),
+            ('memsize', args.memsize )
         ]
 
         for tool_key, tool_binary in toolset:
@@ -259,6 +266,23 @@ class Build(Command):
 
         return used_libs
 
+    def check_memory(self, args):
+        board = self.e.board_model(args.board_model)
+        boardVariant = args.cpu if ('cpu' in args) else None;
+        maximum_size = int(BoardModels.getValueForVariant(board, boardVariant,
+            'upload', 'maximum_size'))
+        maximum_data = int(BoardModels.getValueForVariant(board, boardVariant,
+            'upload', 'maximum_data_size'))
+        firmware = os.path.join(self.e.build_dir, "firmware.elf")
+        output = subprocess.Popen( [self.e.memsize, "--format=sysv", firmware],
+            stdout=subprocess.PIPE).communicate()[0]
+        actual_size = int(re.search('\.text\s+(\d+)', output).group(1))
+        actual_data = int(re.search('\.data\s+(\d+)', output).group(1))
+        print "Size: %d / %d (%d%%)" % ( actual_size , maximum_size ,
+                (actual_size * 100 / maximum_size) )
+        print "Data: %d / %d (%d%%)" % ( actual_data , maximum_data ,
+                (actual_data * 100 / maximum_data) )
+
     def scan_dependencies(self):
         self.e['deps'] = SpaceList()
 
@@ -306,3 +330,4 @@ class Build(Command):
         self.make('Makefile.sketch')
         self.scan_dependencies()
         self.make('Makefile')
+        self.check_memory(args)
