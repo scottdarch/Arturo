@@ -269,19 +269,56 @@ class Build(Command):
     def check_memory(self, args):
         board = self.e.board_model(args.board_model)
         boardVariant = args.cpu if ('cpu' in args) else None;
-        maximum_size = int(BoardModels.getValueForVariant(board, boardVariant,
-            'upload', 'maximum_size'))
-        maximum_data = int(BoardModels.getValueForVariant(board, boardVariant,
-            'upload', 'maximum_data_size'))
+        flash_max = sram_max = 0
+
+        try:
+            flash_max = int(BoardModels.getValueForVariant(board, boardVariant,
+                'upload', 'maximum_size'))
+        except KeyError:
+            pass
+
+        try:
+            sram_max = int(BoardModels.getValueForVariant(board, boardVariant,
+                'upload', 'maximum_data_size'))
+        except KeyError:
+            pass
+
         firmware = os.path.join(self.e.build_dir, "firmware.elf")
         output = subprocess.Popen( [self.e.memsize, "--format=sysv", firmware],
             stdout=subprocess.PIPE).communicate()[0]
-        actual_size = int(re.search('\.text\s+(\d+)', output).group(1))
-        actual_data = int(re.search('\.data\s+(\d+)', output).group(1))
-        print "Size: %d / %d (%d%%)" % ( actual_size , maximum_size ,
-                (actual_size * 100 / maximum_size) )
-        print "Data: %d / %d (%d%%)" % ( actual_data , maximum_data ,
-                (actual_data * 100 / maximum_data) )
+        text_size = int(re.search('\.text\s+(\d+)', output).group(1))
+        data_size = int(re.search('\.data\s+(\d+)', output).group(1))
+        bss_size = int(re.search('\.bss\s+(\d+)', output).group(1))
+
+        flash_size = text_size + data_size
+        sram_size = data_size + bss_size
+        flash_pct = flash_size * 100 / flash_max if flash_max > 0 else 0
+        sram_pct = sram_size * 100 / sram_max if sram_max > 0 else 0
+
+        if flash_max > 0:
+            print "Sketch uses {:,d} bytes ({:d}%) of " \
+                    "program storage space.\nMaxiumum is {:,d} bytes.".format(
+                            flash_size, flash_pct, flash_max )
+        else:
+            print "Sketch uses {:,d} bytes of program storage space.\n" \
+                    "Maxiumum is unknown.".format( flash_size )
+
+        if sram_max > 0:
+            print "Global variables use {:,d} bytes ({:d}%) of dynamic " \
+                    "memory,\nleaving {:,d} bytes for local varialbes. " \
+                    "Maxiumum is {:,d} bytes.".format( sram_size, sram_pct,
+                            sram_max - sram_size, sram_max )
+        else:
+            print "Global variables use {:,d} bytes of dynamic memory.\n" \
+                    "Maxiumum is unknown.".format( sram_size )
+
+        if flash_pct > 99:
+            print "\033[91mSketch too big; see " \
+            "http://www.arduino.cc/en/Guide/Troubleshooting#size\nfor tips " \
+            "on reducing it.\033[0m"
+        if sram_pct >= 75:
+            print "\033[91mLow memory available, stability problems may " \
+                "occur.\033[0m"
 
     def scan_dependencies(self):
         self.e['deps'] = SpaceList()
