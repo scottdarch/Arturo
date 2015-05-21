@@ -41,6 +41,7 @@ class Build(Command):
     default_cxx = 'avr-g++'
     default_ar = 'avr-ar'
     default_objcopy = 'avr-objcopy'
+    default_memsize= 'avr-size'
 
     default_cppflags = '-ffunction-sections -fdata-sections -g -Os -w'
     default_cflags = ''
@@ -70,6 +71,11 @@ class Build(Command):
                             help='Specifies the compiler used for C++ files. '
                             'If a full path is not given, searches in Arduino '
                             'directories before PATH. Default: "%(default)s".')
+
+        parser.add_argument('--memsize', metavar='MEMSIZE',
+                            default=self.default_memsize,
+                            help='Specifies the tool used to determine memory '
+                            ' size. Default: "%(default)s".')
 
         parser.add_argument('--ar', metavar='AR',
                             default=self.default_ar,
@@ -148,6 +154,7 @@ class Build(Command):
             ('cxx', args.cxx),
             ('ar', args.ar),
             ('objcopy', args.objcopy),
+            ('memsize', args.memsize )
         ]
 
         for tool_key, tool_binary in toolset:
@@ -259,6 +266,60 @@ class Build(Command):
 
         return used_libs
 
+    def check_memory(self, args):
+        board = self.e.board_model(args.board_model)
+        boardVariant = args.cpu if ('cpu' in args) else None;
+        flash_max = sram_max = 0
+
+        try:
+            flash_max = int(BoardModels.getValueForVariant(board, boardVariant,
+                'upload', 'maximum_size'))
+        except KeyError:
+            pass
+
+        try:
+            sram_max = int(BoardModels.getValueForVariant(board, boardVariant,
+                'upload', 'maximum_data_size'))
+        except KeyError:
+            pass
+
+        firmware = os.path.join(self.e.build_dir, "firmware.elf")
+        output = subprocess.Popen( [self.e.memsize, "--format=sysv", firmware],
+            stdout=subprocess.PIPE).communicate()[0]
+        text_size = int(re.search('\.text\s+(\d+)', output).group(1))
+        data_size = int(re.search('\.data\s+(\d+)', output).group(1))
+        bss_size = int(re.search('\.bss\s+(\d+)', output).group(1))
+
+        flash_size = text_size + data_size
+        sram_size = data_size + bss_size
+        flash_pct = flash_size * 100 / flash_max if flash_max > 0 else 0
+        sram_pct = sram_size * 100 / sram_max if sram_max > 0 else 0
+
+        if flash_max > 0:
+            print "Sketch uses {:,d} bytes ({:d}%) of " \
+                    "program storage space.\nMaxiumum is {:,d} bytes.".format(
+                            flash_size, flash_pct, flash_max )
+        else:
+            print "Sketch uses {:,d} bytes of program storage space.\n" \
+                    "Maxiumum is unknown.".format( flash_size )
+
+        if sram_max > 0:
+            print "Global variables use {:,d} bytes ({:d}%) of dynamic " \
+                    "memory,\nleaving {:,d} bytes for local varialbes. " \
+                    "Maxiumum is {:,d} bytes.".format( sram_size, sram_pct,
+                            sram_max - sram_size, sram_max )
+        else:
+            print "Global variables use {:,d} bytes of dynamic memory.\n" \
+                    "Maxiumum is unknown.".format( sram_size )
+
+        if flash_pct > 99:
+            print "\033[91mSketch too big; see " \
+            "http://www.arduino.cc/en/Guide/Troubleshooting#size\nfor tips " \
+            "on reducing it.\033[0m"
+        if sram_pct >= 75:
+            print "\033[91mLow memory available, stability problems may " \
+                "occur.\033[0m"
+
     def scan_dependencies(self):
         self.e['deps'] = SpaceList()
 
@@ -306,3 +367,4 @@ class Build(Command):
         self.make('Makefile.sketch')
         self.scan_dependencies()
         self.make('Makefile')
+        self.check_memory(args)
