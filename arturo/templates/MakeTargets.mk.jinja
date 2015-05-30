@@ -41,6 +41,11 @@ INO_PROCESSOR                   := {{command.preprocess_sketch}}
 # +----------------------------------------------------------------------------+
 # | PHONY TARGETS
 # +----------------------------------------------------------------------------+
+
+.PHONY: build
+build : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf
+	#done (for now)
+
 .PHONY: list
 list:
 	@echo $(CPP_HEADERS_W_I) $(INO_SOURCE)
@@ -48,10 +53,6 @@ list:
 .PHONY: clean
 clean:
 	rm -rf $(DIR_BUILD)/$(BOARD)
-
-.PHONY: build
-build : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf
-	#done (for now)
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
@@ -64,7 +65,7 @@ $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
 $(OBJ_PATH)/%.o : %.cpp
 	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
-	{{command.d_to_ad}} $(OBJ_PATH)/$*.d
+	{{command.d_to_p}} $(basename $@).d
 
 $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a : $(OBJ_FILES)
 	{{platform['recipe.ar.pattern']}}
@@ -72,7 +73,8 @@ $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a : $(OBJ_FILES)
 $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a
 	{{platform['recipe.c.combine.pattern']}}
 
--include $(CPP_SOURCE:%.cpp=$(OBJ_PATH)/%.Ad)
+# TODO: make always builds b/c of this.
+-include $(OBJ_FILES:%.o=%.{{command.pfile_ext}})
 
 
 

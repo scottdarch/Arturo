@@ -11,6 +11,7 @@
 import os
 
 from arturo import __app_name__, i18n
+from arturo.commands import build
 from arturo.commands.base import ConfiguredCommand, mkdirs
 from arturo.hardware import BoardMacroResolver
 from arturo.templates import JinjaTemplates
@@ -75,8 +76,9 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         # arturo commands
         listHeadersCommand = __app_name__ + " cmd-source-headers"
         listSourceCommand = __app_name__ + " cmd-source-files"
+        listLibraryDepsCommand = __app_name__ + " cmd-source-libraries --ppath"
         sketchPreprocessCommand = __app_name__ + " preprocess"
-        commandDtoAd = __app_name__ + " cmd-d-to-ad --dpath"
+        commandDtoP = __app_name__ + " cmd-d-to-p --dpath"
         mkdirsCommand = __app_name__ + " cmd-mkdirs --path"
 
         # makefile rendering params
@@ -91,8 +93,11 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
                                     },
                             "command" : { "source_headers"    : listHeadersCommand,
                                           "source_files"      : listSourceCommand,
+                                          "source_lib_deps"   : listLibraryDepsCommand,
                                           "preprocess_sketch" : sketchPreprocessCommand,
-                                          "d_to_ad"           : commandDtoAd,
+                                          "d_to_p"            : commandDtoP,
+                                          "pfile_ext"         : build.Cmd_d_to_p.PFILE_EXTENSION,
+                                          "lib_dep_ext"       : build.Cmd_source_libraries.LIBDEP_EXTENSION,
                                           "mkdirs"            : mkdirsCommand,
                                     },
                             'platform' : boardBuildInfo,
@@ -136,12 +141,12 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
                 return "$<"
         elif recipe == "ar":
             if macro == "object_file":
-                return "$?"
+                return "$(strip $(OBJ_FILES))"
             elif macro == "archive_file":
                 return "$(notdir $@)"
         elif recipe == "c.combine":
             if macro == "object_files":
-                return "$(OBJ_FILES)"
+                return "$(strip $(OBJ_FILES))"
             elif macro == "archive_file":
                 return "$(notdir $<)"
 

@@ -53,6 +53,13 @@ class Library(object):
                 return (libraryName, cls.IMPLIED_LIBRARY_VERSION)
 
     @classmethod
+    def libNameFromNameAndVersion(cls, name, version):
+        if version is None or not Library.VERSION_NUMBER_PATTERN.match(version):
+            return name
+        else:
+            return "{}-{}".format(name, version)
+
+    @classmethod
     def fromDir(cls, environment, fqLibraryDir, console):
         
         libraryName = os.path.basename(fqLibraryDir)
