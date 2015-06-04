@@ -87,6 +87,7 @@ class Environment(dict):
 
     if platformSystem == 'Darwin':
         arduino_dist_dir_guesses.insert(0, '/Applications/Arduino.app/Contents/Resources/Java')
+        arduino_dist_dir_guesses.insert(0, '/Applications/Arduino.app/Contents/Java')
     elif platformSystem == 'Windows':
         arduino_user_dir_guesses.insert(0, os.path.expanduser(os.path.join("~", "My Documents", "Arduino")))
 
