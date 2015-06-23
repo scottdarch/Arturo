@@ -356,7 +356,7 @@ Additional CPU argument required for board models available with different CPUs 
 
         arduino_dist = getattr(args, 'arduino_dist', None)
         if arduino_dist:
-            self['arduino_dist_dir'] = arduino_dist
+            self['arduino_dist_dir'] = os.path.realpath(arduino_dist)
 
         board_model = getattr(args, 'board_model', None)
         if board_model:
