@@ -305,7 +305,7 @@ class Build(Command):
 
         if sram_max > 0:
             print "Global variables use {:,d} bytes ({:d}%) of dynamic " \
-                    "memory,\nleaving {:,d} bytes for local varialbes. " \
+                    "memory,\nleaving {:,d} bytes for local variables. " \
                     "Maxiumum is {:,d} bytes.".format( sram_size, sram_pct,
                             sram_max - sram_size, sram_max )
         else:
