@@ -106,7 +106,10 @@ class Library(object):
     def getVersions(self):
         return self._libraryVersions
 
-    def getHeaders(self):
+    def hasVersion(self, version):
+        return self._libraryVersions.has_key(version)
+
+    def getHeaders(self, version):
         if self._headers is None:
             if self._path is None:
                 self._headers = []

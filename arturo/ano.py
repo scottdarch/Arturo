@@ -7,12 +7,12 @@
 # http://32bits.io/Arturo/
 #
 
-import argparse
 import sys
 
+import argparse
 from arturo import i18n, __app_name__, ArgumentVisitor, Runnable
-from arturo.commands import getAllCommands
-from arturo.commands.base import UnknownUserInputException, ProjectCommand, ConfiguredCommand
+from arturo.commands import getDefaultCommand, getAllCommands
+from arturo.commands.base import UnknownUserInputException
 from arturo.display import Console
 from arturo.environment import Environment
 
@@ -30,17 +30,11 @@ class ArturoCommandLine(ArgumentVisitor, Runnable):
         self._command = None
         self._console = console
         self._env = None
-        self._commands = None
         
     def getEnvironment(self):
         if self._env is None:
             self._env = Environment(self._console)
         return self._env
-    
-    def getCommands(self):
-        if self._commands is None:
-            self._commands = getAllCommands()
-        return self._commands
     
     def getCommandLineDescription(self):
         return _("""\
@@ -60,30 +54,20 @@ TODO: more about gnu make and the core functionality provided by arturo.
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
-        commands = self.getCommands()
+        commands = getAllCommands()
         for arg in sys.argv:
             if arg in commands:
                 self._commandName = arg
                 break;
-        try:
-            commandClass = commands[self._commandName]
-        except KeyError:
-            raise UnknownUserInputException()
+        
 
         subparsers = parser.add_subparsers()
         environment = self.getEnvironment()
         
-        if issubclass(commandClass, ProjectCommand):
-            #TODO: allow explicit project to be provided
-            project = environment.getInferredProject()
-
-            if issubclass(commandClass, ConfiguredCommand):
-                #TODO: allow explicit configuration to be provided
-                command = commandClass(environment, project, project.getLastConfiguration(), self._console)
-            else:
-                command = commandClass(environment, project, self._console)
-        else:
-            command = commandClass(environment, self._console)
+        try:
+            command = getDefaultCommand(environment, self._commandName, self._console)
+        except KeyError:
+            raise UnknownUserInputException()
             
         p = command.add_parser(subparsers)
         command.onVisitArgParser(p)

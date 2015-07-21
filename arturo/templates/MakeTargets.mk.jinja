@@ -7,6 +7,9 @@
 
 -include $(DIR_BUILD)/{{local.toolchainmakefile}}
 
+comma							:= ,
+BINTYPE                         := elf
+
 # +----------------------------------------------------------------------------+
 # | PATHS
 # +----------------------------------------------------------------------------+
@@ -32,6 +35,7 @@ C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
 OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
                                    $(addprefix $(OBJ_PATH)/, $(C_SOURCE:.c=.o)) \
                                    $(INO_INTERM_SOURCE:.cpp=.o)
+DEP_FILES                       := $(OBJ_FILES:.o=.{{command.pfile_ext}})
 
 # +----------------------------------------------------------------------------+
 # | TOOLS
@@ -43,7 +47,7 @@ INO_PROCESSOR                   := {{command.preprocess_sketch}}
 # +----------------------------------------------------------------------------+
 
 .PHONY: build
-build : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf
+build : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).$(BINTYPE)
 	#done (for now)
 
 .PHONY: list
@@ -57,24 +61,22 @@ clean:
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
 # +----------------------------------------------------------------------------+
-
 $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
 	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
 	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)
 
+$(OBJ_PATH)/%.{{command.pfile_ext}} : $(OBJ_PATH)/%.o
+	{{command.cmd_d_to_p}} {{argument.dp_file_path}} $(basename $<).d
+
 $(OBJ_PATH)/%.o : %.cpp
 	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
-	{{command.d_to_p}} $(basename $@).d
 
 $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a : $(OBJ_FILES)
 	{{platform['recipe.ar.pattern']}}
-
-$(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).elf : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a
+	
+$(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).$(BINTYPE) : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a $(DEP_FILES)
 	{{platform['recipe.c.combine.pattern']}}
 
-# TODO: make always builds b/c of this.
+# object dependencies
 -include $(OBJ_FILES:%.o=%.{{command.pfile_ext}})
-
-
-

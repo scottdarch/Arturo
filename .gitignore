@@ -9,4 +9,5 @@ doc/.build
 local.mk
 .build_ano
 .intermediates
+.idea
 

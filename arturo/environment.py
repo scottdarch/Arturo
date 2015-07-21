@@ -174,12 +174,12 @@ class Project(object):
             self._builddir = os.path.join(self._path, SearchPath.ARTURO2_BUILDDIR_NAME)
         return self._builddir
 
+    def getMakefilePath(self):
+        return os.path.join(self._path, JinjaTemplates.TEMPLATES['makefile'])
+
     def getPath(self):
         return self._path
 
-    def getMakefilePath(self):
-        return os.path.join(self._path, JinjaTemplates.MAKEFILE)
-        
     def getName(self):
         return self._name
     
@@ -193,7 +193,7 @@ class Project(object):
         
         #TODO: handle missing makefile error
         #TODO: check makefile version against Arturo version.
-        mergedPreferences = MakefilePropertyParser.parse(os.path.join(self._path, JinjaTemplates.MAKEFILE), preferences, self._console);
+        mergedPreferences = MakefilePropertyParser.parse(os.path.join(self._path, JinjaTemplates.TEMPLATES['makefile']), preferences, self._console);
         
         packageName = mergedPreferences['target_package']
         platformName = mergedPreferences['target_platform']
@@ -218,7 +218,7 @@ class Project(object):
 
     def getLibraries(self):
         if self._libraries is None:
-            # treat anything in a "libarary" folder under the project path as a library
+            # treat anything in a "library" folder under the project path as a library
             projectPath = self.getPath()
             forceTreatAsLibraries = list()
             for folderName in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
@@ -274,7 +274,7 @@ class Environment(object):
         if self._preferences is None:
             self._preferences = Preferences(self.getSearchPath(), self.getConsole())
         return self._preferences
-    
+
     def getInferredProject(self):
         if self._inferredProject is None:
             self._inferredProject = Project.infer(self)

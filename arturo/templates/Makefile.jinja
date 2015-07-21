@@ -18,32 +18,36 @@ BOARD                           := {{preferences.board}}
 # | DIRECTORIES AND CONFIGURATIONS
 # +----------------------------------------------------------------------------+
 DIR_BUILD                       := {{project.builddir}}
+DIR_BUILD_LIBS                  := $(DIR_BUILD)/libs
 DIR_SOURCE                      := {{source.dir}}
+DIR_MAKEFILE                    := $(CURDIR)
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDES
 # +----------------------------------------------------------------------------+
-MAKEINCLUDE_MAKETARGETS         := {{templates.make_targets}}
+META_MAKE_LIBS                  := $(DIR_BUILD)/{{templates.metamake_libs}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
 # +----------------------------------------------------------------------------+
-
 .PHONY : all
 all:
-	# Nothing yet
+	# Build all the things.
 
 .PHONY : init
-init:
-	@echo "init is not a valid make target. Did you mean '{{env.app_name}} init'?"
+init: 
+	@echo "This is not a valid target. Did you mean '{{commands.init}}'?"
 
-.PHONY : superclean
-superclean:
+.PHONY : clean
+clean:
 	rm -rf $(DIR_BUILD)
 
+$(META_MAKE_LIBS): {{this.filename}}
+	{{commands.metamakegen_libs}} {{arguments.path}} $@
+	
 # optional local overrides
 -include local.mk
 
-# use '{{env.app_name}} make-gen' to generate this makefile.
--include $(MAKEINCLUDE_MAKETARGETS)
-
+DIR_MAKEFILE := $(CURDIR)/$(DIR_BUILD)
+-include $(META_MAKE_LIBS)
+DIR_MAKEFILE := $(CURDIR)

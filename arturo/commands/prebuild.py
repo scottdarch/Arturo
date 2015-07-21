@@ -8,7 +8,6 @@ import os
 
 from arturo import __app_name__, __version__, __lib_name__, i18n, MissingRequiredFileException
 from arturo.commands.base import Command, ProjectCommand
-from arturo.commands.makegen import Make_gen
 from arturo.templates import JinjaTemplates
 
 
@@ -77,7 +76,7 @@ class Init(ProjectCommand):
         console = self.getConsole()
         
         # first choose a project "main"
-        # TODO: allow commandline arguments to force paroject folders to be treated as source folders.
+        # TODO: allow commandline arguments to force project folders to be treated as source folders.
         sourceRoots = project.getSourceRoots(Init.LEGACY_SOURCEFOLDER_NAMES)
         sourceRoot = None
         if len(sourceRoots) > 1:
@@ -111,31 +110,21 @@ class Init(ProjectCommand):
         if makeFileGen:
             self._generateMakefile(makefilePath, preferences, projectName, sourcePath)
 
-        # finally ask if we want to (re)generate the project makefiles
-        if self._force or console.askYesNoQuestion(_("Do you want to (re)generate the project makefiles?")):
-            # generate the configuration
-            config = project.getConfiguration(preferences['target_package'], 
-                                              preferences['target_platform'], 
-                                              preferences['board'],
-                                              projectName,
-                                              sourcePath
-                                              )
-            makeGenCommand = Make_gen(self.getEnvironment(), project, config, console)
-            makeGenCommand.run()
-
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
     def _generateMakefile(self, makefilePath, preferences, projectName, sourcePath):
-        
-        
         jinjaEnv = self.getProject().getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE)
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'makefile')
         initRenderParams = {
                             'source' : { 'dir' : sourcePath,
                                          'name' : projectName,
                                     },
+                            'arguments' : { 'path' : '--path',
+                                    },
                             'preferences' : preferences,
                         }
-        with open(makefilePath, 'wt') as makefile:
-            makefile.write(makefileTemplate.render(initRenderParams))
+        
+        self.appendCommandTemplates(initRenderParams)
+        
+        makefileTemplate.renderTo(makefilePath, initRenderParams)

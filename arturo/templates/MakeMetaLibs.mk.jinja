@@ -1,0 +1,15 @@
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+SOURCE_FILES            := {{source.files}}
+SOURCE_LIBS             := {{source.libs}}
+SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD_LIBS)/, $(SOURCE_LIBS)))
+
+$(SOURCE_LIB_INCLUDES) : $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen_lib}} {{arguments.path}} $@
+
+$(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))

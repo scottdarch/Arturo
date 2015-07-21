@@ -38,7 +38,7 @@ class Console(ArgumentVisitor):
     
     def unshift(self):
         '''
-        Decrease console indendataion by 1.
+        Decrease console indentation by 1.
         '''
         if self._indents > 0:
             self._indents -= 1
@@ -69,12 +69,18 @@ class Console(ArgumentVisitor):
             if currentIndents != self._indents:
                 self._resetIndent()
 
+    def willPrintVerbose(self):
+        return (self._loglevel > 1)
+
     def printVerbose(self, message):
-        if self._loglevel > 1:
+        if self.willPrintVerbose():
             self._printMessage(message)
             
+    def willPrintDebug(self):
+        return (self._loglevel > 0)
+
     def printDebug(self, message):
-        if self._loglevel > 0:
+        if self.willPrintDebug():
             self._printMessage(message)
         
     def printInfo(self, message):
@@ -130,11 +136,18 @@ class Console(ArgumentVisitor):
                             default=False,
                             action='store_true',
                             help=_('Enable verbose logging.'))
+        parser.add_argument('-d', '--debug',
+                            default=False,
+                            action='store_true',
+                            help=_('Enable debug logging.'))
 
     def onVisitArgs(self, args):
         if getattr(args, "verbose"):
             self._loglevel = 2
             self.printVerbose(_('enabling verbose logging.'))
+        elif getattr(args, "debug"):
+            self._loglevel = 1
+            self.printDebug(_('enabling debug logging.'))
     
     # +---------------------------------------------------------------------------+
     # | PRIVATE

@@ -8,9 +8,9 @@ from abc import ABCMeta, abstractmethod
 import errno
 import os
 import string
+import sys
 
-from arturo import Runnable, ArgumentVisitor
-
+from arturo import Runnable, ArgumentVisitor, __app_name__
 
 class UnknownUserInputException(Exception):
     '''
@@ -43,8 +43,7 @@ class Command(ArgumentVisitor, Runnable):
     
     @classmethod
     def command_class_to_commandname(cls, commandType):
-        lowername = string.lower(commandType.__name__)
-        return lowername.replace('_', '-')
+        return string.lower(commandType.__name__)
 
     def __init__(self, environment, console):
         super(Command, self).__init__()
@@ -54,6 +53,23 @@ class Command(ArgumentVisitor, Runnable):
     def getCommandName(self):
         return Command.command_class_to_commandname(self.__class__)
 
+    def appendCommandTemplates(self, outTemplates=None):
+        if outTemplates is None:
+            outTemplates = dict()
+        commands = outTemplates.get('commands')
+        if commands is None:
+            commands = dict()
+            outTemplates['commands'] = commands
+        commandDict = getattr(sys.modules["arturo.commands"], 'getAllCommands')()
+        for command in commandDict.keys():
+            commands[command] = __app_name__ + " " + command
+    
+        arguments = outTemplates.get('arguments')
+        if arguments is None:
+            arguments = dict()
+            outTemplates['arguments'] = arguments
+        return outTemplates
+     
     @abstractmethod
     def add_parser(self, subparsers):
         pass
@@ -97,6 +113,9 @@ class ConfiguredCommand(ProjectCommand):
         super(ConfiguredCommand, self).__init__(environment, project, console)
         self._configuration = configuration
 
+    def getCommand(self, commandClass):
+        return getattr(sys.modules["arturo.commands"], 'getDefaultCommand')(self._env, self.command_class_to_commandname(commandClass), self._console)
+   
     def getConfiguration(self):
         return self._configuration
 

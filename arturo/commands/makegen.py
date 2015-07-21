@@ -5,10 +5,8 @@
 # http://32bits.io/Arturo/
 #
 
-
-
-
 import os
+import re
 
 from arturo import __app_name__, i18n
 from arturo.commands import build
@@ -20,9 +18,60 @@ from arturo.templates import JinjaTemplates
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | Make_gen
+# | Makegen_lib
 # +---------------------------------------------------------------------------+
-class Make_gen(ConfiguredCommand, BoardMacroResolver):
+class Makegen_lib(ConfiguredCommand):
+    '''
+    (Re)Generate makefile for a given library.
+    '''
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefile for a library.'.format(__app_name__)))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("-p", "--path")
+    
+    def onVisitArgs(self, args):
+        setattr(self, "_path", args.path)
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        configuration = self.getConfiguration()
+        jinjaEnv = configuration.getJinjaEnvironment()
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'make_lib')
+        library_name = self._library_name_from_path(self._path)
+        
+        if not library_name:
+            raise RuntimeError("Unable to determine library from path {}".format(self._path))
+        
+        initRenderParams = self.appendCommandTemplates()
+        initRenderParams['library'] = { 'name': library_name }
+        
+        mkdirs(os.path.dirname(self._path))
+        
+        makefileTemplate.renderTo(self._path, initRenderParams)
+        
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _library_name_from_path(self, path):
+        matchobj = re.search("/([\w\-\d\.]+)/[\w\.]+$", path)
+        if matchobj:
+            return matchobj.group(1)
+        else:
+            return None
+    
+# +---------------------------------------------------------------------------+
+# | Makegen_targets
+# +---------------------------------------------------------------------------+
+class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
     '''
     (Re)Generate makefiles for a given configuration.
     '''
@@ -36,8 +85,11 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
-        None
+        parser.add_argument("-p", "--path")
     
+    def onVisitArgs(self, args):
+        setattr(self, "_path", args.path)
+        
     # +-----------------------------------------------------------------------+
     # | BoardMacroResolver
     # +-----------------------------------------------------------------------+
@@ -61,15 +113,15 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         board = configuration.getBoard()
         project = self.getProject()
         jinjaEnv = configuration.getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_TARGETS)
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'make_targets')
 
         # directories and paths
         builddir                = project.getBuilddir()
         projectPath             = project.getPath()
         localpath               = os.path.relpath(builddir, projectPath)
         rootdir                 = os.path.relpath(projectPath, builddir)
-        targetsMakefilePath     = JinjaTemplates.MAKEFILE_TARGETS
-        toolchainMakefilePath   = os.path.join(builddir, JinjaTemplates.MAKEFILE_LOCALPATHS)
+        targetsMakefilePath     = self._path
+        toolchainMakefilePath   = os.path.join(builddir, JinjaTemplates.TEMPLATES['make_toolchain'])
         
         mkdirs(builddir)
         
@@ -78,8 +130,9 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         listSourceCommand = __app_name__ + " cmd-source-files"
         listLibraryDepsCommand = __app_name__ + " cmd-source-libraries --ppath"
         sketchPreprocessCommand = __app_name__ + " preprocess"
-        commandDtoP = __app_name__ + " cmd-d-to-p --dpath"
-        mkdirsCommand = __app_name__ + " cmd-mkdirs --path"
+        dToPCommand = __app_name__ + " cmd-d-to-p --dpath"
+        mkdirsCommand = "mkdir -p "
+        makeGenCommand = __app_name__ + " make-gen"
 
         # makefile rendering params
         self._requiredLocalPaths = dict()
@@ -88,35 +141,35 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
         initRenderParams = {
                             "local" : { "dir"                 : localpath,
                                         "rootdir"             : rootdir,
-                                        "makefile"            : JinjaTemplates.MAKEFILE,
-                                        "toolchainmakefile"   : JinjaTemplates.MAKEFILE_LOCALPATHS,
                                     },
                             "command" : { "source_headers"    : listHeadersCommand,
                                           "source_files"      : listSourceCommand,
                                           "source_lib_deps"   : listLibraryDepsCommand,
                                           "preprocess_sketch" : sketchPreprocessCommand,
-                                          "d_to_p"            : commandDtoP,
+                                          "cmd_d_to_p"        : dToPCommand,
                                           "pfile_ext"         : build.Cmd_d_to_p.PFILE_EXTENSION,
-                                          "lib_dep_ext"       : build.Cmd_source_libraries.LIBDEP_EXTENSION,
                                           "mkdirs"            : mkdirsCommand,
+                                          "make_gen"          : makeGenCommand,
                                     },
-                            'platform' : boardBuildInfo,
+                            "argument" : { "dp_file_path"     : "--dpath",
+                                    },
+                            "platform" : boardBuildInfo,
                             }
-
-        with open(targetsMakefilePath, 'wt') as f:
-            f.write(makefileTemplate.render(initRenderParams))
+        
+        self.appendCommandTemplates(initRenderParams)
+        
+        makefileTemplate.renderTo(targetsMakefilePath, initRenderParams)
         
         if len(self._requiredLocalPaths):
             self._console.printVerbose("This makefile requires local paths.")
             
-            toolchainTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE_LOCALPATHS)
+            toolchainTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.TEMPLATES['make_toolchain'])
             
             toolchainRenderParams = {
                                      "local" : self._requiredLocalPaths,
-                                }
+                                    }
 
-            with open(toolchainMakefilePath, 'wt') as f:
-                f.write(toolchainTemplate.render(toolchainRenderParams))
+            toolchainTemplate.renderTo(toolchainMakefilePath, toolchainRenderParams)
 
         elif os.path.exists(toolchainMakefilePath):
             if self._console.askYesNoQuestion(_("Local paths makefile {0} appears to be obsolete. Delete it?".format(toolchainMakefilePath))):
@@ -176,3 +229,4 @@ class Make_gen(ConfiguredCommand, BoardMacroResolver):
             return "$({})".format(makeKey)
         else:
             raise KeyError()
+

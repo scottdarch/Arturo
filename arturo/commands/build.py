@@ -155,12 +155,21 @@ class Preprocess(ConfiguredCommand):
         """
         return self._re_strip.sub(' ', src)
 
-
 # +---------------------------------------------------------------------------+
 # | Cmd_source_headers
 # +---------------------------------------------------------------------------+
 class Cmd_source_headers(ConfiguredCommand):
     
+    def getAllHeaders(self):
+        configuration = self.getConfiguration()
+        headers = configuration.getHeaders()
+        core = configuration.getBoard().getCore();
+        headers += core.getHeaders()
+        variant = configuration.getBoard().getVariant()
+        headers += variant.getHeaders()
+
+        return headers
+
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
@@ -177,15 +186,7 @@ class Cmd_source_headers(ConfiguredCommand):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        configuration = self.getConfiguration()
-        headers = configuration.getHeaders()
-        core = configuration.getBoard().getCore();
-        headers += core.getHeaders()
-        variant = configuration.getBoard().getVariant()
-        headers += variant.getHeaders()
-        
-        for library in configuration.getLibraries().itervalues():
-            headers += library.getHeaders()
+        headers = self.getAllHeaders()
 
         projectPath = self.getProject().getPath()
         
@@ -193,13 +194,23 @@ class Cmd_source_headers(ConfiguredCommand):
         for header in headers:
             headerFolders.add(os.path.relpath(os.path.dirname(header), projectPath))
         self.getConsole().stdout(*headerFolders)
-
-
+        
 # +---------------------------------------------------------------------------+
 # | Cmd_source_files
 # +---------------------------------------------------------------------------+
 class Cmd_source_files(ConfiguredCommand):
     
+    def __init__(self, environment, project, configuration, console):
+        super(Cmd_source_files, self).__init__(environment, project, configuration, console)
+        self._sources = None
+        
+    def getAllSources(self):
+        if self._sources is None:
+            sources = self.getConfiguration().getSources()
+            projectPath = self.getProject().getPath()
+            self._sources = [os.path.relpath(sources[x], projectPath).strip() for x in range(len(sources))]
+        return self._sources
+
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
@@ -216,10 +227,116 @@ class Cmd_source_files(ConfiguredCommand):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        sources = self.getConfiguration().getSources()
-        projectPath = self.getProject().getPath()
-        relativeSource = [os.path.relpath(sources[x], projectPath).strip() for x in range(len(sources))]
-        self.getConsole().stdout(*relativeSource)
+        self.getConsole().stdout(*self.getAllSources())
+
+# +---------------------------------------------------------------------------+
+# | Cmd_source_libs
+# +---------------------------------------------------------------------------+
+class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
+    def __init__(self, environment, project, configuration, console):
+        super(Cmd_source_headers, self).__init__(environment, project, configuration, console)
+        self._headerPattern = re.compile('^\s*#(?:include|import)\s*[<"]\s*([a-zA-Z0-9_/]+)[\.\w]*\s*[>"]')
+        self._blockCommentStartPattern = re.compile("/\*(?!.*\*/)")
+        self._blockCommentEndPattern = re.compile("\*/")
+        self._libdeps = None
+        
+    def findAllIncludesInFile(self, filepath):
+        included = [] 
+        console = self.getConsole()
+        console.printVerbose("Looking for includes in " + filepath)
+        with open(filepath, 'r') as filehd:
+            isCommentedOut = False
+            for line in filehd:
+                if isCommentedOut:
+                    isCommentedOut = False if self._blockCommentEndPattern.search(line) else True
+                    if console.willPrintVerbose():
+                        lineMatch = self._headerPattern.search(line)
+                        if lineMatch:
+                            console.printVerbose("Ignoring commented out include " + lineMatch.get(1))
+                        
+                else:
+                    lineMatch = self._headerPattern.search(line)
+                    if lineMatch:
+                        included.append(lineMatch.group(1))
+                        if console.willPrintVerbose():
+                            console.printVerbose("Found include {} ({})".format(lineMatch.group(1), lineMatch.group(0)))
+                    if self._blockCommentStartPattern.search(line):
+                        isCommentedOut = True
+        return included
+                        
+    def getPossibleLibsForSource(self, filepath):
+        console = self.getConsole()
+        included = self.findAllIncludesInFile(filepath)
+        libraries = self.getConfiguration().getLibraries()
+        matchedLibs = dict()
+        for include in included:
+            nameAndVersion = self._includeNameAndVersionForInclude(include)
+            libraryMatch = libraries.get(nameAndVersion[0])
+            if libraryMatch:
+                libraryMatchVersions = libraryMatch.getVersions()
+                if nameAndVersion[1] and not libraryMatchVersions.has_key(nameAndVersion[1]):
+                    raise RuntimeError("{} depends on version {} of {} which was not found in the current environment ({})."
+                                       .format(filepath, 
+                                               nameAndVersion[1], 
+                                               nameAndVersion[0],
+                                               str(libraryMatch.getVersions().keys())))
+                elif nameAndVersion[1]:
+                    console.printVerbose("{} specified version {} of {}.".format(filepath, nameAndVersion[1], nameAndVersion[0]))
+                    matchedLibs[libraryMatch] = libraryMatchVersions.get(nameAndVersion[1])
+                else:
+                    console.printVerbose("{} did not specify a version of {}. Using latest.".format(filepath, nameAndVersion[0]))
+                    matchedLibs[libraryMatch]  = reversed(libraryMatchVersions).next()
+            elif console.willPrintVerbose():
+                console.printVerbose("{} did not resolve to a know library for the current environment.".format(nameAndVersion[0]))
+        return matchedLibs
+    
+    def getAllPossibleLibsForProject(self):
+        if self._libdeps is not None:
+            return self._libdeps
+        
+        self._libdeps = dict()
+        sources = self.getAllSources()
+        for source in sources:
+            self._libdeps.update(self.getPossibleLibsForSource(source))
+        headers = self.getAllHeaders()
+        for header in headers:
+            self._libdeps.update(self.getPossibleLibsForSource(header))
+        
+        directLibDeps = self._libdeps.copy()
+        for libdep in directLibDeps.iteritems():
+            self._findAllLibrariesRecursive(libdep, self._libdeps)
+        return self._libdeps
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        libdeps = self.getAllPossibleLibsForProject()
+        
+        console = self.getConsole()
+        if console.willPrintDebug():
+            console.printDebug("Project {} has {} library dependencies".format(self.getProject().getName(), len(libdeps)))
+            for lib in libdeps.iteritems():
+                console.printDebug(" + {}".format(Library.libNameFromNameAndVersion(lib[0].getName(), lib[1])))
+            
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def _findAllLibrariesRecursive(self, library, libdeps):
+        console = self.getConsole()
+        libraryHeaders = library[0].getHeaders(library[1])
+        for header in libraryHeaders:
+            headerLibDeps = self.getPossibleLibsForSource(header)
+            before = len(libdeps)
+            libdeps.update(headerLibDeps)
+            if len(libdeps) > before:
+                for headerLibDep in headerLibDeps:
+                    if console.willPrintVerbose():
+                        console.printVerbose("Library {} depends on library {}".format(library.getName(), headerLibDep.getName()))
+                    self._findAllLibrariesRecursive(headerLibDep, libdeps)
+        
+    def _includeNameAndVersionForInclude(self, include):
+        return (include, None)
 
 # +---------------------------------------------------------------------------+
 # | Cmd_mkdirs
@@ -248,7 +365,7 @@ class Cmd_mkdirs(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def run(self):
         mkdirs(self._path)
-        
+
 # +---------------------------------------------------------------------------+
 # | Cmd_d_to_p
 # +---------------------------------------------------------------------------+
@@ -259,6 +376,7 @@ class Cmd_d_to_p(ConfiguredCommand):
     '''
     
     PFILE_EXTENSION = "dp"
+    LIBDEP_EXTENSION = "a"
     
     # +-----------------------------------------------------------------------+
     # | Command
@@ -283,8 +401,7 @@ class Cmd_d_to_p(ConfiguredCommand):
     def run(self):
         dpath = self._dpath
         if not os.path.isfile(dpath):
-            self.getConsole().printDebug("{} was not found.".format(dpath))
-            return
+            raise RuntimeError("{} was not found.".format(dpath))
         ppath = re.sub("\.d$", '.' + Cmd_d_to_p.PFILE_EXTENSION, dpath) if self._ppath is None else self._ppath
         removecommentsPattern = re.compile("^\s*#.*")
         removeLineContinuations = re.compile("\s*\\\\?\n$")
@@ -312,39 +429,9 @@ class Cmd_d_to_p(ConfiguredCommand):
                         item = removeLineContinuations.sub("", item)
                         if not isempty.match(item):
                             pfile.write(item + ":\n")
-        self.getConsole().stdout(ppath)
-
-# +---------------------------------------------------------------------------+
-# | Cmd_source_libraries
-# +---------------------------------------------------------------------------+
-class Cmd_source_libraries(ConfiguredCommand):
-
-    LIBDEP_EXTENSION = "a"
-
-    # +-----------------------------------------------------------------------+
-    # | Command
-    # +-----------------------------------------------------------------------+
-    def add_parser(self, subparsers):
-        return subparsers.add_parser(self.getCommandName(), help=_('Determine Arduino15 library dependencies from dependency files.'))
-
-    # +-----------------------------------------------------------------------+
-    # | ArgumentVisitor
-    # +-----------------------------------------------------------------------+
-    def onVisitArgParser(self, parser):
-        parser.add_argument("--ppath")
-
-    def onVisitArgs(self, args):
-        self._ppath = getattr(args, "ppath")
-
-    # +-----------------------------------------------------------------------+
-    # | Runnable
-    # +-----------------------------------------------------------------------+
-    def run(self):
-        console = self.getConsole()
-        ppath = self._ppath
-        if not os.path.isfile(ppath):
-            self.getConsole().printDebug("{} was not found.".format(ppath))
-            return
+        
+    def _getLibDeps(self, ppath):
+        libnames = []
         endswithColon = re.compile("\:$")
         with open(ppath, "r") as pfile:
             possibleLibraryDependencies = dict()
@@ -364,5 +451,6 @@ class Cmd_source_libraries(ConfiguredCommand):
                 versions = possibleLibraryDependencies[libname]
                 if len(versions) > 1:
                     raise RuntimeError(_("{} required {} different versions of the {} library.".format(os.path.basename(ppath), len(versions), libname)))
-                console.stdout("{}.{}".format(Library.libNameFromNameAndVersion(library.getName(), versions.pop()), Cmd_source_libraries.LIBDEP_EXTENSION))
+                libnames.append("{}.{}".format(Library.libNameFromNameAndVersion(library.getName(), versions.pop()), self.LIBDEP_EXTENSION))
+        return libnames;
 
