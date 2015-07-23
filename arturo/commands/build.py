@@ -5,6 +5,7 @@
 # http://32bits.io/Arturo/
 #
 
+import distutils.version
 import os
 import re
 
@@ -270,22 +271,23 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
         libraries = self.getConfiguration().getLibraries()
         matchedLibs = dict()
         for include in included:
-            nameAndVersion = self._includeNameAndVersionForInclude(include)
-            libraryMatch = libraries.get(nameAndVersion[0])
-            if libraryMatch:
-                libraryMatchVersions = libraryMatch.getVersions()
-                if nameAndVersion[1] and not libraryMatchVersions.has_key(nameAndVersion[1]):
-                    raise RuntimeError("{} depends on version {} of {} which was not found in the current environment ({})."
-                                       .format(filepath, 
-                                               nameAndVersion[1], 
-                                               nameAndVersion[0],
-                                               str(libraryMatch.getVersions().keys())))
-                elif nameAndVersion[1]:
-                    console.printVerbose("{} specified version {} of {}.".format(filepath, nameAndVersion[1], nameAndVersion[0]))
-                    matchedLibs[libraryMatch] = libraryMatchVersions.get(nameAndVersion[1])
+            nameAndVersion = Library.libNameAndVersion(include)
+            libraryVersionsMatch = libraries.get(nameAndVersion[0])
+            if libraryVersionsMatch:
+                
+                if Library.libNameHasVersion(include):
+                    libraryMatch = self._findCompatibleVersion(libraryVersionsMatch, nameAndVersion[1])
                 else:
-                    console.printVerbose("{} did not specify a version of {}. Using latest.".format(filepath, nameAndVersion[0]))
-                    matchedLibs[libraryMatch]  = reversed(libraryMatchVersions).next()
+                    libraryMatch = self._getNewestLibrary(libraryVersionsMatch)
+                    
+                if libraryMatch:
+                    console.printVerbose("{} specified version {} of {}.".format(filepath, nameAndVersion[1], nameAndVersion[0]))
+                    matchedLibs[libraryMatch.getNameAndVersion()] = libraryMatch
+                else:
+                    raise RuntimeError("{} depends on version {} of {} which was not found in the current environment."
+                                           .format(filepath, 
+                                                   nameAndVersion[1], 
+                                                   nameAndVersion[0]))
             elif console.willPrintVerbose():
                 console.printVerbose("{} did not resolve to a know library for the current environment.".format(nameAndVersion[0]))
         return matchedLibs
@@ -303,7 +305,7 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
             self._libdeps.update(self.getPossibleLibsForSource(header))
         
         directLibDeps = self._libdeps.copy()
-        for libdep in directLibDeps.iteritems():
+        for libdep in directLibDeps.itervalues():
             self._findAllLibrariesRecursive(libdep, self._libdeps)
         return self._libdeps
 
@@ -316,28 +318,35 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
         console = self.getConsole()
         if console.willPrintDebug():
             console.printDebug("Project {} has {} library dependencies".format(self.getProject().getName(), len(libdeps)))
-            for lib in libdeps.iteritems():
-                console.printDebug(" + {}".format(Library.libNameFromNameAndVersion(lib[0].getName(), lib[1])))
+            for lib in libdeps.itervalues():
+                console.printDebug(" + {}".format(lib.getNameAndVersion()))
             
     # +-----------------------------------------------------------------------+
-    # | Runnable
+    # | PRIVATE
     # +-----------------------------------------------------------------------+
     def _findAllLibrariesRecursive(self, library, libdeps):
         console = self.getConsole()
-        libraryHeaders = library[0].getHeaders(library[1])
+        libraryHeaders = library.getHeaders()
         for header in libraryHeaders:
             headerLibDeps = self.getPossibleLibsForSource(header)
             before = len(libdeps)
             libdeps.update(headerLibDeps)
             if len(libdeps) > before:
-                for headerLibDep in headerLibDeps:
+                for headerLibDep in headerLibDeps.itervalues():
                     if console.willPrintVerbose():
                         console.printVerbose("Library {} depends on library {}".format(library.getName(), headerLibDep.getName()))
                     self._findAllLibrariesRecursive(headerLibDep, libdeps)
         
-    def _includeNameAndVersionForInclude(self, include):
-        return (include, None)
-
+    def _getNewestLibrary(self, libraryVersions):
+        for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
+            return libraryVersions[libraryVersion]
+        
+    def _findCompatibleVersion(self, requestedVersion, libraryVersions):
+        # TODO: implement me
+        # TODO: implement version sort cache
+        raise RuntimeError("not implemented")
+                
+        
 # +---------------------------------------------------------------------------+
 # | Cmd_mkdirs
 # +---------------------------------------------------------------------------+

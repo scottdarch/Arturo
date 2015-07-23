@@ -334,7 +334,7 @@ class Platform(object):
 
     def getLibraries(self):
         if self._libraries is None:
-            self._libraries = self._package.getEnvironment().getLibrariesFor(self._platformPath)
+            self._libraries = self._package.getEnvironment().getLibrariesFor(self._platformPath, platform=self)
 
         return self._libraries
 

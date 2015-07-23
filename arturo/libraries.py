@@ -8,7 +8,7 @@ from __builtin__ import classmethod
 import os
 import re
 
-from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, KeySortedDict, parsers, \
+from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, parsers, \
     ConfigurationHeaderAggregator
 
 
@@ -42,7 +42,18 @@ class Library(object):
     IMPLIED_LIBRARY_VERSION = "1.0"
 
     @classmethod
+    def libNameHasVersion(cls, libraryName):
+        if not libraryName:
+            return False
+        
+        lastDash = libraryName.rfind('-')
+        return lastDash != -1 and Library.VERSION_NUMBER_PATTERN.match(libraryName[lastDash+1:])
+            
+    @classmethod
     def libNameAndVersion(cls, libraryName):
+        if not libraryName:
+            raise RuntimeError("None passed in for libraryName")
+        
         lastDash = libraryName.rfind('-')
         if lastDash == -1:
             return (libraryName, cls.IMPLIED_LIBRARY_VERSION)
@@ -60,7 +71,7 @@ class Library(object):
             return "{}-{}".format(name, version)
 
     @classmethod
-    def fromDir(cls, environment, fqLibraryDir, console):
+    def fromDir(cls, environment, fqLibraryDir, console, platform):
         
         libraryName = os.path.basename(fqLibraryDir)
         for sourceFolder in SearchPath.ARTURO2_PROJECT_SOURCE_FOLDERS:
@@ -69,16 +80,14 @@ class Library(object):
                 if os.path.isfile(libraryHeader):
                     propertiesFilePath = os.path.join(fqLibraryDir, Library.PROPERTIES_FILE)
                     if os.path.isfile(propertiesFilePath):
-                        libraryVersions = KeySortedDict()
-                        libraryVersion = parsers.ArduinoKeyValueParser.parse(propertiesFilePath, dict(), console=console)
-                        libraryVersions[libraryVersion['version']] = libraryVersion
+                        libraryVersion = parsers.ArduinoKeyValueParser.parse(propertiesFilePath, dict(), console=console)['version']
                     else:
-                        libraryVersions = None
-                    return Library(libraryName, environment, console, libraryVersions, os.path.dirname(libraryHeader))
+                        libraryVersion = None
+                    return Library(libraryName, environment, console, libraryVersion, os.path.dirname(libraryHeader), libraryPlatform=platform)
 
         raise ValueError(_("{0} is not a well formed library.".format(fqLibraryDir)))
 
-    def __init__(self, libraryName, environment, console, libraryVersions=None, libraryPath=None):
+    def __init__(self, libraryName, environment, console, libraryVersion=None, libraryPath=None, libraryPlatform=None):
         super(Library, self).__init__()
         if libraryName is None or len(libraryName) == 0:
             raise ValueError("Library name cannot be empty or missing.")
@@ -88,28 +97,30 @@ class Library(object):
         self._console = console
         nameAndVersion = Library.libNameAndVersion(libraryName)
         self._name = nameAndVersion[0]
-        synthenticVersion = nameAndVersion[1]
-            
-        if libraryVersions is None:
-            self._libraryVersions = KeySortedDict()
-            self._libraryVersions[synthenticVersion] = {'version' : synthenticVersion, "syntheticVersion": True}
-        else:
-            self._libraryVersions = libraryVersions
+        self._libraryVersion = nameAndVersion[1] if libraryVersion is None else libraryVersion
+        self._name_and_version = self.libNameFromNameAndVersion(self._name, self._libraryVersion)
         self._path = libraryPath
+        self._platform = libraryPlatform
 
     def getName(self):
         return self._name
     
+    def getVersion(self):
+        return self._libraryVersion
+    
+    def getNameAndVersion(self):
+        return self._name_and_version
+    
     def getEnvironment(self):
         return self._environment
+
+    def getPath(self):
+        return self._path
     
-    def getVersions(self):
-        return self._libraryVersions
-
-    def hasVersion(self, version):
-        return self._libraryVersions.has_key(version)
-
-    def getHeaders(self, version):
+    def getPlatform(self):
+        return self._platform
+    
+    def getHeaders(self):
         if self._headers is None:
             if self._path is None:
                 self._headers = []

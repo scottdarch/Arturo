@@ -1,0 +1,42 @@
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+-include $(DIR_BUILD)/{{local.toolchainmakefile}}
+
+BINTYPE                         := elf
+
+# +----------------------------------------------------------------------------+
+# | PATHS
+# +----------------------------------------------------------------------------+
+LOCAL_DIR                       := {{local.dir}}
+LOCAL_ROOT_DIR                  := {{local.rootdir}}
+OBJ_DIR                         := obj
+SKETCH_DIR                      := ino
+VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
+OBJ_PATH                        := $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)
+
+# +----------------------------------------------------------------------------+
+# | SOURCE
+# +----------------------------------------------------------------------------+
+CPP_HEADERS                     := $(shell {{command.source_headers}})
+CPP_HEADERS_W_I                 := $(addprefix -I , $(CPP_HEADERS))
+C_HEADERS                       := $(filter-out %.hpp, $(CPP_HEADERS))
+C_HEADERS_W_I                   := $(addprefix -I , $(C_HEADERS))
+ALL_SOURCE                      := $(shell {{command.source_files}})
+INO_SOURCE                      := $(filter %.ino, $(ALL_SOURCE))
+CPP_SOURCE                      := $(filter %.cpp, $(ALL_SOURCE))
+INO_INTERM_SOURCE               := $(addprefix $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/, $(INO_SOURCE:.ino=.cpp))
+C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
+OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
+                                   $(addprefix $(OBJ_PATH)/, $(C_SOURCE:.c=.o)) \
+                                   $(INO_INTERM_SOURCE:.cpp=.o)
+DEP_FILES                       := $(OBJ_FILES:.o=.{{command.pfile_ext}})
+
+# +----------------------------------------------------------------------------+
+# | TOOLS
+# +----------------------------------------------------------------------------+
+INO_PROCESSOR                   := {{command.preprocess_sketch}}

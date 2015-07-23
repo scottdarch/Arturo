@@ -4,6 +4,8 @@
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
 #
+import os
+
 from arturo import __app_name__
 from arturo.commands.base import ConfiguredCommand, mkdirs
 from arturo.commands.build import Cmd_source_libs
@@ -44,10 +46,9 @@ class Metamakegen_libs(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def run(self):
         configuration           = self.getConfiguration()
-        project                 = self.getProject()
         jinjaEnv                = configuration.getJinjaEnvironment()
         makefileTemplate        = JinjaTemplates.getTemplate(jinjaEnv, 'metamake_libs')
-        builddir                = project.getBuilddir()
+        builddir                = os.path.dirname(self._path)
         targetsMakefilePath     = self._path
         
         mkdirs(builddir)
@@ -59,8 +60,8 @@ class Metamakegen_libs(ConfiguredCommand):
         libraries = ""
         sources   = ""
         
-        for library, version in sourceLibsCommand.getAllPossibleLibsForProject().iteritems():
-            libraries += Library.libNameFromNameAndVersion(library.getName(), version)
+        for libraryNameAndVersion in sourceLibsCommand.getAllPossibleLibsForProject().iterkeys():
+            libraries += libraryNameAndVersion
             libraries += " "
         
         for source in sourceLibsCommand.getAllSources():

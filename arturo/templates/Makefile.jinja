@@ -17,7 +17,7 @@ BOARD                           := {{preferences.board}}
 # +----------------------------------------------------------------------------+
 # | DIRECTORIES AND CONFIGURATIONS
 # +----------------------------------------------------------------------------+
-DIR_BUILD                       := {{project.builddir}}
+DIR_BUILD                       := {{project.builddir}}/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)
 DIR_BUILD_LIBS                  := $(DIR_BUILD)/libs
 DIR_SOURCE                      := {{source.dir}}
 DIR_MAKEFILE                    := $(CURDIR)

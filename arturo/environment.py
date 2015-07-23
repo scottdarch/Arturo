@@ -8,7 +8,7 @@ import json
 import os
 
 from arturo import SearchPath, Preferences, SearchPathAgent, Arduino15PackageSearchPathAgent, \
-    KeySortedDict, ConfigurationHeaderAggregator, ConfigurationSourceAggregator, __lib_name__
+    ConfigurationHeaderAggregator, ConfigurationSourceAggregator, __lib_name__
 from arturo import __version__, i18n, __app_name__
 from arturo.libraries import Library
 from arturo.parsers import MakefilePropertyParser
@@ -284,16 +284,20 @@ class Environment(object):
         #TODO: search environment for any libraries on the system path
         if self._libraryIndex is None:
             self._libraryIndex = dict()
-            for libraryName, libraryVersions in self._getLibraryMetadata().iteritems():
-                self._libraryIndex[libraryName] = Library(libraryName, self, self._console, libraryVersions)
+            for meta_data in self._getLibraryMetadata().itervalues():
+                libraryName = meta_data['name']
+                libraryVersion = meta_data['version']
+                library = Library(libraryName, self, self._console, libraryVersion)
+                if not self._libraryIndex.has_key(libraryName):
+                    self._libraryIndex[libraryName] = dict()
+                self._libraryIndex[libraryName][libraryVersion] = library
 
             for searchPath in self.getSearchPath().getPaths():
                 self._libraryIndex.update(self.getLibrariesFor(searchPath, continueOnError=True))
 
         return self._libraryIndex
     
-    def getLibrariesFor(self, path, forcedLibrariesPaths=None, continueOnError=False):
-        #TODO: de-dupe environment libraries
+    def getLibrariesFor(self, path, forcedLibrariesPaths=None, continueOnError=False, platform=None):
         libraries = dict()
         for foldername in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
             librariesDir = os.path.join(path, foldername)
@@ -302,23 +306,24 @@ class Environment(object):
                     libraryDir = os.path.join(librariesDir, item)
                     if os.path.isdir(libraryDir):
                         try:
-                            library = Library.fromDir(self, libraryDir, self._console)
+                            library = Library.fromDir(self, libraryDir, self._console, platform)
                         except ValueError as e:
                             if forcedLibrariesPaths:
                                 prefixList = list(forcedLibrariesPaths)
                                 prefixList.append(libraryDir)
                                 if os.path.commonprefix(prefixList) in forcedLibrariesPaths:
                                     # Any folder under a "forced path" is considered a library.
-                                    library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir)
-                                    continue
+                                    library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir, libraryPlatform=platform)
 
-                            if continueOnError:
+                            elif continueOnError:
                                 self.getConsole().printDebug(_("{} was not a well-formed library.".format(libraryDir)))
                                 continue
                             else:
                                 raise e
+                        if not libraries.has_key(library.getName()):
+                            libraries[library.getName()] = dict()
+                        libraries[library.getName()][library.getVersion()] = library
 
-                        libraries[library.getName()] = library
         return libraries
 
     # +-----------------------------------------------------------------------+
@@ -340,14 +345,8 @@ class Environment(object):
         libraryMetadataList = libraryMetadataCollection['libraries']
         self._libraryMetadataIndex = dict()
         for libraryMetadata in libraryMetadataList:
-            libraryName = libraryMetadata['name']
-            try:
-                libraryVersions = self._libraryMetadataIndex[libraryName]
-            except KeyError:
-                libraryVersions = KeySortedDict(ascending=False)
-                self._libraryMetadataIndex[libraryName] = libraryVersions
-            
-            libraryVersions[libraryMetadata['version']] = libraryMetadata
+            library_name_and_version = Library.libNameFromNameAndVersion(libraryMetadata['name'], libraryMetadata['version'])
+            self._libraryMetadataIndex[library_name_and_version] = libraryMetadata
         
         return self._libraryMetadataIndex;
 

@@ -5,6 +5,7 @@
 # http://32bits.io/Arturo/
 #
 
+import distutils.version
 import re
 
 from arturo import i18n
@@ -114,18 +115,14 @@ class List_libraries(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def _emitLibraryList(self, librariesDict):
         console = self.getConsole()
-        for libraryName, library in librariesDict.iteritems():
-            libraryVersions = library.getVersions()
-            if len(libraryVersions) > 1:
-                console.printInfo(libraryName)
-                console.shift()
-                for libraryVersion in library.getVersions().itervalues():
-                    console.printInfo("- {0}".format(libraryVersion['version']))
-                console.unshift()
-            else:
-                for libraryVersion in library.getVersions().itervalues():
-                    console.printInfo(_("{0} - {1}".format(libraryName, libraryVersion['version'])))
-                    break;
+        for libraryVersions in librariesDict.itervalues():
+            for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
+                library = libraryVersions[libraryVersion]
+                platform = library.getPlatform()
+                if platform:
+                    console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), platform.getName())))
+                else:
+                    console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
 
 
 # +---------------------------------------------------------------------------+
