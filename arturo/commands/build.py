@@ -236,13 +236,17 @@ class Cmd_source_files(ConfiguredCommand):
 class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
     def __init__(self, environment, project, configuration, console):
         super(Cmd_source_headers, self).__init__(environment, project, configuration, console)
-        self._headerPattern = re.compile('^\s*#(?:include|import)\s*[<"]\s*([a-zA-Z0-9_/]+)[\.\w]*\s*[>"]')
+        self._headerPattern = re.compile('^\s*#include\s*[<"]\s*([a-zA-Z0-9_/\.\-]*)\s*[>"]')
+        self._versionPattern = re.compile('^(?P<name>\w+)\-(?P<major>\d+)(?:\.(?P<minor>\d+))?(?:\.(?P<patch>\d+))?$')
         self._blockCommentStartPattern = re.compile("/\*(?!.*\*/)")
         self._blockCommentEndPattern = re.compile("\*/")
         self._libdeps = None
         
     def findAllIncludesInFile(self, filepath):
-        included = [] 
+        '''
+        Returns a dictionary of library names to version number.
+        '''
+        included = dict() 
         console = self.getConsole()
         console.printVerbose("Looking for includes in " + filepath)
         with open(filepath, 'r') as filehd:
@@ -258,7 +262,12 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
                 else:
                     lineMatch = self._headerPattern.search(line)
                     if lineMatch:
-                        included.append(lineMatch.group(1))
+                        nameAndVersion = self._headerToNameAndVersion(lineMatch.group(1))
+                        if not included.has_key(nameAndVersion[0]):
+                            included[nameAndVersion[0]] = nameAndVersion[1]
+                        elif included[nameAndVersion[0]] != nameAndVersion[1]:
+                            raise RuntimeError(_("Two different versions of {} found when scanning headers.".format(nameAndVersion[1])))
+                        included[nameAndVersion[0]] = nameAndVersion[1]
                         if console.willPrintVerbose():
                             console.printVerbose("Found include {} ({})".format(lineMatch.group(1), lineMatch.group(0)))
                     if self._blockCommentStartPattern.search(line):
@@ -270,26 +279,25 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
         included = self.findAllIncludesInFile(filepath)
         libraries = self.getConfiguration().getLibraries()
         matchedLibs = dict()
-        for include in included:
-            nameAndVersion = Library.libNameAndVersion(include)
-            libraryVersionsMatch = libraries.get(nameAndVersion[0])
+        for name, version in included.iteritems():
+            libraryVersionsMatch = libraries.get(name)
             if libraryVersionsMatch:
                 
-                if Library.libNameHasVersion(include):
-                    libraryMatch = self._findCompatibleVersion(libraryVersionsMatch, nameAndVersion[1])
+                if version:
+                    libraryMatch = self._findCompatibleVersion(libraryVersionsMatch, version)
                 else:
                     libraryMatch = self._getNewestLibrary(libraryVersionsMatch)
                     
                 if libraryMatch:
-                    console.printVerbose("{} specified version {} of {}.".format(filepath, nameAndVersion[1], nameAndVersion[0]))
+                    console.printVerbose("{} specified version {} of {}.".format(filepath, version, name))
                     matchedLibs[libraryMatch.getNameAndVersion()] = libraryMatch
                 else:
                     raise RuntimeError("{} depends on version {} of {} which was not found in the current environment."
                                            .format(filepath, 
-                                                   nameAndVersion[1], 
-                                                   nameAndVersion[0]))
+                                                   version, 
+                                                   name))
             elif console.willPrintVerbose():
-                console.printVerbose("{} did not resolve to a know library for the current environment.".format(nameAndVersion[0]))
+                console.printVerbose("{} did not resolve to a know library for the current environment.".format(name))
         return matchedLibs
     
     def getAllPossibleLibsForProject(self):
@@ -324,6 +332,40 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
+    def _headerToNameAndVersion(self, headerPath):
+        '''
+        parses headers with path prefixes into library name and version. For example
+        foobar-2.0/foobar.h -> ('foobar', '2.0')
+        baz-2.0/foobar.h -> ('foobar', None)
+        foobar.h -> ('foobar', None)
+        foobar/baz.h -> ('baz', None)
+        '''
+        pathelements = headerPath.split('/')
+        headername = pathelements[len(pathelements) - 1]
+        lastdot = headername.rfind('.')
+        libraryname = headername[:lastdot] if lastdot != -1 else headername
+        if len(pathelements) > 1:
+            match = self._versionPattern.match(pathelements[len(pathelements) - 2])
+            if match:
+                matchDict = match.groupdict()
+                version = ""
+                if matchDict.has_key('name') and matchDict['name'] == libraryname:
+                    major = matchDict.get('major')
+                    minor = matchDict.get('minor')
+                    patch = matchDict.get('patch')
+                    if major:
+                        version += major
+                        if minor:
+                            version += "." + minor
+                            if patch:
+                                version += '.' + patch
+            else:
+                version = None
+            
+            return (libraryname, version)
+        else:
+            return (libraryname, None)
+        
     def _findAllLibrariesRecursive(self, library, libdeps):
         console = self.getConsole()
         libraryHeaders = library.getHeaders()
@@ -341,10 +383,13 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
         for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
             return libraryVersions[libraryVersion]
         
-    def _findCompatibleVersion(self, requestedVersion, libraryVersions):
-        # TODO: implement me
+    def _findCompatibleVersion(self, libraryVersions, requestedVersion):
         # TODO: implement version sort cache
-        raise RuntimeError("not implemented")
+        requestedMajor = int(requestedVersion.split('.')[0])
+        for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
+            if requestedMajor <= int(libraryVersion.split('.')[0]):
+                return libraryVersions[libraryVersion]
+        return None
                 
         
 # +---------------------------------------------------------------------------+

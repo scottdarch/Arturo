@@ -9,7 +9,6 @@ import os
 from arturo import __app_name__
 from arturo.commands.base import ConfiguredCommand, mkdirs
 from arturo.commands.build import Cmd_source_libs
-from arturo.libraries import Library
 from arturo.templates import JinjaTemplates
 
 
