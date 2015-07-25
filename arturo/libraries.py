@@ -9,7 +9,7 @@ import os
 import re
 
 from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, parsers, \
-    ConfigurationHeaderAggregator
+    ConfigurationHeaderAggregator, ConfigurationSourceAggregator
 
 
 # +---------------------------------------------------------------------------+
@@ -93,6 +93,7 @@ class Library(object):
             raise ValueError("Library name cannot be empty or missing.")
             
         self._headers = None
+        self._sources = None
         self._environment = environment
         self._console = console
         nameAndVersion = Library.libNameAndVersion(libraryName)
@@ -129,4 +130,11 @@ class Library(object):
                         self._path, ConfigurationHeaderAggregator(self, self._console, exclusions=SearchPath.ARTURO2_LIBRARY_EXAMPLE_FOLDERS)).getResults()
         return self._headers
 
+    def hasSource(self):
+        return (len(self.getSources()) > 0)
 
+    def getSources(self):
+        if self._sources is None:
+            self._sources = self.getEnvironment().getSearchPath().scanDirs(
+                 self._path, ConfigurationSourceAggregator(self, self._console, exclusions=SearchPath.ARTURO2_LIBRARY_EXAMPLE_FOLDERS)).getResults()
+        return self._sources

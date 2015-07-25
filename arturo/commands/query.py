@@ -10,6 +10,7 @@ import re
 
 from arturo import i18n
 from arturo.commands.base import Command, ProjectCommand, ConfiguredCommand
+from arturo.libraries import Library
 
 
 _ = i18n.language.ugettext
@@ -67,7 +68,7 @@ class List_tools(Command):
             console.popContext()
 
 # +---------------------------------------------------------------------------+
-# | list-boards
+# | list_libraries
 # +---------------------------------------------------------------------------+
 class List_libraries(ConfiguredCommand):
     '''
@@ -124,6 +125,41 @@ class List_libraries(ConfiguredCommand):
                 else:
                     console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
 
+# +---------------------------------------------------------------------------+
+# | which_lib
+# +---------------------------------------------------------------------------+
+class Which_lib(ConfiguredCommand):
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Print the path found for a given library name an version.'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("-l", "--library", required=True)
+    
+    def onVisitArgs(self, args):
+        setattr(self, "_library", args.library)
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        libraries = self.getConfiguration().getLibraries()
+        libNameAndVersion = Library.libNameAndVersion(self._library)
+        libraryVersions = libraries.get(libNameAndVersion[0])
+        if not libraryVersions:
+            self.getConsole().printInfo(_("No library with name {} was found.".format(libNameAndVersion[0])))
+            return
+        library = libraryVersions.get(libNameAndVersion[1])
+        if not library:
+            self.getConsole().printInfo(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
+            return
+        self.getConsole().printInfo(library.getPath())
 
 # +---------------------------------------------------------------------------+
 # | list-boards

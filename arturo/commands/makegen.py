@@ -6,12 +6,12 @@
 #
 
 import os
-import re
 
 from arturo import __app_name__, i18n
 from arturo.commands import build
 from arturo.commands.base import ConfiguredCommand, mkdirs
 from arturo.hardware import BoardMacroResolver
+from arturo.libraries import Library
 from arturo.templates import JinjaTemplates
 
 
@@ -34,7 +34,7 @@ class Makegen_lib(ConfiguredCommand):
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
-        parser.add_argument("-p", "--path")
+        parser.add_argument("-p", "--path", required=True)
     
     def onVisitArgs(self, args):
         setattr(self, "_path", args.path)
@@ -46,13 +46,17 @@ class Makegen_lib(ConfiguredCommand):
         configuration = self.getConfiguration()
         jinjaEnv = configuration.getJinjaEnvironment()
         makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'make_lib')
-        library_name = self._library_name_from_path(self._path)
+        libraries = self.getConfiguration().getLibraries()
+        library = self._find_library_in_path(self._path, libraries)
         
-        if not library_name:
-            raise RuntimeError("Unable to determine library from path {}".format(self._path))
+        if not library:
+            raise RuntimeError(_("Unable to determine library from path {}".format(self._path)))
         
         initRenderParams = self.appendCommandTemplates()
-        initRenderParams['library'] = { 'name': library_name }
+        initRenderParams['library'] = { 
+                                       'name'       : library.getNameAndVersion(),
+                                       }
+        initRenderParams['arguments']['library'] = '--library'
         
         mkdirs(os.path.dirname(self._path))
         
@@ -61,12 +65,19 @@ class Makegen_lib(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
-    def _library_name_from_path(self, path):
-        matchobj = re.search("/([\w\-\d\.]+)/[\w\.]+$", path)
-        if matchobj:
-            return matchobj.group(1)
-        else:
-            return None
+    def _find_library_in_path(self, path, libraries):
+        libDirName = os.path.basename(os.path.realpath(os.path.join(os.path.dirname(path), "../", "../", "../")))
+        console = self.getConsole()
+        if console.willPrintVerbose():
+            console.printVerbose("Using folder name {} as the name of the library.".format(libDirName))
+        libNameAndVersion = Library.libNameAndVersion(libDirName)
+        libraryversions = libraries.get(libNameAndVersion[0])
+        if libraryversions:
+            library = libraryversions.get(libNameAndVersion[1])
+            if not library:
+                raise RuntimeError(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
+            else:
+                return library
     
 # +---------------------------------------------------------------------------+
 # | Makegen_targets

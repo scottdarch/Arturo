@@ -6,3 +6,5 @@
 #
 
 LIB_NAME                    := {{library.name}}
+LIB_SOURCES                 := $(shell {{commands.cmd_lib_source_files}} {{arguments.library}} $(LIB_NAME))
+LIB_HEADERS                 := $(shell {{commands.cmd_lib_source_headers}} {{arguments.library}} $(LIB_NAME))

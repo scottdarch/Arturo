@@ -7,7 +7,7 @@
 
 SOURCE_FILES            := {{source.files}}
 SOURCE_LIBS             := {{source.libs}}
-SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD_LIBS)/, $(SOURCE_LIBS)))
+SOURCE_LIB_INCLUDES     := $(addsuffix /$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/, $(SOURCE_LIBS)))
 
 $(SOURCE_LIB_INCLUDES) : $(DIR_MAKEFILE)/{{this.filename}}
 	{{commands.makegen_lib}} {{arguments.path}} $@

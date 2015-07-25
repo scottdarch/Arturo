@@ -231,6 +231,74 @@ class Cmd_source_files(ConfiguredCommand):
         self.getConsole().stdout(*self.getAllSources())
 
 # +---------------------------------------------------------------------------+
+# | Cmd_lib_source_files
+# +---------------------------------------------------------------------------+
+class Cmd_lib_source_files(ConfiguredCommand):
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of source files for a given library suitable for consumption by gnu make.'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("-l", "--library", required=True)
+    
+    def onVisitArgs(self, args):
+        setattr(self, "_library", args.library)
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        libraries = self.getConfiguration().getLibraries()
+        libNameAndVersion = Library.libNameAndVersion(self._library)
+        libraryVersions = libraries.get(libNameAndVersion[0])
+        if not libraryVersions:
+            raise RuntimeError(_("No library with name {} was found.".format(libNameAndVersion[0])))
+        library = libraryVersions.get(libNameAndVersion[1])
+        if not library:
+            raise RuntimeError(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
+        self.getConsole().stdout(*library.getSources())
+
+# +---------------------------------------------------------------------------+
+# | Cmd_lib_source_headers
+# +---------------------------------------------------------------------------+
+class Cmd_lib_source_headers(ConfiguredCommand):
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of header files for a given library suitable for consumption by gnu make.'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("-l", "--library", required=True)
+    
+    def onVisitArgs(self, args):
+        setattr(self, "_library", args.library)
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        libraries = self.getConfiguration().getLibraries()
+        libNameAndVersion = Library.libNameAndVersion(self._library)
+        libraryVersions = libraries.get(libNameAndVersion[0])
+        if not libraryVersions:
+            raise RuntimeError(_("No library with name {} was found.".format(libNameAndVersion[0])))
+        library = libraryVersions.get(libNameAndVersion[1])
+        if not library:
+            raise RuntimeError(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
+        self.getConsole().stdout(*library.getHeaders())
+
+# +---------------------------------------------------------------------------+
 # | Cmd_source_libs
 # +---------------------------------------------------------------------------+
 class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
@@ -274,7 +342,7 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
                         isCommentedOut = True
         return included
                         
-    def getPossibleLibsForSource(self, filepath):
+    def getPossibleLibsForSource(self, filepath, excludeHeaderOnly=True):
         console = self.getConsole()
         included = self.findAllIncludesInFile(filepath)
         libraries = self.getConfiguration().getLibraries()
@@ -289,8 +357,11 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
                     libraryMatch = self._getNewestLibrary(libraryVersionsMatch)
                     
                 if libraryMatch:
-                    console.printVerbose("{} specified version {} of {}.".format(filepath, version, name))
-                    matchedLibs[libraryMatch.getNameAndVersion()] = libraryMatch
+                    if excludeHeaderOnly and not libraryMatch.hasSource():
+                        console.printDebug("{} version {} is header only. Skipping".format(name, version))
+                    else:
+                        console.printVerbose("{} specified version {} of {}.".format(filepath, version, name))
+                        matchedLibs[libraryMatch.getNameAndVersion()] = libraryMatch
                 else:
                     raise RuntimeError("{} depends on version {} of {} which was not found in the current environment."
                                            .format(filepath, 
@@ -351,12 +422,12 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
                 version = ""
                 if matchDict.has_key('name') and matchDict['name'] == libraryname:
                     major = matchDict.get('major')
-                    minor = matchDict.get('minor')
-                    patch = matchDict.get('patch')
                     if major:
                         version += major
+                        minor = matchDict.get('minor')
                         if minor:
                             version += "." + minor
+                            patch = matchDict.get('patch')
                             if patch:
                                 version += '.' + patch
             else:
@@ -384,6 +455,9 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
             return libraryVersions[libraryVersion]
         
     def _findCompatibleVersion(self, libraryVersions, requestedVersion):
+        '''
+        Finds the best match based on major version only.
+        '''
         # TODO: implement version sort cache
         requestedMajor = int(requestedVersion.split('.')[0])
         for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
