@@ -10,7 +10,7 @@ import os
 import re
 
 from arturo import i18n
-from arturo.commands.base import ConfiguredCommand, mkdirs
+from arturo.commands.base import ConfiguredCommand, mkdirs, Command
 from arturo.libraries import Library
 
 
@@ -238,6 +238,13 @@ class Cmd_lib_source_files(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+    @classmethod
+    def appendCommandTemplate(cls, inoutTemplates):
+        return Command.appendCommandHelper(cls, 
+                { 
+                    'library'     : '--library',
+                }, inoutTemplates)
+        
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of source files for a given library suitable for consumption by gnu make.'))
 
@@ -272,6 +279,13 @@ class Cmd_lib_source_headers(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+    @classmethod
+    def appendCommandTemplate(cls, inoutTemplates):
+        return Command.appendCommandHelper(cls, 
+                { 
+                    'library'     : '--library',
+                }, inoutTemplates)
+        
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('Emit a list of header files for a given library suitable for consumption by gnu make.'))
 

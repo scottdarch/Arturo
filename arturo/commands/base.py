@@ -41,10 +41,37 @@ class Command(ArgumentVisitor, Runnable):
     
     __metaclass__ = ABCMeta
     
+    @staticmethod
+    def usesCommand(commandClass):
+        def appendCommandTemplatesDecorator(func):
+            def appendCommandTemplatesWrapper(self, inoutTemplates):
+                commandName = Command.command_class_to_commandname(commandClass)
+                try:
+                    inoutTemplates['commands'][commandName] = __app_name__ + " " + commandName
+                except KeyError:
+                    inoutTemplates['commands'] = { commandName : __app_name__ + " " + commandName }
+            
+                try:
+                    return func(self, getattr(commandClass, "appendCommandTemplate")(inoutTemplates))
+                except:
+                    return func(self, inoutTemplates)
+                
+            return appendCommandTemplatesWrapper
+        return appendCommandTemplatesDecorator
+
     @classmethod
     def command_class_to_commandname(cls, commandType):
         return string.lower(commandType.__name__)
 
+    @classmethod
+    def appendCommandHelper(cls, subcls, arguments, inoutTemplates):
+        try:
+            inoutTemplates['arguments'].update(arguments)
+        except KeyError:
+            inoutTemplates['arguments'] = arguments
+        
+        return inoutTemplates
+        
     def __init__(self, environment, console):
         super(Command, self).__init__()
         self._env = environment
@@ -53,21 +80,7 @@ class Command(ArgumentVisitor, Runnable):
     def getCommandName(self):
         return Command.command_class_to_commandname(self.__class__)
 
-    def appendCommandTemplates(self, outTemplates=None):
-        if outTemplates is None:
-            outTemplates = dict()
-        commands = outTemplates.get('commands')
-        if commands is None:
-            commands = dict()
-            outTemplates['commands'] = commands
-        commandDict = getattr(sys.modules["arturo.commands"], 'getAllCommands')()
-        for command in commandDict.keys():
-            commands[command] = __app_name__ + " " + command
-    
-        arguments = outTemplates.get('arguments')
-        if arguments is None:
-            arguments = dict()
-            outTemplates['arguments'] = arguments
+    def appendCommandTemplates(self, outTemplates):
         return outTemplates
      
     @abstractmethod

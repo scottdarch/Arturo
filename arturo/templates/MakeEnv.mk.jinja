@@ -22,7 +22,7 @@ OBJ_PATH                        := $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
-CPP_HEADERS                     := $(shell {{command.source_headers}})
+CPP_HEADERS                     := $(shell {{commands.source_headers}})
 CPP_HEADERS_W_I                 := $(addprefix -I , $(CPP_HEADERS))
 C_HEADERS                       := $(filter-out %.hpp, $(CPP_HEADERS))
 C_HEADERS_W_I                   := $(addprefix -I , $(C_HEADERS))
@@ -39,4 +39,4 @@ DEP_FILES                       := $(OBJ_FILES:.o=.{{command.pfile_ext}})
 # +----------------------------------------------------------------------------+
 # | TOOLS
 # +----------------------------------------------------------------------------+
-INO_PROCESSOR                   := {{command.preprocess_sketch}}
+INO_PROCESSOR                   := {{commands.preprocess_sketch}}

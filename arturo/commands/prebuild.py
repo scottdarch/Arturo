@@ -8,6 +8,7 @@ import os
 
 from arturo import __app_name__, __version__, __lib_name__, i18n, MissingRequiredFileException
 from arturo.commands.base import Command, ProjectCommand
+from arturo.commands.makegen import Metamakegen_libs
 from arturo.templates import JinjaTemplates
 
 
@@ -56,6 +57,10 @@ class Init(ProjectCommand):
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+    @Command.usesCommand(Metamakegen_libs)
+    def appendCommandTemplates(self, inoutTemplates):
+        return super(Init, self).appendCommandTemplates(inoutTemplates)
+    
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('Initialize a project for use with {} and its makefiles.'.format(__app_name__)))
 
@@ -119,8 +124,6 @@ class Init(ProjectCommand):
         initRenderParams = {
                             'source' : { 'dir' : sourcePath,
                                          'name' : projectName,
-                                    },
-                            'arguments' : { 'path' : '--path',
                                     },
                             'preferences' : preferences,
                         }

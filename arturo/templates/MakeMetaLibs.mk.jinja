@@ -7,9 +7,16 @@
 
 SOURCE_FILES            := {{source.files}}
 SOURCE_LIBS             := {{source.libs}}
-SOURCE_LIB_INCLUDES     := $(addsuffix /$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/, $(SOURCE_LIBS)))
+SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIBS)))
+
+MAKE_STATIC_LIB         := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/{{templates.make_staticlib}}
+
+$(MAKE_STATIC_LIB) : $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen_targets}} {{arguments.path}} $@ {{arguments.template}} "make_targets"
 
 $(SOURCE_LIB_INCLUDES) : $(DIR_MAKEFILE)/{{this.filename}}
 	{{commands.makegen_lib}} {{arguments.path}} $@
+
+-include $(MAKE_STATIC_LIB)
 
 $(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))

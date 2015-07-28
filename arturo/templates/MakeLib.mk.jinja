@@ -5,6 +5,8 @@
 # http://32bits.io/Arturo/
 #
 
-LIB_NAME                    := {{library.name}}
-LIB_SOURCES                 := $(shell {{commands.cmd_lib_source_files}} {{arguments.library}} $(LIB_NAME))
-LIB_HEADERS                 := $(shell {{commands.cmd_lib_source_headers}} {{arguments.library}} $(LIB_NAME))
+LOCAL_DIR                   := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/{{library.name}}
+LOCAL_MODULE_NAME           := {{library.name}}
+LOCAL_SOURCES               := $(shell {{commands.cmd_lib_source_files}} {{arguments.library}} $(LIB_NAME))
+LOCAL_HEADERS               := $(shell {{commands.cmd_lib_source_headers}} {{arguments.library}} $(LIB_NAME))
+

@@ -1,0 +1,40 @@
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+-include $(DIR_BUILD)/{{local.toolchainmakefile}}
+
+# +----------------------------------------------------------------------------+
+# | PATHS
+# +----------------------------------------------------------------------------+
+ifndef LOCAL_DIR
+    $(error LOCAL_DIR was not set)
+endif
+OBJ_DIR                         := obj
+OBJ_PATH                        := $(LOCAL_DIR)/$(OBJ_DIR)
+
+# +----------------------------------------------------------------------------+
+# | SOURCE
+# +----------------------------------------------------------------------------+
+CPP_SOURCE                      := $(filter %.cpp, $(LOCAL_SOURCES))
+C_SOURCE                        := $(filter %.c, $(LOCAL_SOURCES))
+OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
+                                   $(addprefix $(OBJ_PATH)/, $(C_SOURCE:.c=.o))
+
+# +----------------------------------------------------------------------------+
+# | BUILD TARGETS
+# +----------------------------------------------------------------------------+
+$(OBJ_PATH)/%.{{command.pfile_ext}} : $(OBJ_PATH)/%.o
+	{{command.cmd_d_to_p}} {{argument.dp_file_path}} $(basename $<).d
+
+$(OBJ_PATH)/%.o : %.cpp
+	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
+	{{platform['recipe.cpp.o.pattern']}}
+
+$(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(OBJ_FILES)
+	{{platform['recipe.ar.pattern']}}
+	
+# object dependencies

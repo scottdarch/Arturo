@@ -51,6 +51,7 @@ class JinjaTemplates(object):
     TEMPLATES = {
                  "make_toolchain"      : "LocalPaths.mk",
                  "make_targets"        : "MakeTargets.mk",
+                 "make_staticlib"      : "MakeStaticLib.mk",
                  "metamake_libs"       : "MakeMetaLibs.mk",
                  "make_lib"            : "MakeLib.mk",
                  "makefile"            : "Makefile",

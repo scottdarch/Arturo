@@ -14,8 +14,7 @@ from arturo import __app_name__
 import arturo
 from arturo.commands.base import Command, ProjectCommand, ConfiguredCommand
 from arturo.commands.build import Preprocess, Cmd_source_headers, Cmd_source_files, Cmd_d_to_p, Cmd_mkdirs, Cmd_source_libs, Cmd_lib_source_files, Cmd_lib_source_headers
-from arturo.commands.makegen import Makegen_lib, Makegen_targets
-from arturo.commands.metamakegen import Metamakegen_libs
+from arturo.commands.makegen import Metamakegen_libs, Makegen_lib, Makegen_targets
 from arturo.commands.prebuild import Init, Version
 from arturo.commands.query import List_boards, List_tools, List_platform_data, List_libraries, Which_lib
 
