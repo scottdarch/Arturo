@@ -5,7 +5,7 @@
 # http://32bits.io/Arturo/
 #
 
--include $(DIR_BUILD)/{{local.toolchainmakefile}}
+-include $(DIR_BUILD)/{{templates.make_targets}}
 
 # +----------------------------------------------------------------------------+
 # | PATHS
@@ -27,14 +27,17 @@ OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
 # +----------------------------------------------------------------------------+
-$(OBJ_PATH)/%.{{command.pfile_ext}} : $(OBJ_PATH)/%.o
-	{{command.cmd_d_to_p}} {{argument.dp_file_path}} $(basename $<).d
+$(OBJ_PATH)/%.{{commands.pfile_ext}} : $(OBJ_PATH)/%.o
+	{{commands.cmd_d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
 
 $(OBJ_PATH)/%.o : %.cpp
-	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
 
 $(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(OBJ_FILES)
 	{{platform['recipe.ar.pattern']}}
 	
+$(DIR_BUILD)/{{templates.make_targets}} : $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen_targets}} {{arguments.path}} $@ {{arguments.template}} "make_targets"
+
 # object dependencies

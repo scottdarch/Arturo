@@ -81,7 +81,16 @@ class Command(ArgumentVisitor, Runnable):
         return Command.command_class_to_commandname(self.__class__)
 
     def appendCommandTemplates(self, outTemplates):
-        return outTemplates
+        # Always append the current command.
+        commandName = self.getCommandName()
+        try:
+            outTemplates['commands'][commandName] = __app_name__ + " " + commandName
+        except KeyError:
+            outTemplates['commands'] = { commandName : __app_name__ + " " + commandName }
+        try:
+            return getattr(self.__class__, "appendCommandTemplate")(outTemplates)
+        except:
+            return outTemplates
      
     @abstractmethod
     def add_parser(self, subparsers):

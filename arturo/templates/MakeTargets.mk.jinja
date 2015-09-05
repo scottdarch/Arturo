@@ -5,7 +5,7 @@
 # http://32bits.io/Arturo/
 #
 
--include $(DIR_BUILD)/{{local.toolchainmakefile}}
+{{local.toolchains}}
 
 comma							:= ,
 BINTYPE                         := elf
@@ -23,11 +23,11 @@ OBJ_PATH                        := $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
-CPP_HEADERS                     := $(shell {{command.source_headers}})
+CPP_HEADERS                     := $(shell {{commands.source_headers}})
 CPP_HEADERS_W_I                 := $(addprefix -I , $(CPP_HEADERS))
 C_HEADERS                       := $(filter-out %.hpp, $(CPP_HEADERS))
 C_HEADERS_W_I                   := $(addprefix -I , $(C_HEADERS))
-ALL_SOURCE                      := $(shell {{command.source_files}})
+ALL_SOURCE                      := $(shell {{commands.source_files}})
 INO_SOURCE                      := $(filter %.ino, $(ALL_SOURCE))
 CPP_SOURCE                      := $(filter %.cpp, $(ALL_SOURCE))
 INO_INTERM_SOURCE               := $(addprefix $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/, $(INO_SOURCE:.ino=.cpp))
@@ -35,12 +35,12 @@ C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
 OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
                                    $(addprefix $(OBJ_PATH)/, $(C_SOURCE:.c=.o)) \
                                    $(INO_INTERM_SOURCE:.cpp=.o)
-DEP_FILES                       := $(OBJ_FILES:.o=.{{command.pfile_ext}})
+DEP_FILES                       := $(OBJ_FILES:.o=.{{commands.pfile_ext}})
 
 # +----------------------------------------------------------------------------+
 # | TOOLS
 # +----------------------------------------------------------------------------+
-INO_PROCESSOR                   := {{command.preprocess_sketch}}
+INO_PROCESSOR                   := {{commands.preprocess_sketch}}
 
 # +----------------------------------------------------------------------------+
 # | PHONY TARGETS
@@ -62,14 +62,14 @@ clean:
 # | BUILD TARGETS
 # +----------------------------------------------------------------------------+
 $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
-	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} $(dir $@)
 	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)
 
-$(OBJ_PATH)/%.{{command.pfile_ext}} : $(OBJ_PATH)/%.o
-	{{command.cmd_d_to_p}} {{argument.dp_file_path}} $(basename $<).d
+$(OBJ_PATH)/%.{{commands.pfile_ext}} : $(OBJ_PATH)/%.o
+	{{commands.cmd_d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
 
 $(OBJ_PATH)/%.o : %.cpp
-	@[ -d $(dir $@) ] || {{command.mkdirs}} $(dir $@)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
 
 $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a : $(OBJ_FILES)
@@ -79,4 +79,4 @@ $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).$(BINTYPE) : $(DIR_BUILD)/$(BOARD)/$(PROJE
 	{{platform['recipe.c.combine.pattern']}}
 
 # object dependencies
--include $(OBJ_FILES:%.o=%.{{command.pfile_ext}})
+-include $(OBJ_FILES:%.o=%.{{commands.pfile_ext}})

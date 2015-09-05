@@ -108,7 +108,7 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
                             "local" : { "dir"                 : localpath,
                                         "rootdir"             : rootdir,
                                     },
-                            "command" : { "source_headers"    : listHeadersCommand,
+                            "commands" : { "source_headers"    : listHeadersCommand,
                                           "source_files"      : listSourceCommand,
                                           "source_lib_deps"   : listLibraryDepsCommand,
                                           "preprocess_sketch" : sketchPreprocessCommand,
@@ -117,7 +117,7 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
                                           "mkdirs"            : mkdirsCommand,
                                           "make_gen"          : makeGenCommand,
                                     },
-                            "argument" : { "dp_file_path"     : "--dpath",
+                            "arguments" : { "dp_file_path"     : "--dpath",
                                     },
                             "platform" : boardBuildInfo,
                             }
@@ -215,6 +215,7 @@ class Makegen_lib(Makegen_targets):
     
     @Command.usesCommand(Cmd_lib_source_files)
     @Command.usesCommand(Cmd_lib_source_headers)
+    @Command.usesCommand(Makegen_targets)
     def appendCommandTemplates(self, inoutTemplates):
         return super(Makegen_lib, self).appendCommandTemplates(inoutTemplates)
     
@@ -273,7 +274,7 @@ class Makegen_lib(Makegen_targets):
 
 
 # +---------------------------------------------------------------------------+
-# | MetaMake_libs
+# | Metamakegen_libs
 # +---------------------------------------------------------------------------+
 class Metamakegen_libs(ConfiguredCommand):
     
@@ -287,8 +288,8 @@ class Metamakegen_libs(ConfiguredCommand):
                     'path'     : '--path',
                 }, inoutTemplates)
         
-    @Command.usesCommand(Makegen_targets)
     @Command.usesCommand(Makegen_lib)
+    @Command.usesCommand(Makegen_targets)
     def appendCommandTemplates(self, inoutTemplates):
         return super(Metamakegen_libs, self).appendCommandTemplates(inoutTemplates)
     
