@@ -19,8 +19,8 @@ from arturo.commands.prebuild import Cmd_init, Cmd_version
 from arturo.commands.query import Cmd_commands, Cmd_list_boards, Cmd_list_tools, Cmd_list_platform_data, Cmd_list_libraries, Cmd_which_lib
 
 
-def _is_command_subclass(commandClass):
-    if inspect.isclass(commandClass) and issubclass(commandClass, Command) and commandClass != Command:
+def _is_concrete_command_subclass(commandClass):
+    if inspect.isclass(commandClass) and issubclass(commandClass, Command) and commandClass != Command and not inspect.isabstract(commandClass):
         return True
     else:
         return False
@@ -34,7 +34,7 @@ def getAllCommands():
     
     if not hasattr(module, "_commands"):
         # commands is a list of name, value pairs sorted by name
-        commands = inspect.getmembers(module, _is_command_subclass)
+        commands = inspect.getmembers(module, _is_concrete_command_subclass)
         module._commands = {Command.command_class_to_commandname(commandClass): commandClass for name, commandClass in commands}  # @UnusedVariable
     return module._commands
 
