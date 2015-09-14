@@ -8,17 +8,43 @@
 import distutils.version
 import re
 
-from arturo import i18n
+from arturo import i18n, __app_name__
 from arturo.commands.base import Command, ProjectCommand, ConfiguredCommand
 from arturo.libraries import Library
-
 
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | list-tools
+# | Cmd_commands
 # +---------------------------------------------------------------------------+
-class List_tools(Command):
+class Cmd_commands(Command):
+    '''
+    List all Arturo commands.
+    '''
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Print {} commands then exit.'.format(__app_name__)))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        commandsDict = self.getAllCommands()
+        self.getConsole().stdout(*sorted(commandsDict.keys()))
+
+# +---------------------------------------------------------------------------+
+# | Cmd_list_tools
+# +---------------------------------------------------------------------------+
+class Cmd_list_tools(Command):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
@@ -68,9 +94,9 @@ class List_tools(Command):
             console.popContext()
 
 # +---------------------------------------------------------------------------+
-# | list_libraries
+# | Cmd_list_libraries
 # +---------------------------------------------------------------------------+
-class List_libraries(ConfiguredCommand):
+class Cmd_list_libraries(ConfiguredCommand):
     '''
     List all known libraries
     '''
@@ -126,9 +152,9 @@ class List_libraries(ConfiguredCommand):
                     console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
 
 # +---------------------------------------------------------------------------+
-# | which_lib
+# | Cmd_which_lib
 # +---------------------------------------------------------------------------+
-class Which_lib(ConfiguredCommand):
+class Cmd_which_lib(ConfiguredCommand):
 
     # +-----------------------------------------------------------------------+
     # | Command
@@ -162,9 +188,9 @@ class Which_lib(ConfiguredCommand):
         self.getConsole().printInfo(library.getPath())
 
 # +---------------------------------------------------------------------------+
-# | list-boards
+# | Cmd_list_boards
 # +---------------------------------------------------------------------------+
-class List_boards(Command):
+class Cmd_list_boards(Command):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
@@ -215,16 +241,16 @@ class List_boards(Command):
             console.popContext()
 
 # +---------------------------------------------------------------------------+
-# | list-platform-data
+# | Cmd_list_platform_data
 # +---------------------------------------------------------------------------+
-class List_platform_data(ProjectCommand):
+class Cmd_list_platform_data(ProjectCommand):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
     query syntax that may be encapsulated in a single Query command.
     '''
     def __init__(self, environment, project, console):
-        super(List_platform_data, self).__init__(environment, project, console)
+        super(Cmd_list_platform_data, self).__init__(environment, project, console)
         self._filter = None
         self._package = None
         self._platform = None

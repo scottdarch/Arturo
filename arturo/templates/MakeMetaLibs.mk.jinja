@@ -5,16 +5,49 @@
 # http://32bits.io/Arturo/
 #
 
-SOURCE_FILES            := {{source.files}}
-SOURCE_LIBS             := {{source.libs}}
-SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIBS)))
+-include $(DIR_BUILD)/{{templates.make_toolchain}}
+
+# +----------------------------------------------------------------------------+
+# | COMMON VARIABLES
+# +----------------------------------------------------------------------------+
+OBJ_DIR                 := obj
+
+SOURCE_LIB_NAMES        := $(shell {{commands.source_libs}})
+SOURCE_LIBS             :=
+
+$(foreach SOURCE_LIB_NAME, $(SOURCE_LIB_NAMES), $(eval SOURCE_LIBS += $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(SOURCE_LIB_NAME)/$(SOURCE_LIB_NAME).a))
+
+SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
 
 MAKE_STATIC_LIB         := $(DIR_BUILD)/{{templates.make_staticlib}}
 
+# +----------------------------------------------------------------------------+
+# | BUILD TARGETS
+# +----------------------------------------------------------------------------+
+.PHONY : libs
+libs : $(SOURCE_LIBS)
+	# Build all the libs
+
+$(LOCAL_OBJ_PATH)/%.{{arguments.pfile_ext}} : $(LOCAL_OBJ_PATH)/%.o
+	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
+
+$(LOCAL_OBJ_PATH)/%.o : %.cpp
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	{{platform['recipe.cpp.o.pattern']}}
+
+$(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(LOCAL_OBJ_FILES)
+	{{platform['recipe.ar.pattern']}}
+
 $(MAKE_STATIC_LIB) : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen_targets}} {{arguments.path}} $@ {{arguments.template}} "make_staticlib"
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_staticlib"
 
 $(SOURCE_LIB_INCLUDES) : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen_lib}} {{arguments.path}} $@
+	{{commands.makegen}} {{arguments.islibrary}} {{arguments.path}} $@ {{arguments.template}} "make_lib"
 
+$(DIR_BUILD)/{{templates.make_toolchain}} : $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_toolchain"
+
+# +----------------------------------------------------------------------------+
+# | LIBRARY MODULES
+# +----------------------------------------------------------------------------+
 $(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))

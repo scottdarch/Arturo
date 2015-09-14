@@ -17,11 +17,11 @@ from arturo.libraries import Library
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | Preprocess
+# | Cmd_preprocess
 # +---------------------------------------------------------------------------+
-class Preprocess(ConfiguredCommand):
+class Cmd_preprocess(ConfiguredCommand):
     """
-    Preprocess an .ino sketch file and produce ready-to-compile .cpp source.
+    Cmd_preprocess an .ino sketch file and produce ready-to-compile .cpp source.
 
     Arturo mimics steps that are performed by official Arduino Software to
     produce similar result:
@@ -30,7 +30,7 @@ class Preprocess(ConfiguredCommand):
         * Function _prototypes are added at the beginning of file
     """
     def __init__(self, environment, project, configuration, console):
-        super(Preprocess, self).__init__(environment, project, configuration, console)
+        super(Cmd_preprocess, self).__init__(environment, project, configuration, console)
 
         # single-quoted character
         p = "('.')"
@@ -164,7 +164,7 @@ class Cmd_source_headers(ConfiguredCommand):
     def getAllHeaders(self):
         configuration = self.getConfiguration()
         headers = configuration.getHeaders()
-        core = configuration.getBoard().getCore();
+        core = configuration.getBoard().getCore()
         headers += core.getHeaders()
         variant = configuration.getBoard().getVariant()
         headers += variant.getHeaders()
@@ -310,7 +310,15 @@ class Cmd_lib_source_headers(ConfiguredCommand):
         library = libraryVersions.get(libNameAndVersion[1])
         if not library:
             raise RuntimeError(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
-        self.getConsole().stdout(*library.getHeaders())
+        
+        configuration = self.getConfiguration()
+        headers = library.getHeaders(dirnameonly=True)
+        core = configuration.getBoard().getCore()
+        headers += core.getHeaders(dirnameonly=True)
+        variant = configuration.getBoard().getVariant()
+        headers += variant.getHeaders(dirnameonly=True)
+        
+        self.getConsole().stdout(*headers)
 
 # +---------------------------------------------------------------------------+
 # | Cmd_source_libs
@@ -411,8 +419,7 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
         console = self.getConsole()
         if console.willPrintDebug():
             console.printDebug("Project {} has {} library dependencies".format(self.getProject().getName(), len(libdeps)))
-            for lib in libdeps.itervalues():
-                console.printDebug(" + {}".format(lib.getNameAndVersion()))
+        console.stdout(*libdeps)
             
     # +-----------------------------------------------------------------------+
     # | PRIVATE
@@ -493,6 +500,13 @@ class Cmd_mkdirs(ConfiguredCommand):
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('portable version of mkdir -p'))
 
+    @classmethod
+    def appendCommandTemplate(cls, inoutTemplates):
+        return Command.appendCommandHelper(cls, 
+                { 
+                    'path'     : '--path',
+                }, inoutTemplates)
+
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
@@ -526,6 +540,13 @@ class Cmd_d_to_p(ConfiguredCommand):
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('convert a gnu .d file into Arturo dependencies.'))
 
+    @classmethod
+    def appendCommandTemplate(cls, inoutTemplates):
+        return Command.appendCommandHelper(cls, 
+                { 
+                    'dp_file_path'     : '--dpath',
+                    'pfile_ext'        : cls.PFILE_EXTENSION,
+                }, inoutTemplates)
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
@@ -595,4 +616,3 @@ class Cmd_d_to_p(ConfiguredCommand):
                     raise RuntimeError(_("{} required {} different versions of the {} library.".format(os.path.basename(ppath), len(versions), libname)))
                 libnames.append("{}.{}".format(Library.libNameFromNameAndVersion(library.getName(), versions.pop()), self.LIBDEP_EXTENSION))
         return libnames;
-

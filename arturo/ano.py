@@ -55,9 +55,12 @@ TODO: more about gnu make and the core functionality provided by arturo.
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         commands = getAllCommands()
-        for arg in sys.argv:
-            if arg in commands:
-                self._commandName = arg
+        for x in range(len(sys.argv)):
+            arg = sys.argv[x]
+            dedashed = arg.replace('-', '_')
+            if dedashed in commands:
+                sys.argv[x] = dedashed
+                self._commandName = dedashed
                 break;
         
 

@@ -13,10 +13,10 @@ import textwrap
 from arturo import __app_name__
 import arturo
 from arturo.commands.base import Command, ProjectCommand, ConfiguredCommand
-from arturo.commands.build import Preprocess, Cmd_source_headers, Cmd_source_files, Cmd_d_to_p, Cmd_mkdirs, Cmd_source_libs, Cmd_lib_source_files, Cmd_lib_source_headers
-from arturo.commands.makegen import Metamakegen_libs, Makegen_lib, Makegen_targets
-from arturo.commands.prebuild import Init, Version
-from arturo.commands.query import List_boards, List_tools, List_platform_data, List_libraries, Which_lib
+from arturo.commands.build import Cmd_preprocess, Cmd_source_headers, Cmd_source_files, Cmd_d_to_p, Cmd_mkdirs, Cmd_source_libs, Cmd_lib_source_files, Cmd_lib_source_headers
+from arturo.commands.makegen import Cmd_makegen
+from arturo.commands.prebuild import Cmd_init, Cmd_version
+from arturo.commands.query import Cmd_commands, Cmd_list_boards, Cmd_list_tools, Cmd_list_platform_data, Cmd_list_libraries, Cmd_which_lib
 
 
 def _is_command_subclass(commandClass):

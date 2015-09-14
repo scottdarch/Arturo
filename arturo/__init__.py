@@ -88,13 +88,16 @@ class SearchPathAgent(object):
     
     __metaclass__ = ABCMeta
     
-    def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
+    def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False, dirnameonly=False):
         super(SearchPathAgent, self).__init__()
         self._console = console
         self._visitedDirMemopad = set()
         self._followLinks = followLinks
         self._useDefaultExcludes = useDefaultExcludes
         self._exclusions = exclusions
+        self._dirNamesOnly = dirnameonly
+        self._resultList = list()
+        self._resultSet = set()
         
     def getFollowLinks(self):
         return self._followLinks
@@ -107,12 +110,42 @@ class SearchPathAgent(object):
     
     def getExclusions(self):
         return self._exclusions
+    
+    def isDirNamesOnly(self):
+        return self._dirNamesOnly
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         return SearchPathAgent.KEEP_GOING
     
     def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath, depth):
         return SearchPathAgent.KEEP_GOING
+    
+    def getResults(self, ordered=True):
+        if ordered:
+            return self._resultList
+        else:
+            return self._resultSet
+
+    def hasResult(self, result):
+        return (result in self._resultSet)
+
+    # +-----------------------------------------------------------------------+
+    # | PROTECTED
+    # +-----------------------------------------------------------------------+
+    def _getConsole(self):
+        return self._console
+
+    def _adjustResult(self, result):
+        if self._dirNamesOnly:
+            return os.path.dirname(result)
+        else:
+            return result;
+        
+    def _addResult(self, result):
+        adjustedResult = self._adjustResult(result)
+        if adjustedResult not in self._resultSet:
+            self._resultSet.add(adjustedResult)
+            self._resultList.append(adjustedResult)
     
 # +---------------------------------------------------------------------------+
 # | UTILITY AGENTS AND AGGREGATORS
@@ -128,11 +161,7 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
     
     def __init__(self, extensionSet, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
         super(Arduino15PackageSearchPathAgent, self).__init__(console, exclusions, useDefaultExcludes, followLinks)
-        self._console = console
         self._extensionSet = extensionSet
-
-    def getResults(self):
-        return self._packages
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
@@ -148,19 +177,15 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
 
 class ConfigurationHeaderAggregator(SearchPathAgent):
 
-    def __init__(self, configuration, console, exclusions=None):
-        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
+    def __init__(self, configuration, console, exclusions=None, dirnameonly=False):
+        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True, dirnameonly=dirnameonly)
         self._configuration = configuration
-        self._console = console
-        self._headers = list()
-
-    def getResults(self):
-        return self._headers
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
-            self._headers.append(fqFilename)
+            self._addResult(fqFilename)
+            
         return SearchPathAgent.KEEP_GOING
 
 
@@ -169,16 +194,11 @@ class ConfigurationSourceAggregator(SearchPathAgent):
     def __init__(self, configuration, console, exclusions=None):
         super(ConfigurationSourceAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
-        self._console = console
-        self._sources = list()
-
-    def getResults(self):
-        return self._sources
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
-            self._sources.append(fqFilename)
+            self._addResult(fqFilename)
         return SearchPathAgent.KEEP_GOING
 
 

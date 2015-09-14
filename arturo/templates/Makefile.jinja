@@ -25,6 +25,7 @@ DIR_MAKEFILE                    := $(CURDIR)
 # | MAKEFILE INCLUDES
 # +----------------------------------------------------------------------------+
 META_MAKE_LIBS                  := $(DIR_BUILD)/{{templates.metamake_libs}}
+MAKE_BIN                        := $(DIR_BUILD)/{{templates.make_bin}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
@@ -42,11 +43,14 @@ clean:
 	rm -rf $(DIR_BUILD)
 
 $(META_MAKE_LIBS): {{this.filename}}
-	{{commands.metamakegen_libs}} {{arguments.path}} $@
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "metamake_libs"
+
+$(MAKE_BIN): {{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_bin"
 	
 # optional local overrides
 -include local.mk
 
 DIR_MAKEFILE := $(CURDIR)/$(DIR_BUILD)
 -include $(META_MAKE_LIBS)
-DIR_MAKEFILE := $(CURDIR)
+#-include $(MAKE_BIN)

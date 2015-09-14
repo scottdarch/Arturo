@@ -11,6 +11,8 @@ import string
 import sys
 
 from arturo import Runnable, ArgumentVisitor, __app_name__
+import inspect
+from inspect import isfunction
 
 class UnknownUserInputException(Exception):
     '''
@@ -41,6 +43,8 @@ class Command(ArgumentVisitor, Runnable):
     
     __metaclass__ = ABCMeta
     
+    _COMMAND_MODULE = "arturo.commands"
+    
     @staticmethod
     def usesCommand(commandClass):
         def appendCommandTemplatesDecorator(func):
@@ -61,7 +65,11 @@ class Command(ArgumentVisitor, Runnable):
 
     @classmethod
     def command_class_to_commandname(cls, commandType):
-        return string.lower(commandType.__name__)
+        lowername = string.lower(commandType.__name__)
+        if lowername.startswith("cmd_"):
+            return lowername[4:]
+        else:
+            return lowername
 
     @classmethod
     def appendCommandHelper(cls, subcls, arguments, inoutTemplates):
@@ -102,6 +110,14 @@ class Command(ArgumentVisitor, Runnable):
     def getEnvironment(self):
         return self._env
 
+    def getAllCommands(self):
+        commandsModule = sys.modules[self._COMMAND_MODULE]
+        
+        filteredMembers = inspect.getmembers(commandsModule, lambda x: (isfunction(x) and x.__name__ is "getAllCommands"))
+        if len(filteredMembers) > 0:
+            getAllCommandsTuple = filteredMembers[0]
+            return getAllCommandsTuple[1]()
+            
 # +---------------------------------------------------------------------------+
 # | ProjectCommand
 # +---------------------------------------------------------------------------+
@@ -136,7 +152,7 @@ class ConfiguredCommand(ProjectCommand):
         self._configuration = configuration
 
     def getCommand(self, commandClass):
-        return getattr(sys.modules["arturo.commands"], 'getDefaultCommand')(self._env, self.command_class_to_commandname(commandClass), self._console)
+        return getattr(sys.modules[self._COMMAND_MODULE], 'getDefaultCommand')(self._env, self.command_class_to_commandname(commandClass), self._console)
    
     def getConfiguration(self):
         return self._configuration

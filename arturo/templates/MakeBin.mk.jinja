@@ -5,17 +5,12 @@
 # http://32bits.io/Arturo/
 #
 
-{{local.toolchains}}
-
 comma							:= ,
 BINTYPE                         := elf
 
 # +----------------------------------------------------------------------------+
 # | PATHS
 # +----------------------------------------------------------------------------+
-LOCAL_DIR                       := {{local.dir}}
-LOCAL_ROOT_DIR                  := {{local.rootdir}}
-OBJ_DIR                         := obj
 SKETCH_DIR                      := ino
 VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
 OBJ_PATH                        := $(DIR_BUILD)/$(BOARD)/$(OBJ_DIR)
@@ -35,12 +30,12 @@ C_SOURCE                        := $(filter %.c, $(ALL_SOURCE))
 OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
                                    $(addprefix $(OBJ_PATH)/, $(C_SOURCE:.c=.o)) \
                                    $(INO_INTERM_SOURCE:.cpp=.o)
-DEP_FILES                       := $(OBJ_FILES:.o=.{{commands.pfile_ext}})
+DEP_FILES                       := $(OBJ_FILES:.o=.{{arguments.pfile_ext}})
 
 # +----------------------------------------------------------------------------+
 # | TOOLS
 # +----------------------------------------------------------------------------+
-INO_PROCESSOR                   := {{commands.preprocess_sketch}}
+INO_PROCESSOR                   := {{commands.preprocess}}
 
 # +----------------------------------------------------------------------------+
 # | PHONY TARGETS
@@ -62,21 +57,11 @@ clean:
 # | BUILD TARGETS
 # +----------------------------------------------------------------------------+
 $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
-	@[ -d $(dir $@) ] || {{commands.mkdirs}} $(dir $@)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)
-
-$(OBJ_PATH)/%.{{commands.pfile_ext}} : $(OBJ_PATH)/%.o
-	{{commands.cmd_d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
-
-$(OBJ_PATH)/%.o : %.cpp
-	@[ -d $(dir $@) ] || {{commands.mkdirs}} $(dir $@)
-	{{platform['recipe.cpp.o.pattern']}}
-
-$(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a : $(OBJ_FILES)
-	{{platform['recipe.ar.pattern']}}
 	
 $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).$(BINTYPE) : $(DIR_BUILD)/$(BOARD)/$(PROJECT_NAME).a $(DEP_FILES)
 	{{platform['recipe.c.combine.pattern']}}
 
 # object dependencies
--include $(OBJ_FILES:%.o=%.{{commands.pfile_ext}})
+-include $(OBJ_FILES:%.o=%.{{arguments.pfile_ext}})

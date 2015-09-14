@@ -153,19 +153,14 @@ class BoardPlatformMacroResolver(BoardMacroResolver):
 # +---------------------------------------------------------------------------+
 class CoreHeaderAggregator(SearchPathAgent):
 
-    def __init__(self, configuration, console):
-        super(CoreHeaderAggregator, self).__init__(console, followLinks=True)
+    def __init__(self, configuration, console, dirnameonly=False):
+        super(CoreHeaderAggregator, self).__init__(console, followLinks=True, dirnameonly=dirnameonly)
         self._configuration = configuration
-        self._console = console
-        self._headers = list()
-
-    def getResults(self):
-        return self._headers
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
-            self._headers.append(fqFilename)
+            self._addResult(fqFilename)
         return SearchPathAgent.KEEP_GOING
     
 class Core(object):
@@ -187,10 +182,10 @@ class Core(object):
     def getPath(self):
         return self._path
     
-    def getHeaders(self):
+    def getHeaders(self, dirnameonly=False):
         if self._headers is None:
             self._headers = self.getPlatform().getPackage().getEnvironment().getSearchPath().scanDirs(
-                 self._path, CoreHeaderAggregator(self, self._console)).getResults()
+                 self._path, CoreHeaderAggregator(self, self._console, dirnameonly=dirnameonly)).getResults()
         return self._headers
 
 # +---------------------------------------------------------------------------+

@@ -5,39 +5,37 @@
 # http://32bits.io/Arturo/
 #
 
--include $(DIR_BUILD)/{{templates.make_targets}}
-
 # +----------------------------------------------------------------------------+
 # | PATHS
 # +----------------------------------------------------------------------------+
 ifndef LOCAL_DIR
     $(error LOCAL_DIR was not set)
 endif
-OBJ_DIR                         := obj
-OBJ_PATH                        := $(LOCAL_DIR)/$(OBJ_DIR)
+LOCAL_OBJ_PATH                  := $(LOCAL_DIR)/$(OBJ_DIR)
+VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
 
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
 CPP_SOURCE                      := $(filter %.cpp, $(LOCAL_SOURCES))
 C_SOURCE                        := $(filter %.c, $(LOCAL_SOURCES))
-OBJ_FILES                       := $(addprefix $(OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
-                                   $(addprefix $(OBJ_PATH)/, $(C_SOURCE:.c=.o))
+LOCAL_OBJ_FILES                 := $(addprefix $(LOCAL_OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
+                                   $(addprefix $(LOCAL_OBJ_PATH)/, $(C_SOURCE:.c=.o))
+CPP_HEADERS_W_I                 := $(addprefix -I , $(LOCAL_HEADERS))
+C_HEADERS                       := $(filter-out %.hpp, $(LOCAL_HEADERS))
+C_HEADERS_W_I                   := $(addprefix -I , $(C_HEADERS))
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
 # +----------------------------------------------------------------------------+
-$(OBJ_PATH)/%.{{commands.pfile_ext}} : $(OBJ_PATH)/%.o
-	{{commands.cmd_d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
+$(LOCAL_OBJ_PATH)/%.{{arguments.pfile_ext}} : $(LOCAL_OBJ_PATH)/%.o
+	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
 
-$(OBJ_PATH)/%.o : %.cpp
-	@[ -d $(dir $@) ] || {{commands.mkdirs}} $(dir $@)
+$(LOCAL_OBJ_PATH)/%.o : %.cpp
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
 
-$(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(OBJ_FILES)
+$(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(LOCAL_OBJ_FILES)
 	{{platform['recipe.ar.pattern']}}
-	
-$(DIR_BUILD)/{{templates.make_targets}} : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen_targets}} {{arguments.path}} $@ {{arguments.template}} "make_targets"
 
 # object dependencies

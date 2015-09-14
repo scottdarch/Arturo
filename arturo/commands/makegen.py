@@ -8,10 +8,10 @@
 import os
 
 from arturo import __app_name__, i18n
-from arturo.commands import build
 from arturo.commands.base import Command
 from arturo.commands.base import ConfiguredCommand, mkdirs
-from arturo.commands.build import Cmd_source_libs, Cmd_lib_source_files, Cmd_lib_source_headers
+from arturo.commands.build import Cmd_lib_source_files, Cmd_lib_source_headers,\
+    Cmd_source_headers, Cmd_source_files, Cmd_mkdirs, Cmd_source_libs, Cmd_d_to_p
 from arturo.hardware import BoardMacroResolver
 from arturo.libraries import Library
 from arturo.templates import JinjaTemplates
@@ -21,9 +21,9 @@ _ = i18n.language.ugettext
 
 
 # +---------------------------------------------------------------------------+
-# | Makegen_targets
+# | Cmd_makegen
 # +---------------------------------------------------------------------------+
-class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
+class Cmd_makegen(ConfiguredCommand, BoardMacroResolver):
     '''
     Common logic for generating makefiles with build targets.
     '''
@@ -35,15 +35,23 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
     def appendCommandTemplate(cls, inoutTemplates):
         return Command.appendCommandHelper(cls, 
                 { 
-                    'path'     : '--path',
+                    'path'       : '--path',
                     'template'   : '--template',
+                    'islibrary'  : '--islibrary',
                 }, inoutTemplates)
 
     def add_parser(self, subparsers):
-        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefile for a makefile that contains Arduino build targets.'.format(__app_name__)))
+        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefiles.'.format(__app_name__)))
 
+    @Command.usesCommand(Cmd_source_libs)
+    @Command.usesCommand(Cmd_source_headers)
+    @Command.usesCommand(Cmd_source_files)
+    @Command.usesCommand(Cmd_mkdirs)
+    @Command.usesCommand(Cmd_d_to_p)
+    @Command.usesCommand(Cmd_lib_source_files)
+    @Command.usesCommand(Cmd_lib_source_headers)
     def appendCommandTemplates(self, outTemplates):
-        return super(Makegen_targets, self).appendCommandTemplates(outTemplates)
+        return super(Cmd_makegen, self).appendCommandTemplates(outTemplates)
     
     # +-----------------------------------------------------------------------+
     # | ArgumentVisitor
@@ -51,10 +59,12 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
     def onVisitArgParser(self, parser):
         parser.add_argument("-p", "--path", required=True)
         parser.add_argument('-t', '--template', required=True)
+        parser.add_argument('--islibrary', default=False, action='store_true')
     
     def onVisitArgs(self, args):
         setattr(self, "_path", args.path)
         setattr(self, '_template', args.template)
+        setattr(self, '_islibrary', args.islibrary)
         
     # +-----------------------------------------------------------------------+
     # | BoardMacroResolver
@@ -75,30 +85,26 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
+        jinjaEnv = self.getConfiguration().getJinjaEnvironment()
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, self._template) 
+        
+        mkdirs(os.path.dirname(self._path))
+        
+        makefileTemplate.renderTo(self._path, self.getInitRenderParams())
+
+    # +-----------------------------------------------------------------------+
+    # | PROTECTED
+    # +-----------------------------------------------------------------------+
+    def getInitRenderParams(self):
         configuration = self.getConfiguration()
         board = configuration.getBoard()
         project = self.getProject()
-        jinjaEnv = configuration.getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, self._template)
 
         # directories and paths
         builddir                = project.getBuilddir()
         projectPath             = project.getPath()
         localpath               = os.path.relpath(builddir, projectPath)
         rootdir                 = os.path.relpath(projectPath, builddir)
-        targetsMakefilePath     = self._path
-        toolchainMakefilePath   = os.path.join(builddir, JinjaTemplates.TEMPLATES['make_toolchain'])
-        
-        mkdirs(os.path.dirname(targetsMakefilePath))
-        
-        # arturo commands
-        listHeadersCommand = __app_name__ + " cmd-source-headers"
-        listSourceCommand = __app_name__ + " cmd-source-files"
-        listLibraryDepsCommand = __app_name__ + " cmd-source-libraries --ppath"
-        sketchPreprocessCommand = __app_name__ + " preprocess"
-        dToPCommand = __app_name__ + " cmd-d-to-p --dpath"
-        mkdirsCommand = "mkdir -p "
-        makeGenCommand = __app_name__ + " make-gen"
 
         # makefile rendering params
         self._requiredLocalPaths = dict()
@@ -108,39 +114,26 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
                             "local" : { "dir"                 : localpath,
                                         "rootdir"             : rootdir,
                                     },
-                            "commands" : { "source_headers"    : listHeadersCommand,
-                                          "source_files"      : listSourceCommand,
-                                          "source_lib_deps"   : listLibraryDepsCommand,
-                                          "preprocess_sketch" : sketchPreprocessCommand,
-                                          "cmd_d_to_p"        : dToPCommand,
-                                          "pfile_ext"         : build.Cmd_d_to_p.PFILE_EXTENSION,
-                                          "mkdirs"            : mkdirsCommand,
-                                          "make_gen"          : makeGenCommand,
-                                    },
-                            "arguments" : { "dp_file_path"     : "--dpath",
-                                    },
                             "platform" : boardBuildInfo,
                             }
+
+        initRenderParams['local'].update(self._requiredLocalPaths)
         
         self.appendCommandTemplates(initRenderParams)
         
-        makefileTemplate.renderTo(targetsMakefilePath, initRenderParams)
+        if self._islibrary:
+            libraries = configuration.getLibraries()
+            library = self._find_library_in_path(self._path, libraries)
+            
+            if not library:
+                raise RuntimeError(_("Unable to determine library from path {}".format(self._path)))
         
-        if len(self._requiredLocalPaths):
-            self._console.printVerbose("This makefile requires local paths.")
-            
-            toolchainTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'make_toolchain')
-            
-            toolchainRenderParams = {
-                                     "local" : self._requiredLocalPaths,
-                                    }
+            initRenderParams['library'] = { 
+                                           'name'       : library.getNameAndVersion(),
+                                           }
 
-            toolchainTemplate.renderTo(toolchainMakefilePath, toolchainRenderParams)
-
-        elif os.path.exists(toolchainMakefilePath):
-            if self._console.askYesNoQuestion(_("Local paths makefile {0} appears to be obsolete. Delete it?".format(toolchainMakefilePath))):
-                os.remove(toolchainMakefilePath)
-
+        return initRenderParams
+        
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
@@ -196,68 +189,6 @@ class Makegen_targets(ConfiguredCommand, BoardMacroResolver):
         else:
             raise KeyError()
 
-# +---------------------------------------------------------------------------+
-# | Makegen_lib
-# +---------------------------------------------------------------------------+
-class Makegen_lib(Makegen_targets):
-    '''
-    (Re)Generate makefile for a given library.
-    '''
-    # +-----------------------------------------------------------------------+
-    # | Command
-    # +-----------------------------------------------------------------------+
-    @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
-        return Command.appendCommandHelper(cls, 
-                { 
-                    'path'     : '--path',
-                }, inoutTemplates)
-    
-    @Command.usesCommand(Cmd_lib_source_files)
-    @Command.usesCommand(Cmd_lib_source_headers)
-    @Command.usesCommand(Makegen_targets)
-    def appendCommandTemplates(self, inoutTemplates):
-        return super(Makegen_lib, self).appendCommandTemplates(inoutTemplates)
-    
-    def add_parser(self, subparsers):
-        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefile for a library.'.format(__app_name__)))
-
-    # +-----------------------------------------------------------------------+
-    # | ArgumentVisitor
-    # +-----------------------------------------------------------------------+
-    def onVisitArgParser(self, parser):
-        parser.add_argument("-p", "--path", required=True)
-    
-    def onVisitArgs(self, args):
-        setattr(self, "_path", args.path)
-
-    # +-----------------------------------------------------------------------+
-    # | Runnable
-    # +-----------------------------------------------------------------------+
-    def run(self):
-        configuration = self.getConfiguration()
-        jinjaEnv = configuration.getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'make_lib')
-        libraries = self.getConfiguration().getLibraries()
-        library = self._find_library_in_path(self._path, libraries)
-        
-        if not library:
-            raise RuntimeError(_("Unable to determine library from path {}".format(self._path)))
-        
-        initRenderParams = self.appendCommandTemplates(dict())
-        initRenderParams['library'] = { 
-                                       'name'       : library.getNameAndVersion(),
-                                       }
-        initRenderParams["local"] = { "dir"                 : "foo",
-                                    }
-        
-        mkdirs(os.path.dirname(self._path))
-        
-        makefileTemplate.renderTo(self._path, initRenderParams)
-        
-    # +-----------------------------------------------------------------------+
-    # | PRIVATE
-    # +-----------------------------------------------------------------------+
     def _find_library_in_path(self, path, libraries):
         libDirName = os.path.basename(os.path.dirname(path))
         console = self.getConsole()
@@ -271,70 +202,3 @@ class Makegen_lib(Makegen_targets):
                 raise RuntimeError(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
             else:
                 return library
-
-
-# +---------------------------------------------------------------------------+
-# | Metamakegen_libs
-# +---------------------------------------------------------------------------+
-class Metamakegen_libs(ConfiguredCommand):
-    
-    # +-----------------------------------------------------------------------+
-    # | Command
-    # +-----------------------------------------------------------------------+
-    @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
-        return Command.appendCommandHelper(cls, 
-                { 
-                    'path'     : '--path',
-                }, inoutTemplates)
-        
-    @Command.usesCommand(Makegen_lib)
-    @Command.usesCommand(Makegen_targets)
-    def appendCommandTemplates(self, inoutTemplates):
-        return super(Metamakegen_libs, self).appendCommandTemplates(inoutTemplates)
-    
-    def add_parser(self, subparsers):
-        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} meta-makefiles for the project.'.format(__app_name__)))
-    
-    # +-----------------------------------------------------------------------+
-    # | ArgumentVisitor
-    # +-----------------------------------------------------------------------+
-    def onVisitArgParser(self, parser):
-        parser.add_argument("-p", "--path", default=None)
-        
-    def onVisitArgs(self, args):
-        if args.path is None:
-            self._path = self.getProject().getBuilddir() + JinjaTemplates.TEMPLATES['metamake_libs']
-        else:
-            self._path = args.path
-        
-    # +-----------------------------------------------------------------------+
-    # | Runnable
-    # +-----------------------------------------------------------------------+
-    def run(self):
-        configuration           = self.getConfiguration()
-        jinjaEnv                = configuration.getJinjaEnvironment()
-        makefileTemplate        = JinjaTemplates.getTemplate(jinjaEnv, 'metamake_libs')
-        builddir                = os.path.dirname(self._path)
-        targetsMakefilePath     = self._path
-        
-        mkdirs(builddir)
-        
-        initRenderParams = self.appendCommandTemplates(dict())
-        
-        sourceLibsCommand = self.getCommand(Cmd_source_libs)
-        
-        libraries = ""
-        sources   = ""
-        
-        for libraryNameAndVersion in sourceLibsCommand.getAllPossibleLibsForProject().iterkeys():
-            libraries += libraryNameAndVersion
-            libraries += " "
-        
-        for source in sourceLibsCommand.getAllSources():
-            sources += source
-            sources += " "
-        
-        initRenderParams['source'] = {'libs': libraries, 'files': sources}
-        
-        makefileTemplate.renderTo(targetsMakefilePath, initRenderParams)

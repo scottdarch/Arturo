@@ -20,13 +20,9 @@ class LibrarySearchAggregator(Arduino15PackageSearchPathAgent):
     def __init__(self, console):
         super(LibrarySearchAggregator, self).__init__(SearchPath.ARTURO2_HEADER_FILEEXT, console, followLinks=True)
         self._console = console
-        self._headers = list()
-
-    def getResults(self):
-        return self._libraryRoots
 
     def onVisitPackage(self, parentPath, rootPath, packageName, filename):
-        self._libraryRoots.append([parentPath, packageName, filename])
+        self._addResult([parentPath, packageName, filename])
         return SearchPathAgent.KEEP_GOING
 
 
@@ -103,6 +99,9 @@ class Library(object):
         self._path = libraryPath
         self._platform = libraryPlatform
 
+    def __str__(self):
+        return self._name_and_version
+
     def getName(self):
         return self._name
     
@@ -121,13 +120,13 @@ class Library(object):
     def getPlatform(self):
         return self._platform
     
-    def getHeaders(self):
+    def getHeaders(self, dirnameonly=False):
         if self._headers is None:
             if self._path is None:
                 self._headers = []
             else:
                 self._headers = self.getEnvironment().getSearchPath().scanDirs(
-                        self._path, ConfigurationHeaderAggregator(self, self._console, exclusions=SearchPath.ARTURO2_LIBRARY_EXAMPLE_FOLDERS)).getResults()
+                        self._path, ConfigurationHeaderAggregator(self, self._console, exclusions=SearchPath.ARTURO2_LIBRARY_EXAMPLE_FOLDERS, dirnameonly=dirnameonly)).getResults()
         return self._headers
 
     def hasSource(self):

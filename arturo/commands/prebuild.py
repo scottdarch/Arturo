@@ -8,16 +8,16 @@ import os
 
 from arturo import __app_name__, __version__, __lib_name__, i18n, MissingRequiredFileException
 from arturo.commands.base import Command, ProjectCommand
-from arturo.commands.makegen import Metamakegen_libs
+from arturo.commands.makegen import Cmd_makegen
 from arturo.templates import JinjaTemplates
 
 
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | Version
+# | Cmd_version
 # +---------------------------------------------------------------------------+
-class Version(Command):
+class Cmd_version(Command):
     '''
     Get versioning information for Arturo/arturo.
     '''
@@ -41,9 +41,9 @@ class Version(Command):
         self.getConsole().printInfo(_('{0} {1} (using lib{2})'.format(__app_name__, __version__, __lib_name__)))
         
 # +---------------------------------------------------------------------------+
-# | Init
+# | Cmd_init
 # +---------------------------------------------------------------------------+
-class Init(ProjectCommand):
+class Cmd_init(ProjectCommand):
     '''
     Safe initialization of a project with the Arturo generated makefile. Once this command completes
     the project should be buildable using make.
@@ -51,15 +51,15 @@ class Init(ProjectCommand):
     LEGACY_SOURCEFOLDER_NAMES = ["src"]
     
     def __init__(self, environment, project, console):
-        super(Init, self).__init__(environment, project, console)
+        super(Cmd_init, self).__init__(environment, project, console)
         self._force = False
 
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
-    @Command.usesCommand(Metamakegen_libs)
+    @Command.usesCommand(Cmd_makegen)
     def appendCommandTemplates(self, inoutTemplates):
-        return super(Init, self).appendCommandTemplates(inoutTemplates)
+        return super(Cmd_init, self).appendCommandTemplates(inoutTemplates)
     
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('Initialize a project for use with {} and its makefiles.'.format(__app_name__)))
@@ -82,7 +82,7 @@ class Init(ProjectCommand):
         
         # first choose a project "main"
         # TODO: allow commandline arguments to force project folders to be treated as source folders.
-        sourceRoots = project.getSourceRoots(Init.LEGACY_SOURCEFOLDER_NAMES)
+        sourceRoots = project.getSourceRoots(Cmd_init.LEGACY_SOURCEFOLDER_NAMES)
         sourceRoot = None
         if len(sourceRoots) > 1:
             projectList = list()
@@ -93,7 +93,7 @@ class Init(ProjectCommand):
         elif (len(sourceRoots) == 1):
             sourceRoot = sourceRoots[0]
         else:
-            raise MissingRequiredFileException(self.getEnvironment().getSearchPath(), Init.LEGACY_SOURCEFOLDER_NAMES, "Source root folders")
+            raise MissingRequiredFileException(self.getEnvironment().getSearchPath(), Cmd_init.LEGACY_SOURCEFOLDER_NAMES, "Source root folders")
             
 
         # next use the IDE's preferences to populate our makefile
@@ -102,7 +102,7 @@ class Init(ProjectCommand):
         # setup the top level makefile
         makefilePath = project.getMakefilePath()
         sourcePath = os.path.relpath(os.path.join(sourceRoot[0], sourceRoot[1]), os.path.dirname(makefilePath))
-        projectName = sourceRoot[1] if sourceRoot[1] not in Init.LEGACY_SOURCEFOLDER_NAMES else os.path.basename(sourceRoot[0])
+        projectName = sourceRoot[1] if sourceRoot[1] not in Cmd_init.LEGACY_SOURCEFOLDER_NAMES else os.path.basename(sourceRoot[0])
         
         if os.path.exists(makefilePath):
             if self._force:

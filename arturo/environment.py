@@ -88,10 +88,10 @@ class Configuration(object):
     def getSourcePath(self):
         return self._sourcePath
 
-    def getHeaders(self):
+    def getHeaders(self, dirnameonly=False):
         if self._headers is None:
             self._headers = self.getProject().getEnvironment().getSearchPath().scanDirs(
-                 self._sourcePath, ConfigurationHeaderAggregator(self, self._console)).getResults()
+                 self._sourcePath, ConfigurationHeaderAggregator(self, self._console, dirnameonly=dirnameonly)).getResults()
         return self._headers
 
     def getSources(self):
@@ -121,15 +121,10 @@ class ProjectSourceRootAggregator(Arduino15PackageSearchPathAgent):
     def __init__(self, project, console, exclusions=None):
         super(ProjectSourceRootAggregator, self).__init__(SearchPath.ARTURO2_SOURCE_FILEEXT, console, exclusions=exclusions, followLinks=True)
         self._project = project
-        self._console = console
-        self._sourceRoots = []
-
-    def getResults(self):
-        return self._sourceRoots
 
     def onVisitPackage(self, parentPath, rootPath, packageName, filename):
         if os.path.basename(parentPath) not in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
-            self._sourceRoots.append([parentPath, packageName, filename])
+            self._addResult([parentPath, packageName, filename])
         return SearchPathAgent.KEEP_GOING
 
 

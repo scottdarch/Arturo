@@ -5,9 +5,11 @@
 # http://32bits.io/Arturo/
 #
 
-LOCAL_DIR                   := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/{{library.name}}
+#TODO: include $(MAKE_CLEAR_VARS)
+
 LOCAL_MODULE_NAME           := {{library.name}}
-LOCAL_SOURCES               := $(shell {{commands.cmd_lib_source_files}} {{arguments.library}} $(LOCAL_MODULE_NAME))
-LOCAL_HEADERS               := $(shell {{commands.cmd_lib_source_headers}} {{arguments.library}} $(LOCAL_MODULE_NAME))
+LOCAL_DIR                   := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)
+LOCAL_SOURCES               := $(shell {{commands.lib_source_files}} {{arguments.library}} $(LOCAL_MODULE_NAME))
+LOCAL_HEADERS               := $(shell {{commands.lib_source_headers}} {{arguments.library}} $(LOCAL_MODULE_NAME))
 
 -include $(MAKE_STATIC_LIB)
