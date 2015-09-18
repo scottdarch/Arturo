@@ -11,19 +11,20 @@
 ifndef LOCAL_DIR
     $(error LOCAL_DIR was not set)
 endif
-LOCAL_OBJ_PATH                  := $(LOCAL_DIR)/$(OBJ_DIR)
-VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
+LOCAL_OBJ_PATH                  = $(LOCAL_DIR)/$(OBJ_DIR)
+VPATH                           = $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
 
 # +----------------------------------------------------------------------------+
 # | SOURCE
 # +----------------------------------------------------------------------------+
-CPP_SOURCE                      := $(filter %.cpp, $(LOCAL_SOURCES))
-C_SOURCE                        := $(filter %.c, $(LOCAL_SOURCES))
-LOCAL_OBJ_FILES                 := $(addprefix $(LOCAL_OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
+CPP_SOURCE                      = $(filter %.cpp, $(LOCAL_SOURCES))
+C_SOURCE                        = $(filter %.c, $(LOCAL_SOURCES))
+LOCAL_OBJ_FILES                 = $(addprefix $(LOCAL_OBJ_PATH)/, $(CPP_SOURCE:.cpp=.o)) \
                                    $(addprefix $(LOCAL_OBJ_PATH)/, $(C_SOURCE:.c=.o))
-CPP_HEADERS_W_I                 := $(addprefix -I , $(LOCAL_HEADERS))
-C_HEADERS                       := $(filter-out %.hpp, $(LOCAL_HEADERS))
-C_HEADERS_W_I                   := $(addprefix -I , $(C_HEADERS))
+CPP_HEADERS                     = $(LOCAL_HEADERS)
+CPP_HEADERS_W_I                 = $(addprefix -I , $(LOCAL_HEADERS))
+C_HEADERS                       = $(filter-out %.hpp, $(LOCAL_HEADERS))
+C_HEADERS_W_I                   = $(addprefix -I , $(C_HEADERS))
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS

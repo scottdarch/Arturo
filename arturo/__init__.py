@@ -88,14 +88,13 @@ class SearchPathAgent(object):
     
     __metaclass__ = ABCMeta
     
-    def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False, dirnameonly=False):
+    def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
         super(SearchPathAgent, self).__init__()
         self._console = console
         self._visitedDirMemopad = set()
         self._followLinks = followLinks
         self._useDefaultExcludes = useDefaultExcludes
         self._exclusions = exclusions
-        self._dirNamesOnly = dirnameonly
         self._resultList = list()
         self._resultSet = set()
         
@@ -110,9 +109,6 @@ class SearchPathAgent(object):
     
     def getExclusions(self):
         return self._exclusions
-    
-    def isDirNamesOnly(self):
-        return self._dirNamesOnly
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         return SearchPathAgent.KEEP_GOING
@@ -134,18 +130,11 @@ class SearchPathAgent(object):
     # +-----------------------------------------------------------------------+
     def _getConsole(self):
         return self._console
-
-    def _adjustResult(self, result):
-        if self._dirNamesOnly:
-            return os.path.dirname(result)
-        else:
-            return result;
         
     def _addResult(self, result):
-        adjustedResult = self._adjustResult(result)
-        if adjustedResult not in self._resultSet:
-            self._resultSet.add(adjustedResult)
-            self._resultList.append(adjustedResult)
+        if result not in self._resultSet:
+            self._resultSet.add(result)
+            self._resultList.append(result)
     
 # +---------------------------------------------------------------------------+
 # | UTILITY AGENTS AND AGGREGATORS
@@ -177,8 +166,8 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
 
 class ConfigurationHeaderAggregator(SearchPathAgent):
 
-    def __init__(self, configuration, console, exclusions=None, dirnameonly=False):
-        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True, dirnameonly=dirnameonly)
+    def __init__(self, configuration, console, exclusions=None):
+        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):

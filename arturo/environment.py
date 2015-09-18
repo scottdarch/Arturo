@@ -42,6 +42,7 @@ class Configuration(object):
         self._jinjaEnv = None
         self._builddir = None
         self._headers = None
+        self._headerPaths = None
         self._sources = None
         self._libraries = None
         
@@ -89,10 +90,21 @@ class Configuration(object):
         return self._sourcePath
 
     def getHeaders(self, dirnameonly=False):
-        if self._headers is None:
-            self._headers = self.getProject().getEnvironment().getSearchPath().scanDirs(
-                 self._sourcePath, ConfigurationHeaderAggregator(self, self._console, dirnameonly=dirnameonly)).getResults()
-        return self._headers
+        headers = self._headerPaths if (dirnameonly) else self._headers
+        if headers is None and self._sourcePath is not None:
+            if self._headers is None:
+                self._headers = self.getProject().getEnvironment().getSearchPath().scanDirs(
+                     self._sourcePath, ConfigurationHeaderAggregator(self, self._console)).getResults()
+            
+            if dirnameonly and self._headerPaths is None:
+                paths = set()
+                for header in self._headers:
+                    paths.add(os.path.dirname(header))
+                self._headerPaths = list(paths)
+
+            headers = self._headerPaths if (dirnameonly) else self._headers
+
+        return headers
 
     def getSources(self):
         if self._sources is None:

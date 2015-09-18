@@ -10,6 +10,7 @@ import re
 
 from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, parsers, \
     ConfigurationHeaderAggregator, ConfigurationSourceAggregator
+from docutils.transforms.peps import Headers
 
 
 # +---------------------------------------------------------------------------+
@@ -89,6 +90,7 @@ class Library(object):
             raise ValueError("Library name cannot be empty or missing.")
             
         self._headers = None
+        self._headerPaths = None
         self._sources = None
         self._environment = environment
         self._console = console
@@ -121,13 +123,23 @@ class Library(object):
         return self._platform
     
     def getHeaders(self, dirnameonly=False):
-        if self._headers is None:
-            if self._path is None:
-                self._headers = []
-            else:
+        headers = self._headerPaths if (dirnameonly) else self._headers
+        if headers is None and self._path is not None:
+            if self._headers is None:
                 self._headers = self.getEnvironment().getSearchPath().scanDirs(
-                        self._path, ConfigurationHeaderAggregator(self, self._console, exclusions=SearchPath.ARTURO2_LIBRARY_EXAMPLE_FOLDERS, dirnameonly=dirnameonly)).getResults()
-        return self._headers
+                        self._path, 
+                        ConfigurationHeaderAggregator(self, 
+                                                      self._console,
+                                                      exclusions=SearchPath.ARTURO2_LIBRARY_EXAMPLE_FOLDERS)).getResults()
+            if dirnameonly and self._headerPaths is None:
+                paths = set()
+                for header in self._headers:
+                    paths.add(os.path.dirname(header))
+                self._headerPaths = list(paths)
+
+            headers = self._headerPaths if (dirnameonly) else self._headers
+
+        return headers
 
     def hasSource(self):
         return (len(self.getSources()) > 0)

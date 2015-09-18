@@ -302,7 +302,9 @@ class Cmd_lib_source_headers(ConfiguredCommand):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        libraries = self.getConfiguration().getLibraries()
+        configuration = self.getConfiguration()
+
+        libraries = configuration.getLibraries()
         libNameAndVersion = Library.libNameAndVersion(self._library)
         libraryVersions = libraries.get(libNameAndVersion[0])
         if not libraryVersions:
@@ -310,15 +312,28 @@ class Cmd_lib_source_headers(ConfiguredCommand):
         library = libraryVersions.get(libNameAndVersion[1])
         if not library:
             raise RuntimeError(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
-        
-        configuration = self.getConfiguration()
-        headers = library.getHeaders(dirnameonly=True)
+
+        headers = set(library.getHeaders(dirnameonly=True))
+        dependantLibs = self._findAllLibrariesForLibrary(library)
+        for dependantLib in dependantLibs.itervalues():
+            headers.update(set(dependantLib.getHeaders(dirnameonly=True)))
         core = configuration.getBoard().getCore()
-        headers += core.getHeaders(dirnameonly=True)
+        headers.update(set(core.getHeaders(dirnameonly=True)))
         variant = configuration.getBoard().getVariant()
-        headers += variant.getHeaders(dirnameonly=True)
-        
+        headers.update(set(variant.getHeaders(dirnameonly=True)))
+
         self.getConsole().stdout(*headers)
+
+    # +-----------------------------------------------------------------------+
+    # | PRIVATE
+    # +-----------------------------------------------------------------------+
+    def _findAllLibrariesForLibrary(self, library):
+        if hasattr(self, "_libdeps"):
+            return self._libdeps
+
+        cmd_source_libs = self.getCommand("Cmd_source_libs")
+        setattr(self, "_libdeps", cmd_source_libs.findAllLibrariesForLibrary(library))
+        return self._libdeps
 
 # +---------------------------------------------------------------------------+
 # | Cmd_source_libs
@@ -410,12 +425,17 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
             self._findAllLibrariesRecursive(libdep, self._libdeps)
         return self._libdeps
 
+    def findAllLibrariesForLibrary(self, library):
+        results = dict()
+        self._findAllLibrariesRecursive(library, results)
+        return results;
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
         libdeps = self.getAllPossibleLibsForProject()
-        
+        #TODO: find recursive library dependencies (i.e. libraries that depend on other libraries).
         console = self.getConsole()
         if console.willPrintDebug():
             console.printDebug("Project {} has {} library dependencies".format(self.getProject().getName(), len(libdeps)))
@@ -470,6 +490,16 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
                     if console.willPrintVerbose():
                         console.printVerbose("Library {} depends on library {}".format(library.getName(), headerLibDep.getName()))
                     self._findAllLibrariesRecursive(headerLibDep, libdeps)
+        librarySources = library.getSources()
+        for source in librarySources:
+            sourceLibDeps = self.getPossibleLibsForSource(source)
+            before = len(libdeps)
+            libdeps.update(sourceLibDeps)
+            if len(libdeps) > before:
+                for sourceLibDep in sourceLibDeps.itervalues():
+                    if console.willPrintVerbose():
+                        console.printVerbose("Library {} depends on library {}".format(library.getName(), sourceLibDep.getName()))
+                    self._findAllLibrariesRecursive(sourceLibDep, libdeps)
         
     def _getNewestLibrary(self, libraryVersions):
         for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):

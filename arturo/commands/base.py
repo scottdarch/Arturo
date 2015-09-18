@@ -64,12 +64,16 @@ class Command(ArgumentVisitor, Runnable):
         return appendCommandTemplatesDecorator
 
     @classmethod
-    def command_class_to_commandname(cls, commandType):
-        lowername = string.lower(commandType.__name__)
+    def command_class_name_to_commandname(cls, commandTypeName):
+        lowername = string.lower(commandTypeName)
         if lowername.startswith("cmd_"):
             return lowername[4:]
         else:
             return lowername
+
+    @classmethod
+    def command_class_to_commandname(cls, commandType):
+        return cls.command_class_name_to_commandname(commandType.__name__)
 
     @classmethod
     def appendCommandHelper(cls, subcls, arguments, inoutTemplates):
@@ -117,7 +121,14 @@ class Command(ArgumentVisitor, Runnable):
         if len(filteredMembers) > 0:
             getAllCommandsTuple = filteredMembers[0]
             return getAllCommandsTuple[1]()
-            
+
+    def getCommand(self, commandClass):
+        if inspect.isclass(commandClass):
+            classname = self.command_class_to_commandname(commandClass)
+        else:
+            classname = self.command_class_name_to_commandname(commandClass)
+        return getattr(sys.modules[self._COMMAND_MODULE], 'getDefaultCommand')(self._env, classname, self._console)
+ 
 # +---------------------------------------------------------------------------+
 # | ProjectCommand
 # +---------------------------------------------------------------------------+
@@ -150,10 +161,7 @@ class ConfiguredCommand(ProjectCommand):
     def __init__(self, environment, project, configuration, console):
         super(ConfiguredCommand, self).__init__(environment, project, console)
         self._configuration = configuration
-
-    def getCommand(self, commandClass):
-        return getattr(sys.modules[self._COMMAND_MODULE], 'getDefaultCommand')(self._env, self.command_class_to_commandname(commandClass), self._console)
-   
+  
     def getConfiguration(self):
         return self._configuration
 

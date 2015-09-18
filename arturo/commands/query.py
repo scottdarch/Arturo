@@ -145,12 +145,8 @@ class Cmd_list_libraries(ConfiguredCommand):
         for libraryVersions in librariesDict.itervalues():
             for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
                 library = libraryVersions[libraryVersion]
-                platform = library.getPlatform()
-                if platform:
-                    console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), platform.getName())))
-                else:
-                    console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
-
+                console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
+                
 # +---------------------------------------------------------------------------+
 # | Cmd_which_lib
 # +---------------------------------------------------------------------------+

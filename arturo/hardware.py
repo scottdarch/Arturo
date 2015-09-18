@@ -153,8 +153,8 @@ class BoardPlatformMacroResolver(BoardMacroResolver):
 # +---------------------------------------------------------------------------+
 class CoreHeaderAggregator(SearchPathAgent):
 
-    def __init__(self, configuration, console, dirnameonly=False):
-        super(CoreHeaderAggregator, self).__init__(console, followLinks=True, dirnameonly=dirnameonly)
+    def __init__(self, configuration, console):
+        super(CoreHeaderAggregator, self).__init__(console, followLinks=True)
         self._configuration = configuration
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
@@ -172,6 +172,7 @@ class Core(object):
         self._console = console
         self._platform = platform
         self._headers = None
+        self._headerPaths = None
 
     def getName(self):
         return self._name
@@ -183,10 +184,21 @@ class Core(object):
         return self._path
     
     def getHeaders(self, dirnameonly=False):
-        if self._headers is None:
-            self._headers = self.getPlatform().getPackage().getEnvironment().getSearchPath().scanDirs(
-                 self._path, CoreHeaderAggregator(self, self._console, dirnameonly=dirnameonly)).getResults()
-        return self._headers
+        headers = self._headerPaths if (dirnameonly) else self._headers
+        if headers is None and self._path is not None:
+            if self._headers is None:
+                self._headers = self.getPlatform().getPackage().getEnvironment().getSearchPath().scanDirs(
+                     self._path, CoreHeaderAggregator(self, self._console)).getResults()
+
+            if dirnameonly and self._headerPaths is None:
+                paths = set()
+                for header in self._headers:
+                    paths.add(os.path.dirname(header))
+                self._headerPaths = list(paths)
+
+            headers = self._headerPaths if (dirnameonly) else self._headers
+
+        return headers
 
 # +---------------------------------------------------------------------------+
 # | Variant
