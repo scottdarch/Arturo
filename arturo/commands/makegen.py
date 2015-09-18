@@ -19,29 +19,73 @@ from arturo.templates import JinjaTemplates
 
 _ = i18n.language.ugettext
 
+# +---------------------------------------------------------------------------+
+# | Cmd_makegen_noexpand
+# +---------------------------------------------------------------------------+
+class Cmd_makegen_noexpand(ConfiguredCommand):
+    '''
+    Generates makefiles but does not provide macro expansion.
+    '''
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    @classmethod
+    def appendCommandTemplateForClass(cls, inoutTemplates):
+        return Command.appendCommandHelper(cls, 
+                { 
+                    'path'       : '--path',
+                    'template'   : '--template',
+                }, inoutTemplates)
+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefiles.'.format(__app_name__)))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("-p", "--path", required=True)
+        parser.add_argument('-t', '--template', required=True)\
+    
+    def onVisitArgs(self, args):
+        setattr(self, "_path", args.path)
+        setattr(self, '_template', args.template)
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        jinjaEnv = self.getConfiguration().getJinjaEnvironment()
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, self._template) 
+        
+        mkdirs(os.path.dirname(self._path))
+        
+        makefileTemplate.renderTo(self._path, self.getInitRenderParams())
+
+    # +-----------------------------------------------------------------------+
+    # | PROTECTED
+    # +-----------------------------------------------------------------------+
+    def getInitRenderParams(self):
+        return dict()
 
 # +---------------------------------------------------------------------------+
 # | Cmd_makegen
 # +---------------------------------------------------------------------------+
-class Cmd_makegen(ConfiguredCommand, BoardMacroResolver):
+class Cmd_makegen(Cmd_makegen_noexpand, BoardMacroResolver):
     '''
-    Common logic for generating makefiles with build targets.
+    Common logic for generating makefiles and expanding makefile jinja 2 macros.
     '''
     
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
     @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
+    def appendCommandTemplateForClass(cls, inoutTemplates):
         return Command.appendCommandHelper(cls, 
-                { 
-                    'path'       : '--path',
-                    'template'   : '--template',
+                {
                     'islibrary'  : '--islibrary',
                 }, inoutTemplates)
-
-    def add_parser(self, subparsers):
-        return subparsers.add_parser(self.getCommandName(), help=_('Generate {} makefiles.'.format(__app_name__)))
 
     @Command.usesCommand(Cmd_source_libs)
     @Command.usesCommand(Cmd_source_headers)
@@ -57,13 +101,11 @@ class Cmd_makegen(ConfiguredCommand, BoardMacroResolver):
     # | ArgumentVisitor
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
-        parser.add_argument("-p", "--path", required=True)
-        parser.add_argument('-t', '--template', required=True)
+        super(Cmd_makegen, self).onVisitArgParser(parser)
         parser.add_argument('--islibrary', default=False, action='store_true')
     
     def onVisitArgs(self, args):
-        setattr(self, "_path", args.path)
-        setattr(self, '_template', args.template)
+        super(Cmd_makegen, self).onVisitArgs(args)
         setattr(self, '_islibrary', args.islibrary)
         
     # +-----------------------------------------------------------------------+
@@ -82,20 +124,11 @@ class Cmd_makegen(ConfiguredCommand, BoardMacroResolver):
             raise KeyError()
 
     # +-----------------------------------------------------------------------+
-    # | Runnable
-    # +-----------------------------------------------------------------------+
-    def run(self):
-        jinjaEnv = self.getConfiguration().getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, self._template) 
-        
-        mkdirs(os.path.dirname(self._path))
-        
-        makefileTemplate.renderTo(self._path, self.getInitRenderParams())
-
-    # +-----------------------------------------------------------------------+
     # | PROTECTED
     # +-----------------------------------------------------------------------+
     def getInitRenderParams(self):
+        initRenderParams = super(Cmd_makegen, self).getInitRenderParams()
+        
         configuration = self.getConfiguration()
         board = configuration.getBoard()
         project = self.getProject()
@@ -110,12 +143,12 @@ class Cmd_makegen(ConfiguredCommand, BoardMacroResolver):
         self._requiredLocalPaths = dict()
         boardBuildInfo = board.processBuildInfo(self)
         
-        initRenderParams = {
+        initRenderParams.update({
                             "local" : { "dir"                 : localpath,
                                         "rootdir"             : rootdir,
                                     },
                             "platform" : boardBuildInfo,
-                            }
+                            })
 
         initRenderParams['local'].update(self._requiredLocalPaths)
         

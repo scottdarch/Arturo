@@ -22,10 +22,9 @@ DIR_SOURCE                      := {{source.dir}}
 DIR_MAKEFILE                    := $(CURDIR)
 
 # +----------------------------------------------------------------------------+
-# | MAKEFILE INCLUDES
+# | MAKEFILE INCLUDE AS COMMAND
 # +----------------------------------------------------------------------------+
 META_MAKE_LIBS                  := $(DIR_BUILD)/{{templates.metamake_libs}}
-MAKE_BIN                        := $(DIR_BUILD)/{{templates.make_bin}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
@@ -45,9 +44,6 @@ clean:
 $(META_MAKE_LIBS): {{this.filename}}
 	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "metamake_libs"
 
-$(MAKE_BIN): {{this.filename}}
-	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_bin"
-	
 # optional local overrides
 -include local.mk
 

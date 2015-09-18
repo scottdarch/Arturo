@@ -34,6 +34,9 @@ $(LOCAL_OBJ_PATH)/%.{{arguments.pfile_ext}} : $(LOCAL_OBJ_PATH)/%.o
 
 $(LOCAL_OBJ_PATH)/%.o : %.cpp
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	# +------------------------------------------------------------------------+
+	# | Building $(LOCAL_MODULE_NAME).a
+	# +------------------------------------------------------------------------+
 	{{platform['recipe.cpp.o.pattern']}}
 
 $(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(LOCAL_OBJ_FILES)

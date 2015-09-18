@@ -55,6 +55,7 @@ class JinjaTemplates(object):
                  "metamake_libs"       : "MakeMetaLibs.mk",
                  "make_lib"            : "MakeLib.mk",
                  "makefile"            : "Makefile",
+                 "make_clearvars"      : "MakeClearVars.mk",
                 }
     
     @classmethod

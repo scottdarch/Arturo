@@ -239,7 +239,7 @@ class Cmd_lib_source_files(ConfiguredCommand):
     # | Command
     # +-----------------------------------------------------------------------+
     @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
+    def appendCommandTemplateForClass(cls, inoutTemplates):
         return Command.appendCommandHelper(cls, 
                 { 
                     'library'     : '--library',
@@ -280,7 +280,7 @@ class Cmd_lib_source_headers(ConfiguredCommand):
     # | Command
     # +-----------------------------------------------------------------------+
     @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
+    def appendCommandTemplateForClass(cls, inoutTemplates):
         return Command.appendCommandHelper(cls, 
                 { 
                     'library'     : '--library',
@@ -531,7 +531,7 @@ class Cmd_mkdirs(ConfiguredCommand):
         return subparsers.add_parser(self.getCommandName(), help=_('portable version of mkdir -p'))
 
     @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
+    def appendCommandTemplateForClass(cls, inoutTemplates):
         return Command.appendCommandHelper(cls, 
                 { 
                     'path'     : '--path',
@@ -571,7 +571,7 @@ class Cmd_d_to_p(ConfiguredCommand):
         return subparsers.add_parser(self.getCommandName(), help=_('convert a gnu .d file into Arturo dependencies.'))
 
     @classmethod
-    def appendCommandTemplate(cls, inoutTemplates):
+    def appendCommandTemplateForClass(cls, inoutTemplates):
         return Command.appendCommandHelper(cls, 
                 { 
                     'dp_file_path'     : '--dpath',

@@ -49,17 +49,8 @@ class Command(ArgumentVisitor, Runnable):
     def usesCommand(commandClass):
         def appendCommandTemplatesDecorator(func):
             def appendCommandTemplatesWrapper(self, inoutTemplates):
-                commandName = Command.command_class_to_commandname(commandClass)
-                try:
-                    inoutTemplates['commands'][commandName] = __app_name__ + " " + commandName
-                except KeyError:
-                    inoutTemplates['commands'] = { commandName : __app_name__ + " " + commandName }
-            
-                try:
-                    return func(self, getattr(commandClass, "appendCommandTemplate")(inoutTemplates))
-                except:
-                    return func(self, inoutTemplates)
-                
+                return func(self, Command._appendCommandNameForSelfRecursive(commandClass, inoutTemplates))
+
             return appendCommandTemplatesWrapper
         return appendCommandTemplatesDecorator
 
@@ -94,15 +85,7 @@ class Command(ArgumentVisitor, Runnable):
 
     def appendCommandTemplates(self, outTemplates):
         # Always append the current command.
-        commandName = self.getCommandName()
-        try:
-            outTemplates['commands'][commandName] = __app_name__ + " " + commandName
-        except KeyError:
-            outTemplates['commands'] = { commandName : __app_name__ + " " + commandName }
-        try:
-            return getattr(self.__class__, "appendCommandTemplate")(outTemplates)
-        except:
-            return outTemplates
+        return Command._appendCommandNameForSelfRecursive(self.__class__, outTemplates)
      
     @abstractmethod
     def add_parser(self, subparsers):
@@ -129,6 +112,31 @@ class Command(ArgumentVisitor, Runnable):
             classname = self.command_class_name_to_commandname(commandClass)
         return getattr(sys.modules[self._COMMAND_MODULE], 'getDefaultCommand')(self._env, classname, self._console)
  
+    # +---------------------------------------------------------------------------+
+    # | PRIVATE
+    # +---------------------------------------------------------------------------+
+    @staticmethod
+    def _appendCommandNameForSelfRecursive(cls, outTemplates):
+        if inspect.isabstract(cls):
+            return;
+
+        commandName =  Command.command_class_to_commandname(cls)
+        try:
+            outTemplates['commands'][commandName] = __app_name__ + " " + commandName
+        except KeyError:
+            outTemplates['commands'] = { commandName : __app_name__ + " " + commandName }
+
+        try:
+            getattr(cls, "appendCommandTemplateForClass")(outTemplates)
+        except:
+            pass
+
+        for base in cls.__bases__:
+            if issubclass(base, Command):
+                Command._appendCommandNameForSelfRecursive(base, outTemplates)
+
+        return outTemplates
+
 # +---------------------------------------------------------------------------+
 # | ProjectCommand
 # +---------------------------------------------------------------------------+

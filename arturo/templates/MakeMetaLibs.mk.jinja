@@ -19,7 +19,12 @@ $(foreach SOURCE_LIB_NAME, $(SOURCE_LIB_NAMES), $(eval SOURCE_LIBS += $(DIR_BUIL
 
 SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
 
+# +----------------------------------------------------------------------------+
+# | MAKEFILE INCLUDE AS COMMAND
+# +----------------------------------------------------------------------------+
 MAKE_STATIC_LIB         := $(DIR_BUILD)/{{templates.make_staticlib}}
+MAKE_BIN                := $(DIR_BUILD)/{{templates.make_bin}}
+MAKE_CLEAR_VARS         := $(DIR_BUILD)/{{templates.make_clearvars}}
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
@@ -28,24 +33,23 @@ MAKE_STATIC_LIB         := $(DIR_BUILD)/{{templates.make_staticlib}}
 libs : $(SOURCE_LIBS)
 	# Build all the libs
 
-$(LOCAL_OBJ_PATH)/%.{{arguments.pfile_ext}} : $(LOCAL_OBJ_PATH)/%.o
-	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
-
-$(LOCAL_OBJ_PATH)/%.o : %.cpp
-	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
-	{{platform['recipe.cpp.o.pattern']}}
-
-$(LOCAL_DIR)/$(LOCAL_MODULE_NAME).a : $(LOCAL_OBJ_FILES)
-	{{platform['recipe.ar.pattern']}}
-
-$(MAKE_STATIC_LIB) : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_staticlib"
-
+# +----------------------------------------------------------------------------+
+# | MAKEFILE GENERATION RULES
+# +----------------------------------------------------------------------------+
 $(SOURCE_LIB_INCLUDES) : $(DIR_MAKEFILE)/{{this.filename}}
 	{{commands.makegen}} {{arguments.islibrary}} {{arguments.path}} $@ {{arguments.template}} "make_lib"
 
 $(DIR_BUILD)/{{templates.make_toolchain}} : $(DIR_MAKEFILE)/{{this.filename}}
 	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_toolchain"
+
+$(MAKE_STATIC_LIB) : $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_staticlib"
+
+$(MAKE_BIN): $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_bin"
+
+$(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen_noexpand}} {{arguments.path}} $@ {{arguments.template}} "make_clearvars"
 
 # +----------------------------------------------------------------------------+
 # | LIBRARY MODULES
