@@ -15,9 +15,18 @@ OBJ_DIR                 := obj
 SOURCE_LIB_NAMES        := $(shell {{commands.source_libs}})
 SOURCE_LIBS             :=
 
-$(foreach SOURCE_LIB_NAME, $(SOURCE_LIB_NAMES), $(eval SOURCE_LIBS += $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(SOURCE_LIB_NAME)/$(SOURCE_LIB_NAME).a))
-
 SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
+
+# +----------------------------------------------------------------------------+
+# | SOURCE
+# +----------------------------------------------------------------------------+
+CPP_SOURCE                      :=
+C_SOURCE                        :=
+OBJ_FILES                       := 
+CPP_HEADERS                     :=
+CPP_HEADERS_W_I                 :=
+C_HEADERS                       :=
+C_HEADERS_W_I                   :=
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND
@@ -25,13 +34,6 @@ SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DI
 MAKE_STATIC_LIB         := $(DIR_BUILD)/{{templates.make_staticlib}}
 MAKE_BIN                := $(DIR_BUILD)/{{templates.make_bin}}
 MAKE_CLEAR_VARS         := $(DIR_BUILD)/{{templates.make_clearvars}}
-
-# +----------------------------------------------------------------------------+
-# | BUILD TARGETS
-# +----------------------------------------------------------------------------+
-.PHONY : libs
-libs : $(SOURCE_LIBS)
-	# Build all the libs
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE GENERATION RULES
@@ -54,4 +56,17 @@ $(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
 # +----------------------------------------------------------------------------+
 # | LIBRARY MODULES
 # +----------------------------------------------------------------------------+
+-include $(MAKE_CLEAR_VARS)
+
 $(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))
+
+# +----------------------------------------------------------------------------+
+# | BUILD TARGETS
+# +----------------------------------------------------------------------------+
+.PHONY : objs
+objs : $(OBJ_FILES)
+	# Build all the objects
+
+.PHONY : libs
+libs : $(SOURCE_LIBS)
+	# Build all the libs

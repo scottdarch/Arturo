@@ -20,6 +20,8 @@ BOARD                           := {{preferences.board}}
 DIR_BUILD                       := {{project.builddir}}
 DIR_SOURCE                      := {{source.dir}}
 DIR_MAKEFILE                    := $(CURDIR)
+# Arduino macro {build.path} resolves to this path.
+DIR_BUILD_PATH                  := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND

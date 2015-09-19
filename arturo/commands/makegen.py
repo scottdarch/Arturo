@@ -115,7 +115,7 @@ class Cmd_makegen(Cmd_makegen_noexpand, BoardMacroResolver):
         if macro == "build.project_name":
             return "$(PROJECT_NAME)"
         elif macro == "build.path":
-            return "$(DIR_BUILD)/$(BOARD)"
+            return "$(DIR_BUILD_PATH)"
         elif macro.startswith("runtime.tools."):
             return self._resolveToolsMacro(macro[14:])
         elif namespace.startswith("recipe.") and namespace.endswith(".pattern"):
@@ -173,9 +173,9 @@ class Cmd_makegen(Cmd_makegen_noexpand, BoardMacroResolver):
     def _resolveRecipeMacros(self, recipe, macro):
         if macro == "includes":
             if recipe.startswith("cpp."):
-                return "$(CPP_HEADERS_W_I)"
+                return "$(addprefix -I,$|)"
             elif recipe.startswith("c."):
-                return "$(C_HEADERS_W_I)"
+                return "$(addprefix -I,$|)"
             else:
                 raise KeyError()
 
@@ -186,7 +186,7 @@ class Cmd_makegen(Cmd_makegen_noexpand, BoardMacroResolver):
                 return "$<"
         elif recipe == "ar":
             if macro == "object_file":
-                return "$(strip $(OBJ_FILES))"
+                return "$?"
             elif macro == "archive_file":
                 return "$(notdir $@)"
         elif recipe == "c.combine":
