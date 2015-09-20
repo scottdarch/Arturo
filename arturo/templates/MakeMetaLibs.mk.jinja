@@ -11,22 +11,16 @@
 # | COMMON VARIABLES
 # +----------------------------------------------------------------------------+
 OBJ_DIR                 := obj
-
 SOURCE_LIB_NAMES        := $(shell {{commands.source_libs}})
-SOURCE_LIBS             :=
-
 SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
 
 # +----------------------------------------------------------------------------+
-# | SOURCE
+# | ACCUMULATORS
 # +----------------------------------------------------------------------------+
-CPP_SOURCE                      :=
-C_SOURCE                        :=
-OBJ_FILES                       := 
-CPP_HEADERS                     :=
-CPP_HEADERS_W_I                 :=
-C_HEADERS                       :=
-C_HEADERS_W_I                   :=
+OBJ_FILES               := 
+CPP_HEADERS             :=
+C_HEADERS               :=
+SOURCE_LIBS             :=
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND
@@ -58,7 +52,11 @@ $(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
 # +----------------------------------------------------------------------------+
 -include $(MAKE_CLEAR_VARS)
 
-$(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))
+define includeLibraryRulesFor
+    -include $(1)
+endef
+
+$(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval $(call includeLibraryRulesFor, $(SOURCE_LIB_INCLUDE))))
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS

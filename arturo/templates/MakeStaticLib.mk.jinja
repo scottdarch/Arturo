@@ -5,6 +5,13 @@
 # http://32bits.io/Arturo/
 #
 
+ifndef LOCAL_MODULE_NAME
+    $(error LOCAL_MODULE_NAME was not set)
+endif
+
+# +----------------------------------------------------------------------------+
+# | PRIVATE DATA
+# +----------------------------------------------------------------------------+
 PRIVATE_OBJ_PATH     := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)/$(OBJ_DIR)
 PRIVATE_ARCHIVE      := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).a
 PRIVATE_SOURCE       := $(shell {{commands.lib_source_files}} {{arguments.library}} $(LOCAL_MODULE_NAME))
@@ -15,19 +22,27 @@ PRIVATE_C_SOURCE     := $(filter %.c, $(PRIVATE_SOURCE))
 PRIVATE_OBJ_FILES    := $(addprefix $(PRIVATE_OBJ_PATH), $(PRIVATE_CPP_SOURCE:.cpp=.o)) \
                         $(addprefix $(PRIVATE_OBJ_PATH), $(PRIVATE_C_SOURCE:.c=.o))
 
+# +----------------------------------------------------------------------------+
+# | ACCUMULATORS
+# +----------------------------------------------------------------------------+
 SOURCE_LIBS          += $(PRIVATE_ARCHIVE)
 CPP_HEADERS          += $(PRIVATE_HEADERS)
-CPP_HEADERS_W_I      += $(addprefix -I , $(PRIVATE_HEADERS))
 C_HEADERS            += $(PRIVATE_C_HEADERS)
-C_HEADERS_W_I        += $(addprefix -I , $(PRIVATE_C_HEADERS))
 OBJ_FILES            += $(PRIVATE_OBJ_FILES)
 
+# +----------------------------------------------------------------------------+
+# | LIBRARY RULES
+# +----------------------------------------------------------------------------+
 $(PRIVATE_OBJ_PATH)%.o : %.cpp | $(PRIVATE_HEADERS)
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
-	# +------------------------------------------------------------------------+
-	# | Compiling $(notdir $@)
-	# +------------------------------------------------------------------------+
 	{{platform['recipe.cpp.o.pattern']}}
 
+$(PRIVATE_OBJ_PATH)%.o : %.c | $(PRIVATE_C_HEADERS)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	{{platform['recipe.c.o.pattern']}}
+	
 $(PRIVATE_ARCHIVE) : $(PRIVATE_OBJ_FILES)
-	{{platform['recipe.ar.pattern']}}
+	$(foreach OBJECT_FILE, $?, {{platform['recipe.ar.pattern']}};)
+	# +------------------------------------------------------------------------+
+	# | Created $(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(notdir $@)
+	# +------------------------------------------------------------------------+

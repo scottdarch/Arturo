@@ -427,7 +427,7 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
 
     def findAllLibrariesForLibrary(self, library):
         results = dict()
-        self._findAllLibrariesRecursive(library, results)
+        self._findAllLibrariesRecursive(library, results, excludeHeaderOnly=False)
         return results;
 
     # +-----------------------------------------------------------------------+
@@ -478,28 +478,28 @@ class Cmd_source_libs(Cmd_source_headers, Cmd_source_files):
         else:
             return (libraryname, None)
         
-    def _findAllLibrariesRecursive(self, library, libdeps):
+    def _findAllLibrariesRecursive(self, library, libdeps, excludeHeaderOnly=True):
         console = self.getConsole()
         libraryHeaders = library.getHeaders()
         for header in libraryHeaders:
-            headerLibDeps = self.getPossibleLibsForSource(header)
+            headerLibDeps = self.getPossibleLibsForSource(header, excludeHeaderOnly=excludeHeaderOnly)
             before = len(libdeps)
             libdeps.update(headerLibDeps)
             if len(libdeps) > before:
                 for headerLibDep in headerLibDeps.itervalues():
                     if console.willPrintVerbose():
                         console.printVerbose("Library {} depends on library {}".format(library.getName(), headerLibDep.getName()))
-                    self._findAllLibrariesRecursive(headerLibDep, libdeps)
+                    self._findAllLibrariesRecursive(headerLibDep, libdeps, excludeHeaderOnly=excludeHeaderOnly)
         librarySources = library.getSources()
         for source in librarySources:
-            sourceLibDeps = self.getPossibleLibsForSource(source)
+            sourceLibDeps = self.getPossibleLibsForSource(source, excludeHeaderOnly=excludeHeaderOnly)
             before = len(libdeps)
             libdeps.update(sourceLibDeps)
             if len(libdeps) > before:
                 for sourceLibDep in sourceLibDeps.itervalues():
                     if console.willPrintVerbose():
                         console.printVerbose("Library {} depends on library {}".format(library.getName(), sourceLibDep.getName()))
-                    self._findAllLibrariesRecursive(sourceLibDep, libdeps)
+                    self._findAllLibrariesRecursive(sourceLibDep, libdeps, excludeHeaderOnly=excludeHeaderOnly)
         
     def _getNewestLibrary(self, libraryVersions):
         for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):

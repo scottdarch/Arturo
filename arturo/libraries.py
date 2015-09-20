@@ -10,8 +10,6 @@ import re
 
 from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, parsers, \
     ConfigurationHeaderAggregator, ConfigurationSourceAggregator
-from docutils.transforms.peps import Headers
-
 
 # +---------------------------------------------------------------------------+
 # | LibrarySearchAggregator

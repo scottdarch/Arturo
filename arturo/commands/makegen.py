@@ -179,14 +179,14 @@ class Cmd_makegen(Cmd_makegen_noexpand, BoardMacroResolver):
             else:
                 raise KeyError()
 
-        if recipe == "cpp.o":
+        if recipe == "cpp.o" or recipe == "c.o":
             if macro == "object_file":
                 return "$@"
             elif macro == "source_file":
                 return "$<"
         elif recipe == "ar":
             if macro == "object_file":
-                return "$?"
+                return "$(OBJECT_FILE)"
             elif macro == "archive_file":
                 return "$(notdir $@)"
         elif recipe == "c.combine":
