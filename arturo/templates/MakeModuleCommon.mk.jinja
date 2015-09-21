@@ -44,7 +44,7 @@ $(LOCAL_SKETCH_DIR)%.cpp : %.ino
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	$(shell $(INO_PROCESSOR) {{arguments.output_dir}} $(dir $@) {{arguments.sketch}} $<)
 	
-$(LOCAL_BINARY) : $(LOCAL_ARCHIVE)
+$(LOCAL_BINARY) : $(LOCAL_ARCHIVE) $(LIB_ARCHIVES)
 	{{platform['recipe.c.combine.pattern']}}
 	# +------------------------------------------------------------------------+
 	# | Created $(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(notdir $@)
