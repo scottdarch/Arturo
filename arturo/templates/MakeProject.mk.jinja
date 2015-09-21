@@ -17,12 +17,8 @@ PROJECT_BINTYPE         := elf
 SOURCE_BIN_NAMES        := $(PROJECT_NAME).$(PROJECT_BINTYPE)
 SOURCE_BIN_INCLUDES     := $(addsuffix /{{templates.makemodule_bin}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_BIN_NAMES)))
 
-# +----------------------------------------------------------------------------+
-# | ACCUMULATORS
-# +----------------------------------------------------------------------------+
-OBJ_FILES               := 
-SOURCE_LIBS             :=
-BIN_FILES               :=
+LIB_ARCHIVES            := $(addprefix $(DIR_BUILD_PATH)/, $(addsuffix .a, $(SOURCE_LIB_NAMES)))
+BIN_FILES               := $(addprefix $(DIR_BUILD_PATH)/, $(addsuffix .$(PROJECT_BINTYPE), $(SOURCE_BIN_NAMES)))
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND
@@ -46,6 +42,12 @@ $(MAKEMODULE_COMMON) : $(DIR_MAKEFILE)/{{this.filename}}
 $(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
 	{{commands.makegen_noexpand}} {{arguments.path}} $@ {{arguments.template}} "make_clearvars"
 
+$(DIR_BUILD_PATH)/%.a : $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/%/{{templates.makemodule_lib}}
+	@#Rule that archives are made out of makemodule_lib makefiles.
+
+$(DIR_BUILD_PATH)/%.$(PROJECT_BINTYPE) : $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/%/{{templates.makemodule_bin}}
+	@#Rule that binaries are made out of makemodule_bin makefiles.
+
 # +----------------------------------------------------------------------------+
 # | LIBRARY MODULES
 # +----------------------------------------------------------------------------+
@@ -54,17 +56,13 @@ $(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB
 # +----------------------------------------------------------------------------+
 # | BINARY MODULES
 # +----------------------------------------------------------------------------+
-#$(foreach SOURCE_BIN_INCLUDE,$(SOURCE_BIN_INCLUDES),$(eval -include $(SOURCE_BIN_INCLUDE)))
+$(foreach SOURCE_BIN_INCLUDE,$(SOURCE_BIN_INCLUDES),$(eval -include $(SOURCE_BIN_INCLUDE)))
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
 # +----------------------------------------------------------------------------+
-.PHONY : objs
-objs : $(OBJ_FILES)
-	# Build all the objects
-
 .PHONY : libs
-libs : $(SOURCE_LIBS)
+libs : $(LIB_ARCHIVES)
 	# Build all the libs
 
 .PHONY : bins

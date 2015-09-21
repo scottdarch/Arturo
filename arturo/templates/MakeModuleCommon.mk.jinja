@@ -12,32 +12,33 @@ endif
 # +----------------------------------------------------------------------------+
 # | LIBRARY RULES
 # +----------------------------------------------------------------------------+
-%.{{arguments.pfile_ext}} : %.o
-	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
-	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
+# See http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/ for details on the "dp" files
+# used in this makefile.
 
-$(LOCAL_OBJ_PATH)%.o : %.cpp | $(LOCAL_HEADERS)
+$(LOCAL_OBJ_PATH)%.o : %.cpp %.{{arguments.dp_file_path}} | $(LOCAL_HEADERS)
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
+	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $@).d
 
-$(LOCAL_OBJ_PATH)%.o : %.c | $(LOCAL_C_HEADERS)
+$(LOCAL_OBJ_PATH)%.o : %.c %.{{arguments.dp_file_path}} | $(LOCAL_C_HEADERS)
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	{{platform['recipe.c.o.pattern']}}
-	
+	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $@).d
+
 $(LOCAL_ARCHIVE) : $(LOCAL_OBJ_FILES)
-	$(foreach OBJECT_FILE, $?, {{platform['recipe.ar.pattern']}};)
+	$(foreach OBJECT_FILE, $(filter-out %.{{arguments.pfile_ext}}, $?), {{platform['recipe.ar.pattern']}};)
 	# +------------------------------------------------------------------------+
 	# | Created $(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(notdir $@)
 	# +------------------------------------------------------------------------+
+
+# rule to recreate manually deleted dp files when building objects.
+%.{{arguments.dp_file_path}}: ;
+
 
 # +----------------------------------------------------------------------------+
 # | BINARY RULES
 # +----------------------------------------------------------------------------+
 ifdef LOCAL_BINARY
-
-$(info # +--------------------------------------------------------------------+)
-$(info # | $(LOCAL_BINARY)
-$(info # +--------------------------------------------------------------------+)
 
 $(LOCAL_SKETCH_DIR)%.cpp : %.ino
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
@@ -52,7 +53,7 @@ $(LOCAL_BINARY) : $(LOCAL_ARCHIVE)
 endif
 
 # object dependencies
--include $(LOCAL_DEP_FILES)
+-include $(LOCAL_OBJ_FILES:.o=.{{arguments.pfile_ext}})
 
 -include $(MAKE_CLEAR_VARS)
 
