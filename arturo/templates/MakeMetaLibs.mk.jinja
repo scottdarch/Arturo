@@ -21,6 +21,7 @@ OBJ_FILES               :=
 CPP_HEADERS             :=
 C_HEADERS               :=
 SOURCE_LIBS             :=
+DEP_FILES               :=
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND
@@ -52,11 +53,7 @@ $(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
 # +----------------------------------------------------------------------------+
 -include $(MAKE_CLEAR_VARS)
 
-define includeLibraryRulesFor
-    -include $(1)
-endef
-
-$(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval $(call includeLibraryRulesFor, $(SOURCE_LIB_INCLUDE))))
+$(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS

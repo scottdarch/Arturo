@@ -59,7 +59,6 @@ clean:
 $(DIR_BUILD)/%.{{arguments.pfile_ext}} : %.o
 	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
 
-
 $(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)/%.cpp : %.ino
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	$(shell $(INO_PROCESSOR) --output_dir $(dir $@) --sketch $<)

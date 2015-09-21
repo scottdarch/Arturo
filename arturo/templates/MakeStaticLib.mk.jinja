@@ -21,6 +21,7 @@ PRIVATE_CPP_SOURCE   := $(filter %.cpp, $(PRIVATE_SOURCE))
 PRIVATE_C_SOURCE     := $(filter %.c, $(PRIVATE_SOURCE))
 PRIVATE_OBJ_FILES    := $(addprefix $(PRIVATE_OBJ_PATH), $(PRIVATE_CPP_SOURCE:.cpp=.o)) \
                         $(addprefix $(PRIVATE_OBJ_PATH), $(PRIVATE_C_SOURCE:.c=.o))
+PRIVATE_DEP_FILES    := $(PRIVATE_OBJ_FILES:.o=.{{arguments.pfile_ext}})
 
 # +----------------------------------------------------------------------------+
 # | ACCUMULATORS
@@ -29,10 +30,15 @@ SOURCE_LIBS          += $(PRIVATE_ARCHIVE)
 CPP_HEADERS          += $(PRIVATE_HEADERS)
 C_HEADERS            += $(PRIVATE_C_HEADERS)
 OBJ_FILES            += $(PRIVATE_OBJ_FILES)
+DEP_FILES            += $(PRIVATE_DEP_FILES)
 
 # +----------------------------------------------------------------------------+
 # | LIBRARY RULES
 # +----------------------------------------------------------------------------+
+%.{{arguments.pfile_ext}} : %.o
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
+
 $(PRIVATE_OBJ_PATH)%.o : %.cpp | $(PRIVATE_HEADERS)
 	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
 	{{platform['recipe.cpp.o.pattern']}}
@@ -46,3 +52,6 @@ $(PRIVATE_ARCHIVE) : $(PRIVATE_OBJ_FILES)
 	# +------------------------------------------------------------------------+
 	# | Created $(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(notdir $@)
 	# +------------------------------------------------------------------------+
+
+# object dependencies
+-include $(PRIVATE_DEP_FILES)
