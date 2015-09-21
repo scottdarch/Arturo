@@ -1,0 +1,58 @@
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+ifndef LOCAL_MODULE_NAME
+    $(error LOCAL_MODULE_NAME was not set)
+endif
+
+# +----------------------------------------------------------------------------+
+# | LIBRARY RULES
+# +----------------------------------------------------------------------------+
+%.{{arguments.pfile_ext}} : %.o
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	{{commands.d_to_p}} {{arguments.dp_file_path}} $(basename $<).d
+
+$(LOCAL_OBJ_PATH)%.o : %.cpp | $(LOCAL_HEADERS)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	{{platform['recipe.cpp.o.pattern']}}
+
+$(LOCAL_OBJ_PATH)%.o : %.c | $(LOCAL_C_HEADERS)
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	{{platform['recipe.c.o.pattern']}}
+	
+$(LOCAL_ARCHIVE) : $(LOCAL_OBJ_FILES)
+	$(foreach OBJECT_FILE, $?, {{platform['recipe.ar.pattern']}};)
+	# +------------------------------------------------------------------------+
+	# | Created $(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(notdir $@)
+	# +------------------------------------------------------------------------+
+
+# +----------------------------------------------------------------------------+
+# | BINARY RULES
+# +----------------------------------------------------------------------------+
+ifdef LOCAL_BINARY
+
+$(info # +--------------------------------------------------------------------+)
+$(info # | $(LOCAL_BINARY)
+$(info # +--------------------------------------------------------------------+)
+
+$(LOCAL_SKETCH_DIR)%.cpp : %.ino
+	@[ -d $(dir $@) ] || {{commands.mkdirs}} {{arguments.path}} $(dir $@)
+	$(shell $(INO_PROCESSOR) {{arguments.output_dir}} $(dir $@) {{arguments.sketch}} $<)
+	
+$(LOCAL_BINARY) : $(LOCAL_ARCHIVE)
+	{{platform['recipe.c.combine.pattern']}}
+	# +------------------------------------------------------------------------+
+	# | Created $(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(notdir $@)
+	# +------------------------------------------------------------------------+
+
+endif
+
+# object dependencies
+-include $(LOCAL_DEP_FILES)
+
+-include $(MAKE_CLEAR_VARS)
+

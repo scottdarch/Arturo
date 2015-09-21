@@ -49,11 +49,10 @@ class JinjaTemplate(object):
 class JinjaTemplates(object):
     
     TEMPLATES = {
-                 "make_bin"            : "MakeBin.mk",
-                 "make_toolchain"      : "MakeToolchain.mk",
-                 "make_staticlib"      : "MakeStaticLib.mk",
-                 "metamake_libs"       : "MakeMetaLibs.mk",
-                 "make_lib"            : "MakeLib.mk",
+                 "makemodule_bin"      : "MakeModuleBin.mk",
+                 "makemodule_common"   : "MakeModuleCommon.mk",
+                 "makeproject"         : "MakeProject.mk",
+                 "makemodule_lib"      : "MakeModuleLib.mk",
                  "makefile"            : "Makefile",
                  "make_clearvars"      : "MakeClearVars.mk",
                 }

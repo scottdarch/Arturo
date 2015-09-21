@@ -13,6 +13,7 @@ PROJECT_NAME                    := {{source.name}}
 TARGET_PACKAGE                  := {{preferences.target_package}}
 TARGET_PLATFORM                 := {{preferences.target_platform}}
 BOARD                           := {{preferences.board}}
+INO_PROCESSOR                   := {{commands.preprocess}}
 
 # +----------------------------------------------------------------------------+
 # | DIRECTORIES AND CONFIGURATIONS
@@ -26,7 +27,7 @@ DIR_BUILD_PATH                  := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATF
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND
 # +----------------------------------------------------------------------------+
-META_MAKE_LIBS                  := $(DIR_BUILD)/{{templates.metamake_libs}}
+MAKE_PROJECT                    := $(DIR_BUILD)/{{templates.makeproject}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
@@ -43,12 +44,11 @@ init:
 clean:
 	rm -rf $(DIR_BUILD)
 
-$(META_MAKE_LIBS): {{this.filename}}
-	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "metamake_libs"
+$(MAKE_PROJECT): {{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "makeproject"
 
 # optional local overrides
 -include local.mk
 
 DIR_MAKEFILE := $(CURDIR)/$(DIR_BUILD)
--include $(META_MAKE_LIBS)
-#-include $(MAKE_BIN)
+-include $(MAKE_PROJECT)

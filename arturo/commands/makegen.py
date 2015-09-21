@@ -36,6 +36,8 @@ class Cmd_makegen_noexpand(ConfiguredCommand):
                 { 
                     'path'       : '--path',
                     'template'   : '--template',
+                    'sketch'     : '--sketch',
+                    'output_dir' : '--output_dir',
                 }, inoutTemplates)
 
     def add_parser(self, subparsers):

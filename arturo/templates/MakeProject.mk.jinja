@@ -5,45 +5,43 @@
 # http://32bits.io/Arturo/
 #
 
--include $(DIR_BUILD)/{{templates.make_toolchain}}
+{{local.toolchains}}
 
 # +----------------------------------------------------------------------------+
 # | COMMON VARIABLES
 # +----------------------------------------------------------------------------+
 OBJ_DIR                 := obj
 SOURCE_LIB_NAMES        := $(shell {{commands.source_libs}})
-SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.make_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
+SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.makemodule_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
+PROJECT_BINTYPE         := elf
+SOURCE_BIN_NAMES        := $(PROJECT_NAME).$(PROJECT_BINTYPE)
+SOURCE_BIN_INCLUDES     := $(addsuffix /{{templates.makemodule_bin}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_BIN_NAMES)))
 
 # +----------------------------------------------------------------------------+
 # | ACCUMULATORS
 # +----------------------------------------------------------------------------+
 OBJ_FILES               := 
-CPP_HEADERS             :=
-C_HEADERS               :=
 SOURCE_LIBS             :=
-DEP_FILES               :=
+BIN_FILES               :=
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE INCLUDE AS COMMAND
 # +----------------------------------------------------------------------------+
-MAKE_STATIC_LIB         := $(DIR_BUILD)/{{templates.make_staticlib}}
-MAKE_BIN                := $(DIR_BUILD)/{{templates.make_bin}}
+MAKEMODULE_COMMON       := $(DIR_BUILD)/{{templates.makemodule_common}}
+MAKEMODULE_BIN          := $(DIR_BUILD)/{{templates.makemodule_bin}}
 MAKE_CLEAR_VARS         := $(DIR_BUILD)/{{templates.make_clearvars}}
 
 # +----------------------------------------------------------------------------+
 # | MAKEFILE GENERATION RULES
 # +----------------------------------------------------------------------------+
 $(SOURCE_LIB_INCLUDES) : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen}} {{arguments.islibrary}} {{arguments.path}} $@ {{arguments.template}} "make_lib"
+	{{commands.makegen}} {{arguments.islibrary}} {{arguments.path}} $@ {{arguments.template}} "makemodule_lib"
 
-$(DIR_BUILD)/{{templates.make_toolchain}} : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_toolchain"
+$(SOURCE_BIN_INCLUDES): $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "makemodule_bin"
 
-$(MAKE_STATIC_LIB) : $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_staticlib"
-
-$(MAKE_BIN): $(DIR_MAKEFILE)/{{this.filename}}
-	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "make_bin"
+$(MAKEMODULE_COMMON) : $(DIR_MAKEFILE)/{{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "makemodule_common"
 
 $(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
 	{{commands.makegen_noexpand}} {{arguments.path}} $@ {{arguments.template}} "make_clearvars"
@@ -51,9 +49,12 @@ $(MAKE_CLEAR_VARS): $(DIR_MAKEFILE)/{{this.filename}}
 # +----------------------------------------------------------------------------+
 # | LIBRARY MODULES
 # +----------------------------------------------------------------------------+
--include $(MAKE_CLEAR_VARS)
-
 $(foreach SOURCE_LIB_INCLUDE,$(SOURCE_LIB_INCLUDES),$(eval -include $(SOURCE_LIB_INCLUDE)))
+
+# +----------------------------------------------------------------------------+
+# | BINARY MODULES
+# +----------------------------------------------------------------------------+
+#$(foreach SOURCE_BIN_INCLUDE,$(SOURCE_BIN_INCLUDES),$(eval -include $(SOURCE_BIN_INCLUDE)))
 
 # +----------------------------------------------------------------------------+
 # | BUILD TARGETS
@@ -65,3 +66,8 @@ objs : $(OBJ_FILES)
 .PHONY : libs
 libs : $(SOURCE_LIBS)
 	# Build all the libs
+
+.PHONY : bins
+bins : $(BIN_FILES)
+	# Build all binaries
+

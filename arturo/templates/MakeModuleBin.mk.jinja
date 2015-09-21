@@ -1,0 +1,39 @@
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+LOCAL_MODULE_NAME := $(PROJECT_NAME)
+
+# +----------------------------------------------------------------------------+
+# | LOCAL DATA
+# +----------------------------------------------------------------------------+
+LOCAL_SKETCH_DIR           := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)/ino
+LOCAL_OBJ_PATH             := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)/$(OBJ_DIR)
+LOCAL_ARCHIVE              := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).a
+LOCAL_BINARY			   := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).$(PROJECT_BINTYPE)
+LOCAL_SOURCE               := $(shell {{commands.source_files}})
+LOCAL_INO_SOURCE           := $(filter %.ino, $(LOCAL_SOURCE))
+LOCAL_HEADERS              := $(shell {{commands.source_headers}})
+LOCAL_C_HEADERS            := $(filter-out %.hpp, $(LOCAL_HEADERS))
+LOCAL_CPP_SOURCE           := $(filter %.cpp, $(LOCAL_SOURCE))
+LOCAL_C_SOURCE             := $(filter %.c, $(LOCAL_SOURCE))
+LOCAL_INO_INTERM_SOURCE    := $(addprefix $(LOCAL_SKETCH_DIR)/, $(LOCAL_INO_SOURCE:.ino=.cpp))
+LOCAL_OBJ_FILES            := $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_CPP_SOURCE:.cpp=.o)) \
+                              $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_C_SOURCE:.c=.o)) \
+                              $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_INO_INTERM_SOURCE:.cpp=.o))
+LOCAL_DEP_FILES            := $(LOCAL_OBJ_FILES:.o=.{{arguments.pfile_ext}})
+
+# +----------------------------------------------------------------------------+
+# | ACCUMULATORS
+# +----------------------------------------------------------------------------+
+SOURCE_LIBS          += $(LOCAL_ARCHIVE)
+OBJ_FILES            += $(LOCAL_OBJ_FILES)
+BIN_FILES            += $(LOCAL_BINARY)
+
+#VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
+
+-include $(MAKEMODULE_COMMON)
+
