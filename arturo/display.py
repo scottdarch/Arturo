@@ -21,13 +21,14 @@ class Console(ArgumentVisitor):
     
     INDENTATION = "    "
     
-    def __init__(self, indents=0):
+    def __init__(self, indents=0, stdoutIsBash=False):
         super(Console, self).__init__()
         self._loglevel = 0
         self._contexts = []
         self._indents = indents
         self._indent = ""
         self._resetIndent()
+        self._stdoutIsBash = stdoutIsBash
         
     def shift(self):
         '''
@@ -38,7 +39,7 @@ class Console(ArgumentVisitor):
     
     def unshift(self):
         '''
-        Decrease console indendataion by 1.
+        Decrease console indentation by 1.
         '''
         if self._indents > 0:
             self._indents -= 1
@@ -69,12 +70,18 @@ class Console(ArgumentVisitor):
             if currentIndents != self._indents:
                 self._resetIndent()
 
+    def willPrintVerbose(self):
+        return (self._loglevel > 1)
+
     def printVerbose(self, message):
-        if self._loglevel > 1:
+        if self.willPrintVerbose():
             self._printMessage(message)
             
+    def willPrintDebug(self):
+        return (self._loglevel > 0)
+
     def printDebug(self, message):
-        if self._loglevel > 0:
+        if self.willPrintDebug():
             self._printMessage(message)
         
     def printInfo(self, message):
@@ -84,8 +91,12 @@ class Console(ArgumentVisitor):
         self._printMessage(message)
         
     def stdout(self, *tokens):
-        for token in tokens:
-            print token,
+        if self._stdoutIsBash:
+            for token in tokens:
+                print token
+        else:
+            for token in tokens:
+                print token,
             
     def askYesNoQuestion(self, question):
         response = raw_input(self._indent + question + os.linesep)
@@ -130,11 +141,24 @@ class Console(ArgumentVisitor):
                             default=False,
                             action='store_true',
                             help=_('Enable verbose logging.'))
+        parser.add_argument('-d', '--debug',
+                            default=False,
+                            action='store_true',
+                            help=_('Enable debug logging.'))
+        parser.add_argument('-b', '--bash',
+                            default=False,
+                            action='store_true',
+                            help=_('Output should be formatted for the bash console.'))
 
     def onVisitArgs(self, args):
         if getattr(args, "verbose"):
             self._loglevel = 2
             self.printVerbose(_('enabling verbose logging.'))
+        elif getattr(args, "debug"):
+            self._loglevel = 1
+            self.printDebug(_('enabling debug logging.'))
+        elif getattr(args, "bash"):
+            self._stdoutIsBash = True
     
     # +---------------------------------------------------------------------------+
     # | PRIVATE

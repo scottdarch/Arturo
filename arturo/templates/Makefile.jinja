@@ -13,37 +13,42 @@ PROJECT_NAME                    := {{source.name}}
 TARGET_PACKAGE                  := {{preferences.target_package}}
 TARGET_PLATFORM                 := {{preferences.target_platform}}
 BOARD                           := {{preferences.board}}
+INO_PROCESSOR                   := {{commands.preprocess}}
 
 # +----------------------------------------------------------------------------+
 # | DIRECTORIES AND CONFIGURATIONS
 # +----------------------------------------------------------------------------+
 DIR_BUILD                       := {{project.builddir}}
 DIR_SOURCE                      := {{source.dir}}
+DIR_MAKEFILE                    := $(CURDIR)
+# Arduino macro {build.path} resolves to $(DIR_BUILD_PATH).
+DIR_BUILD_PATH                  := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)
 
 # +----------------------------------------------------------------------------+
-# | MAKEFILE INCLUDES
+# | MAKEFILE INCLUDE AS COMMAND
 # +----------------------------------------------------------------------------+
-MAKEINCLUDE_MAKETARGETS         := {{templates.make_targets}}
+MAKE_PROJECT                    := $(DIR_BUILD)/{{templates.makeproject}}
 
 # +----------------------------------------------------------------------------+
 # | TARGETS
 # +----------------------------------------------------------------------------+
-
 .PHONY : all
 all:
-	# Nothing yet
+	# Build all the things.
 
 .PHONY : init
-init:
-	@echo "init is not a valid make target. Did you mean '{{env.app_name}} init'?"
+init: 
+	@echo "This is not a valid target. Did you mean '{{commands.init}}'?"
 
-.PHONY : superclean
-superclean:
+.PHONY : clean
+clean:
 	rm -rf $(DIR_BUILD)
+
+$(MAKE_PROJECT): {{this.filename}}
+	{{commands.makegen}} {{arguments.path}} $@ {{arguments.template}} "makeproject"
 
 # optional local overrides
 -include local.mk
 
-# use '{{env.app_name}} make-gen' to generate this makefile.
--include $(MAKEINCLUDE_MAKETARGETS)
-
+DIR_MAKEFILE := $(CURDIR)/$(DIR_BUILD)
+-include $(MAKE_PROJECT)

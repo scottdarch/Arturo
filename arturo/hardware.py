@@ -10,8 +10,8 @@ from collections import OrderedDict
 import os
 from string import upper
 
-from arturo import NamedOrderedDict, SearchPathAgent, SearchPath
-from arturo import __lib_name__, __version__
+from arturo import NamedOrderedDict, SearchPathAgent, SearchPath, __version_num__
+from arturo import __lib_name__
 from arturo.parsers import ArduinoKeyValueParser
 
 
@@ -61,7 +61,10 @@ class Board(NamedOrderedDict):
             coreName = self['build.core']
             self._core = self.getPlatform().getCores()[coreName]
         return self._core
-    
+
+    def getPath(self):
+        return os.path.join(self._platform.getPlatformPath(), Board.PLATFORM_FILENAME)
+
     def getVariant(self):
         if self._variant == -1:
             return None
@@ -88,7 +91,7 @@ class Board(NamedOrderedDict):
         '''
         if self._rawPlatformData is None:
             self._rawPlatformData = OrderedDict()
-            ArduinoKeyValueParser.parse(os.path.join(self._platform.getPlatformPath(), Board.PLATFORM_FILENAME), self._rawPlatformData, None, None, self._console)
+            ArduinoKeyValueParser.parse(self.getPath(), self._rawPlatformData, None, None, self._console)
 
         boardBuildMetadata = OrderedDict(self._rawPlatformData)
         macroResolverChain = BoardPlatformMacroResolver(self, boardBuildMetadata, unexpandedMacroResolver, self._console)
@@ -115,7 +118,7 @@ class BoardPlatformMacroResolver(BoardMacroResolver):
             return __lib_name__.upper()
         
         if macro == "runtime.ide.version":
-            return __version__
+            return str(__version_num__)
 
         try:
             return self._board[macro]
@@ -153,16 +156,11 @@ class CoreHeaderAggregator(SearchPathAgent):
     def __init__(self, configuration, console):
         super(CoreHeaderAggregator, self).__init__(console, followLinks=True)
         self._configuration = configuration
-        self._console = console
-        self._headers = list()
-
-    def getResults(self):
-        return self._headers
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
-            self._headers.append(fqFilename)
+            self._addResult(fqFilename)
         return SearchPathAgent.KEEP_GOING
     
 class Core(object):
@@ -174,6 +172,7 @@ class Core(object):
         self._console = console
         self._platform = platform
         self._headers = None
+        self._headerPaths = None
 
     def getName(self):
         return self._name
@@ -184,11 +183,22 @@ class Core(object):
     def getPath(self):
         return self._path
     
-    def getHeaders(self):
-        if self._headers is None:
-            self._headers = self.getPlatform().getPackage().getEnvironment().getSearchPath().scanDirs(
-                 self._path, CoreHeaderAggregator(self, self._console)).getResults()
-        return self._headers
+    def getHeaders(self, dirnameonly=False):
+        headers = self._headerPaths if (dirnameonly) else self._headers
+        if headers is None and self._path is not None:
+            if self._headers is None:
+                self._headers = self.getPlatform().getPackage().getEnvironment().getSearchPath().scanDirs(
+                     self._path, CoreHeaderAggregator(self, self._console)).getResults()
+
+            if dirnameonly and self._headerPaths is None:
+                paths = set()
+                for header in self._headers:
+                    paths.add(os.path.dirname(header))
+                self._headerPaths = list(paths)
+
+            headers = self._headerPaths if (dirnameonly) else self._headers
+
+        return headers
 
 # +---------------------------------------------------------------------------+
 # | Variant
@@ -331,7 +341,7 @@ class Platform(object):
 
     def getLibraries(self):
         if self._libraries is None:
-            self._libraries = self._package.getEnvironment().getLibrariesFor(self._platformPath)
+            self._libraries = self._package.getEnvironment().getLibrariesFor(self._platformPath, platform=self)
 
         return self._libraries
 

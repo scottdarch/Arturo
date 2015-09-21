@@ -1,0 +1,23 @@
+#  _____     _               
+# |  _  |___| |_ _ _ ___ ___ 
+# |     |  _|  _| | |  _| . |
+# |__|__|_| |_| |___|_| |___|
+# http://32bits.io/Arturo/
+#
+
+LOCAL_MODULE_NAME := {{library.name}}
+
+# +----------------------------------------------------------------------------+
+# | LOCAL DATA
+# +----------------------------------------------------------------------------+
+LOCAL_OBJ_PATH     := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)/$(OBJ_DIR)
+LOCAL_ARCHIVE      := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).a
+LOCAL_SOURCE       := $(shell {{commands.lib_source_files}} {{arguments.library}} $(LOCAL_MODULE_NAME))
+LOCAL_HEADERS      := $(shell {{commands.lib_source_headers}} {{arguments.library}} $(LOCAL_MODULE_NAME))
+LOCAL_C_HEADERS    := $(filter-out %.hpp, $(LOCAL_HEADERS))
+LOCAL_CPP_SOURCE   := $(filter %.cpp, $(LOCAL_SOURCE))
+LOCAL_C_SOURCE     := $(filter %.c, $(LOCAL_SOURCE))
+LOCAL_OBJ_FILES    := $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_CPP_SOURCE:.cpp=.o)) \
+                      $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_C_SOURCE:.c=.o))
+
+-include $(MAKEMODULE_COMMON)

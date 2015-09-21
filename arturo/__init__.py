@@ -15,6 +15,9 @@ from arturo import parsers
 __app_name__ = 'ano'
 __lib_name__ = 'arturo'
 __version__ = '2.0.0'
+# some libraries have coded against -DARDUINO as an integer. We use this both to supply an integer
+# and to use newer branches where the "1.0.x" line was handled by this macro (e.g. #if ARDUINO > 100).
+__version_num__ = 200
 
 
 # +---------------------------------------------------------------------------+
@@ -36,13 +39,10 @@ class ArgumentVisitor(object):
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def onVisitArgParser(self, parser):
+    def onVisitArgParser(self, subparsers):
         None
     
     def onVisitArgs(self, args):
-        None
-
-    def onVisitSubParserArgs(self, outSubparserArgs):
         None
 
 # +---------------------------------------------------------------------------+
@@ -95,6 +95,8 @@ class SearchPathAgent(object):
         self._followLinks = followLinks
         self._useDefaultExcludes = useDefaultExcludes
         self._exclusions = exclusions
+        self._resultList = list()
+        self._resultSet = set()
         
     def getFollowLinks(self):
         return self._followLinks
@@ -114,6 +116,26 @@ class SearchPathAgent(object):
     def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath, depth):
         return SearchPathAgent.KEEP_GOING
     
+    def getResults(self, ordered=True):
+        if ordered:
+            return self._resultList
+        else:
+            return self._resultSet
+
+    def hasResult(self, result):
+        return (result in self._resultSet)
+
+    # +-----------------------------------------------------------------------+
+    # | PROTECTED
+    # +-----------------------------------------------------------------------+
+    def _getConsole(self):
+        return self._console
+        
+    def _addResult(self, result):
+        if result not in self._resultSet:
+            self._resultSet.add(result)
+            self._resultList.append(result)
+    
 # +---------------------------------------------------------------------------+
 # | UTILITY AGENTS AND AGGREGATORS
 # +---------------------------------------------------------------------------+
@@ -128,11 +150,7 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
     
     def __init__(self, extensionSet, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
         super(Arduino15PackageSearchPathAgent, self).__init__(console, exclusions, useDefaultExcludes, followLinks)
-        self._console = console
         self._extensionSet = extensionSet
-
-    def getResults(self):
-        return self._packages
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
@@ -151,16 +169,12 @@ class ConfigurationHeaderAggregator(SearchPathAgent):
     def __init__(self, configuration, console, exclusions=None):
         super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
-        self._console = console
-        self._headers = list()
-
-    def getResults(self):
-        return self._headers
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
-            self._headers.append(fqFilename)
+            self._addResult(fqFilename)
+            
         return SearchPathAgent.KEEP_GOING
 
 
@@ -169,16 +183,11 @@ class ConfigurationSourceAggregator(SearchPathAgent):
     def __init__(self, configuration, console, exclusions=None):
         super(ConfigurationSourceAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
-        self._console = console
-        self._sources = list()
-
-    def getResults(self):
-        return self._sources
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_SOURCE_FILEEXT:
-            self._sources.append(fqFilename)
+            self._addResult(fqFilename)
         return SearchPathAgent.KEEP_GOING
 
 
@@ -190,7 +199,12 @@ class SearchPath(object):
     ARDUINO15_PACKAGES_PATH = "packages"
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
-    ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15")]
+    ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15"),
+                      os.path.expanduser("~/Documents/Arduino"),
+                      os.path.expanduser("~/Arduino"),
+                      os.path.expanduser(os.path.join("~", "My Documents", "Arduino"))
+                    ]
+
     ARDUINO15_LIBRARY_FOLDER_NAMES = ("lib", "libraries")
 
     ARTURO2_BUILDDIR_NAME = ".build_ano2"
@@ -215,6 +229,9 @@ class SearchPath(object):
     
     def __str__(self):
         return str(self._envpath)
+
+    def getPaths(self):
+        return self._envpath
 
     def findFirstFileOfNameOrThrow(self, fileNames, genericName):
         for name in fileNames:

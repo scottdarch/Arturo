@@ -8,7 +8,7 @@ import json
 import os
 
 from arturo import SearchPath, Preferences, SearchPathAgent, Arduino15PackageSearchPathAgent, \
-    KeySortedDict, ConfigurationHeaderAggregator, ConfigurationSourceAggregator, __lib_name__
+    ConfigurationHeaderAggregator, ConfigurationSourceAggregator, __lib_name__
 from arturo import __version__, i18n, __app_name__
 from arturo.libraries import Library
 from arturo.parsers import MakefilePropertyParser
@@ -42,7 +42,9 @@ class Configuration(object):
         self._jinjaEnv = None
         self._builddir = None
         self._headers = None
+        self._headerPaths = None
         self._sources = None
+        self._libraries = None
         
     def getJinjaEnvironment(self):
         if self._jinjaEnv is None:
@@ -54,6 +56,9 @@ class Configuration(object):
                 'preferences' : self._prefs,
             }
         return self._jinjaEnv
+
+    def getEnvironment(self):
+        return self._project.getEnvironment()
 
     def getProject(self):
         return self._project
@@ -84,17 +89,36 @@ class Configuration(object):
     def getSourcePath(self):
         return self._sourcePath
 
-    def getHeaders(self):
-        if self._headers is None:
-            self._headers = self.getProject().getEnvironment().getSearchPath().scanDirs(
-                 self._sourcePath, ConfigurationHeaderAggregator(self, self._console)).getResults()
-        return self._headers
+    def getHeaders(self, dirnameonly=False):
+        headers = self._headerPaths if (dirnameonly) else self._headers
+        if headers is None and self._sourcePath is not None:
+            if self._headers is None:
+                self._headers = self.getProject().getEnvironment().getSearchPath().scanDirs(
+                     self._sourcePath, ConfigurationHeaderAggregator(self, self._console)).getResults()
+            
+            if dirnameonly and self._headerPaths is None:
+                paths = set()
+                for header in self._headers:
+                    paths.add(os.path.dirname(header))
+                self._headerPaths = list(paths)
+
+            headers = self._headerPaths if (dirnameonly) else self._headers
+
+        return headers
 
     def getSources(self):
         if self._sources is None:
             self._sources = self.getProject().getEnvironment().getSearchPath().scanDirs(
                  self._sourcePath, ConfigurationSourceAggregator(self, self._console)).getResults()
         return self._sources
+
+    def getLibraries(self):
+        if self._libraries is None:
+            self._libraries = dict()
+            self._libraries.update(self.getEnvironment().getLibraries())
+            self._libraries.update(self.getPlatform().getLibraries())
+            self._libraries.update(self.getProject().getLibraries())
+        return self._libraries
 
 # +---------------------------------------------------------------------------+
 # | Project
@@ -109,15 +133,10 @@ class ProjectSourceRootAggregator(Arduino15PackageSearchPathAgent):
     def __init__(self, project, console, exclusions=None):
         super(ProjectSourceRootAggregator, self).__init__(SearchPath.ARTURO2_SOURCE_FILEEXT, console, exclusions=exclusions, followLinks=True)
         self._project = project
-        self._console = console
-        self._sourceRoots = []
-
-    def getResults(self):
-        return self._sourceRoots
 
     def onVisitPackage(self, parentPath, rootPath, packageName, filename):
         if os.path.basename(parentPath) not in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
-            self._sourceRoots.append([parentPath, packageName, filename])
+            self._addResult([parentPath, packageName, filename])
         return SearchPathAgent.KEEP_GOING
 
 
@@ -162,12 +181,12 @@ class Project(object):
             self._builddir = os.path.join(self._path, SearchPath.ARTURO2_BUILDDIR_NAME)
         return self._builddir
 
+    def getMakefilePath(self):
+        return os.path.join(self._path, JinjaTemplates.TEMPLATES['makefile'])
+
     def getPath(self):
         return self._path
 
-    def getMakefilePath(self):
-        return os.path.join(self._path, JinjaTemplates.MAKEFILE)
-        
     def getName(self):
         return self._name
     
@@ -181,7 +200,7 @@ class Project(object):
         
         #TODO: handle missing makefile error
         #TODO: check makefile version against Arturo version.
-        mergedPreferences = MakefilePropertyParser.parse(os.path.join(self._path, JinjaTemplates.MAKEFILE), preferences, self._console);
+        mergedPreferences = MakefilePropertyParser.parse(os.path.join(self._path, JinjaTemplates.TEMPLATES['makefile']), preferences, self._console);
         
         packageName = mergedPreferences['target_package']
         platformName = mergedPreferences['target_platform']
@@ -206,7 +225,7 @@ class Project(object):
 
     def getLibraries(self):
         if self._libraries is None:
-            # treat anything in a "libarary" folder under the project path as a library
+            # treat anything in a "library" folder under the project path as a library
             projectPath = self.getPath()
             forceTreatAsLibraries = list()
             for folderName in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
@@ -262,7 +281,7 @@ class Environment(object):
         if self._preferences is None:
             self._preferences = Preferences(self.getSearchPath(), self.getConsole())
         return self._preferences
-    
+
     def getInferredProject(self):
         if self._inferredProject is None:
             self._inferredProject = Project.infer(self)
@@ -272,13 +291,20 @@ class Environment(object):
         #TODO: search environment for any libraries on the system path
         if self._libraryIndex is None:
             self._libraryIndex = dict()
-            for libraryName, libraryVersions in self._getLibraryMetadata().iteritems():
-                self._libraryIndex[libraryName] = Library(libraryName, self, self._console, libraryVersions)
+            for meta_data in self._getLibraryMetadata().itervalues():
+                libraryName = meta_data['name']
+                libraryVersion = meta_data['version']
+                library = Library(libraryName, self, self._console, libraryVersion)
+                if not self._libraryIndex.has_key(libraryName):
+                    self._libraryIndex[libraryName] = dict()
+                self._libraryIndex[libraryName][libraryVersion] = library
+
+            for searchPath in self.getSearchPath().getPaths():
+                self._libraryIndex.update(self.getLibrariesFor(searchPath, continueOnError=True))
 
         return self._libraryIndex
     
-    def getLibrariesFor(self, path, forcedLibrariesPaths=None):
-        #TODO: de-dupe environment libraries
+    def getLibrariesFor(self, path, forcedLibrariesPaths=None, continueOnError=False, platform=None):
         libraries = dict()
         for foldername in SearchPath.ARDUINO15_LIBRARY_FOLDER_NAMES:
             librariesDir = os.path.join(path, foldername)
@@ -287,19 +313,24 @@ class Environment(object):
                     libraryDir = os.path.join(librariesDir, item)
                     if os.path.isdir(libraryDir):
                         try:
-                            library = Library.fromDir(self, libraryDir, self._console)
+                            library = Library.fromDir(self, libraryDir, self._console, platform)
                         except ValueError as e:
-                            if forcedLibrariesPaths is None:
-                                raise e
+                            if forcedLibrariesPaths:
+                                prefixList = list(forcedLibrariesPaths)
+                                prefixList.append(libraryDir)
+                                if os.path.commonprefix(prefixList) in forcedLibrariesPaths:
+                                    # Any folder under a "forced path" is considered a library.
+                                    library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir, libraryPlatform=platform)
 
-                            prefixList = list(forcedLibrariesPaths)
-                            prefixList.append(libraryDir)
-                            if os.path.commonprefix(prefixList) in forcedLibrariesPaths:
-                                # Any folder under a "forced path" is considered a library.
-                                library = Library(os.path.basename(libraryDir), self, self._console, libraryPath=libraryDir)
+                            elif continueOnError:
+                                self.getConsole().printDebug(_("{} was not a well-formed library.".format(libraryDir)))
+                                continue
                             else:
                                 raise e
-                        libraries[library.getName()] = library
+                        if not libraries.has_key(library.getName()):
+                            libraries[library.getName()] = dict()
+                        libraries[library.getName()][library.getVersion()] = library
+
         return libraries
 
     # +-----------------------------------------------------------------------+
@@ -321,14 +352,8 @@ class Environment(object):
         libraryMetadataList = libraryMetadataCollection['libraries']
         self._libraryMetadataIndex = dict()
         for libraryMetadata in libraryMetadataList:
-            libraryName = libraryMetadata['name']
-            try:
-                libraryVersions = self._libraryMetadataIndex[libraryName]
-            except KeyError:
-                libraryVersions = KeySortedDict(ascending=False)
-                self._libraryMetadataIndex[libraryName] = libraryVersions
-            
-            libraryVersions[libraryMetadata['version']] = libraryMetadata
+            library_name_and_version = Library.libNameFromNameAndVersion(libraryMetadata['name'], libraryMetadata['version'])
+            self._libraryMetadataIndex[library_name_and_version] = libraryMetadata
         
         return self._libraryMetadataIndex;
 

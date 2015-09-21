@@ -8,16 +8,16 @@ import os
 
 from arturo import __app_name__, __version__, __lib_name__, i18n, MissingRequiredFileException
 from arturo.commands.base import Command, ProjectCommand
-from arturo.commands.makegen import Make_gen
+from arturo.commands.makegen import Cmd_makegen
 from arturo.templates import JinjaTemplates
 
 
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | Version
+# | Cmd_version
 # +---------------------------------------------------------------------------+
-class Version(Command):
+class Cmd_version(Command):
     '''
     Get versioning information for Arturo/arturo.
     '''
@@ -41,9 +41,9 @@ class Version(Command):
         self.getConsole().printInfo(_('{0} {1} (using lib{2})'.format(__app_name__, __version__, __lib_name__)))
         
 # +---------------------------------------------------------------------------+
-# | Init
+# | Cmd_init
 # +---------------------------------------------------------------------------+
-class Init(ProjectCommand):
+class Cmd_init(ProjectCommand):
     '''
     Safe initialization of a project with the Arturo generated makefile. Once this command completes
     the project should be buildable using make.
@@ -51,12 +51,16 @@ class Init(ProjectCommand):
     LEGACY_SOURCEFOLDER_NAMES = ["src"]
     
     def __init__(self, environment, project, console):
-        super(Init, self).__init__(environment, project, console)
+        super(Cmd_init, self).__init__(environment, project, console)
         self._force = False
 
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+    @Command.usesCommand(Cmd_makegen)
+    def appendCommandTemplates(self, inoutTemplates):
+        return super(Cmd_init, self).appendCommandTemplates(inoutTemplates)
+    
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('Initialize a project for use with {} and its makefiles.'.format(__app_name__)))
 
@@ -77,8 +81,8 @@ class Init(ProjectCommand):
         console = self.getConsole()
         
         # first choose a project "main"
-        # TODO: allow commandline arguments to force paroject folders to be treated as source folders.
-        sourceRoots = project.getSourceRoots(Init.LEGACY_SOURCEFOLDER_NAMES)
+        # TODO: allow commandline arguments to force project folders to be treated as source folders.
+        sourceRoots = project.getSourceRoots(Cmd_init.LEGACY_SOURCEFOLDER_NAMES)
         sourceRoot = None
         if len(sourceRoots) > 1:
             projectList = list()
@@ -89,7 +93,7 @@ class Init(ProjectCommand):
         elif (len(sourceRoots) == 1):
             sourceRoot = sourceRoots[0]
         else:
-            raise MissingRequiredFileException(self.getEnvironment().getSearchPath(), Init.LEGACY_SOURCEFOLDER_NAMES, "Source root folders")
+            raise MissingRequiredFileException(self.getEnvironment().getSearchPath(), Cmd_init.LEGACY_SOURCEFOLDER_NAMES, "Source root folders")
             
 
         # next use the IDE's preferences to populate our makefile
@@ -98,7 +102,7 @@ class Init(ProjectCommand):
         # setup the top level makefile
         makefilePath = project.getMakefilePath()
         sourcePath = os.path.relpath(os.path.join(sourceRoot[0], sourceRoot[1]), os.path.dirname(makefilePath))
-        projectName = sourceRoot[1] if sourceRoot[1] not in Init.LEGACY_SOURCEFOLDER_NAMES else os.path.basename(sourceRoot[0])
+        projectName = sourceRoot[1] if sourceRoot[1] not in Cmd_init.LEGACY_SOURCEFOLDER_NAMES else os.path.basename(sourceRoot[0])
         
         if os.path.exists(makefilePath):
             if self._force:
@@ -111,31 +115,19 @@ class Init(ProjectCommand):
         if makeFileGen:
             self._generateMakefile(makefilePath, preferences, projectName, sourcePath)
 
-        # finally ask if we want to (re)generate the project makefiles
-        if self._force or console.askYesNoQuestion(_("Do you want to (re)generate the project makefiles?")):
-            # generate the configuration
-            config = project.getConfiguration(preferences['target_package'], 
-                                              preferences['target_platform'], 
-                                              preferences['board'],
-                                              projectName,
-                                              sourcePath
-                                              )
-            makeGenCommand = Make_gen(self.getEnvironment(), project, config, console)
-            makeGenCommand.run()
-
     # +-----------------------------------------------------------------------+
     # | PRIVATE
     # +-----------------------------------------------------------------------+
     def _generateMakefile(self, makefilePath, preferences, projectName, sourcePath):
-        
-        
         jinjaEnv = self.getProject().getJinjaEnvironment()
-        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, JinjaTemplates.MAKEFILE)
+        makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'makefile')
         initRenderParams = {
                             'source' : { 'dir' : sourcePath,
                                          'name' : projectName,
                                     },
                             'preferences' : preferences,
                         }
-        with open(makefilePath, 'wt') as makefile:
-            makefile.write(makefileTemplate.render(initRenderParams))
+        
+        self.appendCommandTemplates(initRenderParams)
+        
+        makefileTemplate.renderTo(makefilePath, initRenderParams)

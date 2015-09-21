@@ -5,18 +5,46 @@
 # http://32bits.io/Arturo/
 #
 
+import distutils.version
 import re
 
-from arturo import i18n
+from arturo import i18n, __app_name__
 from arturo.commands.base import Command, ProjectCommand, ConfiguredCommand
-
+from arturo.libraries import Library
 
 _ = i18n.language.ugettext
 
 # +---------------------------------------------------------------------------+
-# | list-tools
+# | Cmd_commands
 # +---------------------------------------------------------------------------+
-class List_tools(Command):
+class Cmd_commands(Command):
+    '''
+    List all Arturo commands.
+    '''
+
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Print {} commands then exit.'.format(__app_name__)))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        None
+
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        commandsDict = self.getAllCommands()
+        self.getConsole().stdout(*sorted(commandsDict.keys()))
+
+# +---------------------------------------------------------------------------+
+# | Cmd_list_tools
+# +---------------------------------------------------------------------------+
+class Cmd_list_tools(Command):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
@@ -66,9 +94,9 @@ class List_tools(Command):
             console.popContext()
 
 # +---------------------------------------------------------------------------+
-# | list-boards
+# | Cmd_list_libraries
 # +---------------------------------------------------------------------------+
-class List_libraries(ConfiguredCommand):
+class Cmd_list_libraries(ConfiguredCommand):
     '''
     List all known libraries
     '''
@@ -114,24 +142,51 @@ class List_libraries(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def _emitLibraryList(self, librariesDict):
         console = self.getConsole()
-        for libraryName, library in librariesDict.iteritems():
-            libraryVersions = library.getVersions()
-            if len(libraryVersions) > 1:
-                console.printInfo(libraryName)
-                console.shift()
-                for libraryVersion in library.getVersions().itervalues():
-                    console.printInfo("- {0}".format(libraryVersion['version']))
-                console.unshift()
-            else:
-                for libraryVersion in library.getVersions().itervalues():
-                    console.printInfo(_("{0} - {1}".format(libraryName, libraryVersion['version'])))
-                    break;
+        for libraryVersions in librariesDict.itervalues():
+            for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
+                library = libraryVersions[libraryVersion]
+                console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
+                
+# +---------------------------------------------------------------------------+
+# | Cmd_which_lib
+# +---------------------------------------------------------------------------+
+class Cmd_which_lib(ConfiguredCommand):
 
+    # +-----------------------------------------------------------------------+
+    # | Command
+    # +-----------------------------------------------------------------------+
+    def add_parser(self, subparsers):
+        return subparsers.add_parser(self.getCommandName(), help=_('Print the path found for a given library name an version.'))
+
+    # +-----------------------------------------------------------------------+
+    # | ArgumentVisitor
+    # +-----------------------------------------------------------------------+
+    def onVisitArgParser(self, parser):
+        parser.add_argument("-l", "--library", required=True)
+    
+    def onVisitArgs(self, args):
+        setattr(self, "_library", args.library)
+    
+    # +-----------------------------------------------------------------------+
+    # | Runnable
+    # +-----------------------------------------------------------------------+
+    def run(self):
+        libraries = self.getConfiguration().getLibraries()
+        libNameAndVersion = Library.libNameAndVersion(self._library)
+        libraryVersions = libraries.get(libNameAndVersion[0])
+        if not libraryVersions:
+            self.getConsole().printInfo(_("No library with name {} was found.".format(libNameAndVersion[0])))
+            return
+        library = libraryVersions.get(libNameAndVersion[1])
+        if not library:
+            self.getConsole().printInfo(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
+            return
+        self.getConsole().printInfo(library.getPath())
 
 # +---------------------------------------------------------------------------+
-# | list-boards
+# | Cmd_list_boards
 # +---------------------------------------------------------------------------+
-class List_boards(Command):
+class Cmd_list_boards(Command):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
@@ -182,16 +237,16 @@ class List_boards(Command):
             console.popContext()
 
 # +---------------------------------------------------------------------------+
-# | list-platform-data
+# | Cmd_list_platform_data
 # +---------------------------------------------------------------------------+
-class List_platform_data(ProjectCommand):
+class Cmd_list_platform_data(ProjectCommand):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
     query syntax that may be encapsulated in a single Query command.
     '''
     def __init__(self, environment, project, console):
-        super(List_platform_data, self).__init__(environment, project, console)
+        super(Cmd_list_platform_data, self).__init__(environment, project, console)
         self._filter = None
         self._package = None
         self._platform = None
@@ -245,6 +300,7 @@ class List_platform_data(ProjectCommand):
                 if self._board is None else boards[self._board]
             
             buildInfo = board.processBuildInfo()
+            console.printInfo(board.getPath())
             for key, value in buildInfo.iteritems():
                 if self._filter is None or self._filter.search(key):
                     console.printInfo(_("{0:<40} - {1}".format(key, value)))
