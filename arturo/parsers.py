@@ -6,6 +6,7 @@
 #
 
 import re
+import os
 
 # +---------------------------------------------------------------------------+
 # | Makefile Property Parser
@@ -39,6 +40,34 @@ class MakefilePropertyParser(object):
                 if kvmatch is not None:
                     mergeWith[kvmatch.group(1).lower()] = kvmatch.group(2)
         return mergeWith
+
+# +---------------------------------------------------------------------------+
+# | .gitignore Rule Parser
+# +---------------------------------------------------------------------------+
+
+class GitIgnoreParser(object):
+    '''
+    Collects all ignore rules from a .gitignore found in a provided path.
+    '''
+    
+    LINECOMMENT_PATTERN = re.compile("^\s?\#")
+    ONLYWHITESPACE_PATTERN = re.compile("^\s+$")
+    
+    def __init__(self):
+        raise Exception("static only")
+    
+    @classmethod
+    def parse(cls, basepath, ignoreRules=[]):
+        ignorefile = os.path.join(basepath, ".gitignore")
+        if os.path.isfile(ignorefile):
+            with open(ignorefile) as gitignore:
+                for line in gitignore:
+                    if len(line) is 0 or cls.ONLYWHITESPACE_PATTERN.match(line):
+                        continue
+                    if cls.LINECOMMENT_PATTERN.match(line):
+                        continue
+                    ignoreRules.append(line.strip())
+        return ignoreRules
     
 # +---------------------------------------------------------------------------+
 # | ArduinoKeyValueParser

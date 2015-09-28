@@ -105,7 +105,7 @@ class Console(ArgumentVisitor):
     def askPickOneFromList(self, prompt, optionList, responseList=None):
         '''
         @param optionList: A list of two-tuples to display to the user with a prompt to select one. The first
-                           index in the tuple is used as a succinct title and the second a breif description.
+                           index in the tuple is used as a succinct title and the second a brief description.
         '''
         listLen = len(optionList)
         listAsString = ""

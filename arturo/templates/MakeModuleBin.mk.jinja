@@ -13,7 +13,6 @@ LOCAL_MODULE_NAME := $(PROJECT_NAME)
 LOCAL_SKETCH_DIR           := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)/ino
 LOCAL_OBJ_PATH             := $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/$(LOCAL_MODULE_NAME)/$(OBJ_DIR)
 LOCAL_ARCHIVE              := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).a
-LOCAL_BINARY			   := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).$(PROJECT_BINTYPE)
 LOCAL_SOURCE               := $(shell {{commands.source_files}})
 LOCAL_INO_SOURCE           := $(filter %.ino, $(LOCAL_SOURCE))
 LOCAL_HEADERS              := $(shell {{commands.source_headers}})
@@ -25,7 +24,7 @@ LOCAL_OBJ_FILES            := $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_CPP_SOURCE:
                               $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_C_SOURCE:.c=.o)) \
                               $(addprefix $(LOCAL_OBJ_PATH), $(LOCAL_INO_INTERM_SOURCE:.cpp=.o))
 
-#VPATH                           := $(DIR_SOURCE):$(DIR_BUILD)/$(BOARD)/$(SKETCH_DIR)
+LOCAL_BINARY			   := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).$(PROJECT_BINTYPE)
 
 -include $(MAKEMODULE_COMMON)
 

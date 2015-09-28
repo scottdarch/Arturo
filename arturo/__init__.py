@@ -132,8 +132,9 @@ class SearchPathAgent(object):
         return self._console
         
     def _addResult(self, result):
-        if result not in self._resultSet:
-            self._resultSet.add(result)
+        result_hashable = str(result)
+        if result_hashable not in self._resultSet:
+            self._resultSet.add(result_hashable)
             self._resultList.append(result)
     
 # +---------------------------------------------------------------------------+
