@@ -10,6 +10,7 @@ from arturo import __app_name__, __version__, __lib_name__, i18n, MissingRequire
 from arturo.commands.base import Command, ProjectCommand
 from arturo.commands.makegen import Cmd_makegen
 from arturo.templates import JinjaTemplates
+from arturo.commands.build import Cmd_preprocess
 
 
 _ = i18n.language.ugettext
@@ -58,6 +59,7 @@ class Cmd_init(ProjectCommand):
     # | Command
     # +-----------------------------------------------------------------------+
     @Command.usesCommand(Cmd_makegen)
+    @Command.usesCommand(Cmd_preprocess)
     def appendCommandTemplates(self, inoutTemplates):
         return super(Cmd_init, self).appendCommandTemplates(inoutTemplates)
     
