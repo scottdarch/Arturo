@@ -1,5 +1,5 @@
-#  _____     _               
-# |  _  |___| |_ _ _ ___ ___ 
+#  _____     _
+# |  _  |___| |_ _ _ ___ ___
 # |     |  _|  _| | |  _| . |
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
@@ -18,6 +18,8 @@ _ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 # | Cmd_version
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_version(Command):
     '''
     Get versioning information for Arturo/arturo.
@@ -39,18 +41,21 @@ class Cmd_version(Command):
     # | Runnable
     # +-----------------------------------------------------------------------+
     def run(self):
-        self.getConsole().printInfo(_('{0} {1} (using lib{2})'.format(__app_name__, __version__, __lib_name__)))
-        
+        self.getConsole().printInfo(
+            _('{0} {1} (using lib{2})'.format(__app_name__, __version__, __lib_name__)))
+
 # +---------------------------------------------------------------------------+
 # | Cmd_init
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_init(ProjectCommand):
     '''
     Safe initialization of a project with the Arturo generated makefile. Once this command completes
     the project should be buildable using make.
     '''
     LEGACY_SOURCEFOLDER_NAMES = ["src"]
-    
+
     def __init__(self, environment, project, console):
         super(Cmd_init, self).__init__(environment, project, console)
         self._force = False
@@ -62,7 +67,7 @@ class Cmd_init(ProjectCommand):
     @Command.usesCommand(Cmd_preprocess)
     def appendCommandTemplates(self, inoutTemplates):
         return super(Cmd_init, self).appendCommandTemplates(inoutTemplates)
-    
+
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('Initialize a project for use with {} and its makefiles.'.format(__app_name__)))
 
@@ -71,7 +76,7 @@ class Cmd_init(ProjectCommand):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         parser.add_argument("-f", "--force", action="store_true")
-    
+
     def onVisitArgs(self, args):
         self._force = args.force
 
@@ -81,41 +86,49 @@ class Cmd_init(ProjectCommand):
     def run(self):
         project = self.getProject()
         console = self.getConsole()
-        
+
         # first choose a project "main"
-        # TODO: allow commandline arguments to force project folders to be treated as source folders.
-        sourceRoots = project.getSourceRoots(Cmd_init.LEGACY_SOURCEFOLDER_NAMES)
+        # TODO: allow commandline arguments to force project folders to be
+        # treated as source folders.
+        sourceRoots = project.getSourceRoots(
+            Cmd_init.LEGACY_SOURCEFOLDER_NAMES)
         sourceRoot = None
         if len(sourceRoots) > 1:
             projectList = list()
-            for rootPath, rootName, mainSource in sourceRoots:  # @UnusedVariable
+            # @UnusedVariable
+            for rootPath, rootName, mainSource in sourceRoots:
                 projectList.append([rootName, mainSource])
-            #TODO: handle invalid input
-            sourceRoot = sourceRoots[console.askPickOneFromList(_("Which project?"), projectList)]
+            # TODO: handle invalid input
+            sourceRoot = sourceRoots[
+                console.askPickOneFromList(_("Which project?"), projectList)]
         elif (len(sourceRoots) == 1):
             sourceRoot = sourceRoots[0]
         else:
-            raise MissingRequiredFileException(self.getEnvironment().getSearchPath(), Cmd_init.LEGACY_SOURCEFOLDER_NAMES, "Source root folders")
-            
+            raise MissingRequiredFileException(self.getEnvironment().getSearchPath(
+            ), Cmd_init.LEGACY_SOURCEFOLDER_NAMES, "Source root folders")
 
         # next use the IDE's preferences to populate our makefile
         preferences = project.getEnvironment().getPreferences()
-        
+
         # setup the top level makefile
         makefilePath = project.getMakefilePath()
-        sourcePath = os.path.relpath(os.path.join(sourceRoot[0], sourceRoot[1]), os.path.dirname(makefilePath))
-        projectName = sourceRoot[1] if sourceRoot[1] not in Cmd_init.LEGACY_SOURCEFOLDER_NAMES else os.path.basename(sourceRoot[0])
-        
+        sourcePath = os.path.relpath(
+            os.path.join(sourceRoot[0], sourceRoot[1]), os.path.dirname(makefilePath))
+        projectName = sourceRoot[1] if sourceRoot[
+            1] not in Cmd_init.LEGACY_SOURCEFOLDER_NAMES else os.path.basename(sourceRoot[0])
+
         if os.path.exists(makefilePath):
             if self._force:
                 makeFileGen = True
             else:
-                makeFileGen = console.askYesNoQuestion(_('%s exists. Overwrite?' % (makefilePath)))
+                makeFileGen = console.askYesNoQuestion(
+                    _('%s exists. Overwrite?' % (makefilePath)))
         else:
             makeFileGen = True
 
         if makeFileGen:
-            self._generateMakefile(makefilePath, preferences, projectName, sourcePath)
+            self._generateMakefile(
+                makefilePath, preferences, projectName, sourcePath)
 
     # +-----------------------------------------------------------------------+
     # | PRIVATE
@@ -124,12 +137,12 @@ class Cmd_init(ProjectCommand):
         jinjaEnv = self.getProject().getJinjaEnvironment()
         makefileTemplate = JinjaTemplates.getTemplate(jinjaEnv, 'makefile')
         initRenderParams = {
-                            'source' : { 'dir' : sourcePath,
-                                         'name' : projectName,
-                                    },
-                            'preferences' : preferences,
-                        }
-        
+            'source': {'dir': sourcePath,
+                       'name': projectName,
+                       },
+            'preferences': preferences,
+        }
+
         self.appendCommandTemplates(initRenderParams)
-        
+
         makefileTemplate.renderTo(makefilePath, initRenderParams)

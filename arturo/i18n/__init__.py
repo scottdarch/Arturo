@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-#  _____     _               
-# |  _  |___| |_ _ _ ___ ___ 
+#  _____     _
+# |  _  |___| |_ _ _ ___ ___
 # |     |  _|  _| | |  _| . |
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
@@ -25,11 +25,11 @@ def _init_i18n():
     #
     DEFAULT_LANGUAGES = os.environ.get('LANG', '').split(':')
     DEFAULT_LANGUAGES += ['en_US']
-     
+
     lc, encoding = locale.getdefaultlocale()  # @UnusedVariable
     if lc:
         languages = [lc]
-    
+
     # Concat all languages (env + default locale),
     #  and here we have the languages and location of the translations
     languages += DEFAULT_LANGUAGES
@@ -37,7 +37,7 @@ def _init_i18n():
     # Lets tell those details to gettext
     gettext.install(True, localedir=None, unicode=1)
     gettext.find(__lib_name__, mo_location)
-    gettext.textdomain (__lib_name__)
+    gettext.textdomain(__lib_name__)
     gettext.bind_textdomain_codeset(__lib_name__, "UTF-8")
     return gettext.translation(__lib_name__, mo_location, languages=languages, fallback=True)
 

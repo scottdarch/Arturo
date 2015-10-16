@@ -1,5 +1,5 @@
-#  _____     _               
-# |  _  |___| |_ _ _ ___ ___ 
+#  _____     _
+# |  _  |___| |_ _ _ ___ ___
 # |     |  _|  _| | |  _| . |
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
@@ -16,7 +16,8 @@ __app_name__ = 'ano'
 __lib_name__ = 'arturo'
 __version__ = '2.0.0'
 # some libraries have coded against -DARDUINO as an integer. We use this both to supply an integer
-# and to use newer branches where the "1.0.x" line was handled by this macro (e.g. #if ARDUINO > 100).
+# and to use newer branches where the "1.0.x" line was handled by this
+# macro (e.g. #if ARDUINO > 100).
 __version_num__ = 200
 
 
@@ -24,9 +25,9 @@ __version_num__ = 200
 # | Runnable
 # +---------------------------------------------------------------------------+
 class Runnable(object):
-    
+
     __metaclass__ = ABCMeta
-    
+
     @abstractmethod
     def run(self):
         None
@@ -34,32 +35,37 @@ class Runnable(object):
 # +---------------------------------------------------------------------------+
 # | ArgumentVisitor
 # +---------------------------------------------------------------------------+
+
+
 class ArgumentVisitor(object):
-    
+
     __metaclass__ = ABCMeta
-    
+
     @abstractmethod
     def onVisitArgParser(self, subparsers):
         None
-    
+
     def onVisitArgs(self, args):
         None
 
 # +---------------------------------------------------------------------------+
 # | COMMON TYPES
 # +---------------------------------------------------------------------------+
+
+
 class MissingRequiredFileException(BaseException):
-    
+
     def __init__(self, searchPath, filenames, genericName):
         super(MissingRequiredFileException, self).__init__(genericName)
         # TODO: format a "looked in [searchPath] for [filenames]" message
+
 
 class NamedOrderedDict(OrderedDict):
 
     def __init__(self, name):
         super(NamedOrderedDict, self).__init__()
         self['name'] = name
-        
+
     def getName(self):
         return self['name']
 
@@ -71,7 +77,7 @@ class KeySortedDict(OrderedDict):
     '''
     TODO: implement me
     '''
-    
+
     def __init__(self, ascending=True):
         super(KeySortedDict, self).__init__()
         self._ascending = ascending
@@ -81,13 +87,13 @@ class KeySortedDict(OrderedDict):
 # | SearchPathAgent
 # +---------------------------------------------------------------------------+
 class SearchPathAgent(object):
-    
+
     KEEP_GOING = 1
     DONE = 0
     DONE_WITH_THIS_DIR = 2
-    
+
     __metaclass__ = ABCMeta
-    
+
     def __init__(self, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
         super(SearchPathAgent, self).__init__()
         self._console = console
@@ -97,7 +103,7 @@ class SearchPathAgent(object):
         self._exclusions = exclusions
         self._resultList = list()
         self._resultSet = set()
-        
+
     def getFollowLinks(self):
         return self._followLinks
 
@@ -106,16 +112,16 @@ class SearchPathAgent(object):
 
     def getVisitedDirMemopad(self):
         return self._visitedDirMemopad
-    
+
     def getExclusions(self):
         return self._exclusions
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         return SearchPathAgent.KEEP_GOING
-    
+
     def onVisitDir(self, parentPath, rootPath, foldername, fqFolderName, canonicalPath, depth):
         return SearchPathAgent.KEEP_GOING
-    
+
     def getResults(self, ordered=True):
         if ordered:
             return self._resultList
@@ -130,16 +136,18 @@ class SearchPathAgent(object):
     # +-----------------------------------------------------------------------+
     def _getConsole(self):
         return self._console
-        
+
     def _addResult(self, result):
         result_hashable = str(result)
         if result_hashable not in self._resultSet:
             self._resultSet.add(result_hashable)
             self._resultList.append(result)
-    
+
 # +---------------------------------------------------------------------------+
 # | UTILITY AGENTS AND AGGREGATORS
 # +---------------------------------------------------------------------------+
+
+
 class Arduino15PackageSearchPathAgent(SearchPathAgent):
     '''
     SearchPathAgent that looks for the Arduino15 standard "[token]/[token].[extension]" pattern
@@ -148,9 +156,10 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
     '''
 
     __metaclass__ = ABCMeta
-    
+
     def __init__(self, extensionSet, console, exclusions=None, useDefaultExcludes=True, followLinks=False):
-        super(Arduino15PackageSearchPathAgent, self).__init__(console, exclusions, useDefaultExcludes, followLinks)
+        super(Arduino15PackageSearchPathAgent, self).__init__(
+            console, exclusions, useDefaultExcludes, followLinks)
         self._extensionSet = extensionSet
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
@@ -168,21 +177,23 @@ class Arduino15PackageSearchPathAgent(SearchPathAgent):
 class ConfigurationHeaderAggregator(SearchPathAgent):
 
     def __init__(self, configuration, console, exclusions=None):
-        super(ConfigurationHeaderAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
+        super(ConfigurationHeaderAggregator, self).__init__(
+            console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
         splitName = filename.split('.')
         if len(splitName) == 2 and splitName[1] in SearchPath.ARTURO2_HEADER_FILEEXT:
             self._addResult(fqFilename)
-            
+
         return SearchPathAgent.KEEP_GOING
 
 
 class ConfigurationSourceAggregator(SearchPathAgent):
 
     def __init__(self, configuration, console, exclusions=None):
-        super(ConfigurationSourceAggregator, self).__init__(console, exclusions=exclusions, followLinks=True)
+        super(ConfigurationSourceAggregator, self).__init__(
+            console, exclusions=exclusions, followLinks=True)
         self._configuration = configuration
 
     def onVisitFile(self, parentPath, rootPath, containingFolderName, filename, fqFilename):
@@ -196,15 +207,16 @@ class ConfigurationSourceAggregator(SearchPathAgent):
 # | SearchPath
 # +---------------------------------------------------------------------------+
 class SearchPath(object):
-    
+
     ARDUINO15_PACKAGES_PATH = "packages"
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
     ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15"),
                       os.path.expanduser("~/Documents/Arduino"),
                       os.path.expanduser("~/Arduino"),
-                      os.path.expanduser(os.path.join("~", "My Documents", "Arduino"))
-                    ]
+                      os.path.expanduser(
+                          os.path.join("~", "My Documents", "Arduino"))
+                      ]
 
     ARDUINO15_LIBRARY_FOLDER_NAMES = ("lib", "libraries")
 
@@ -215,10 +227,10 @@ class SearchPath(object):
     ARTURO2_PROJECT_SOURCE_FOLDERS = ("src", ".")
     ARTURO2_LIBRARY_EXAMPLE_FOLDERS = ("examples")
 
-    ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS = ["\..+", 
+    ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS = ["\..+",
                                             ARTURO2_BUILDDIR_NAME,
-                                           ]
-    
+                                            ]
+
     def __init__(self, console):
         super(SearchPath, self).__init__()
         self._envpath = list(SearchPath.ARDUINO15_PATH)
@@ -227,7 +239,7 @@ class SearchPath(object):
         self._console = console
         for patternString in SearchPath.ARTURO2_DEFAULT_SCM_EXCLUDE_PATTERNS:
             self._compiledScmExcludes.append(re.compile(patternString))
-    
+
     def __str__(self):
         return str(self._envpath)
 
@@ -240,20 +252,23 @@ class SearchPath(object):
             if packageIndexPath is not None:
                 return packageIndexPath
 
-        raise MissingRequiredFileException(self._searchPath, fileNames, genericName)
+        raise MissingRequiredFileException(
+            self._searchPath, fileNames, genericName)
 
     def findFile(self, filename):
         return self._findFirstOrNone(filename, os.path.isfile)
-    
+
     def findDir(self, relativepath):
         return self._findFirstOrNone(relativepath, os.path.isdir)
 
     def scanDirs(self, path, searchAgent):
         if searchAgent is None or not isinstance(searchAgent, SearchPathAgent):
-            raise ValueError("You must provide a SearchPathAgent object to use the scanDirs method.")
+            raise ValueError(
+                "You must provide a SearchPathAgent object to use the scanDirs method.")
         parentPath = os.path.realpath(os.path.join(path, os.path.pardir))
         canonicalPath = os.path.realpath(path)
-        self._scanDirsRecursive(parentPath, path, os.path.basename(path), canonicalPath, searchAgent, 0)
+        self._scanDirsRecursive(
+            parentPath, path, os.path.basename(path), canonicalPath, searchAgent, 0)
         return searchAgent
 
     # +-----------------------------------------------------------------------+
@@ -280,18 +295,21 @@ class SearchPath(object):
         for name in dirThings:
             if useDefaultExcludes and self._isExcludedByDefault(name):
                 if self._console is not None:
-                    self._console.printVerbose("Skipping {} by default.".format(name))
+                    self._console.printVerbose(
+                        "Skipping {} by default.".format(name))
                 continue
-            
+
             if exclusions is not None and name in exclusions:
                 if self._console is not None:
-                    self._console.printVerbose("Skipping {} by exclusion rule.".format(name))
+                    self._console.printVerbose(
+                        "Skipping {} by exclusion rule.".format(name))
                 continue
 
             fullPath = os.path.join(folderPath, name)
             if os.path.isdir(fullPath):
                 canonicalDir = os.path.realpath(fullPath)
-                resultOfVisit = searchAgent.onVisitDir(parentPath, folderPath, name, fullPath, canonicalDir, folderDepth)
+                resultOfVisit = searchAgent.onVisitDir(
+                    parentPath, folderPath, name, fullPath, canonicalDir, folderDepth)
                 if resultOfVisit != SearchPathAgent.KEEP_GOING:
                     return resultOfVisit
 
@@ -299,18 +317,19 @@ class SearchPath(object):
                     dirsToTraverse.append([fullPath, name, canonicalDir])
 
             else:
-                resultOfVisit = searchAgent.onVisitFile(parentPath, folderPath, folderName, name, fullPath)
+                resultOfVisit = searchAgent.onVisitFile(
+                    parentPath, folderPath, folderName, name, fullPath)
                 if resultOfVisit != SearchPathAgent.KEEP_GOING:
                     return resultOfVisit
 
         for dirPath, dirName, canonicalDirPath in dirsToTraverse:
-            result = self._scanDirsRecursive(folderPath, dirPath, dirName, canonicalDirPath, searchAgent, folderDepth + 1)
+            result = self._scanDirsRecursive(
+                folderPath, dirPath, dirName, canonicalDirPath, searchAgent, folderDepth + 1)
             if result == SearchPathAgent.DONE:
                 return result
-        
+
         return SearchPathAgent.KEEP_GOING
 
-    
     def _findFirstOrNone(self, pathelement, compariator):
         if pathelement is None:
             raise ValueError("pathelement argument is required.")
@@ -327,19 +346,21 @@ class SearchPath(object):
 # +---------------------------------------------------------------------------+
 # | Preferences
 # +---------------------------------------------------------------------------+
+
+
 class Preferences(object):
-    
+
     PREFERENCE_FILE_NAMES = ["preferences.txt", "arturo.ini", ".anorc"]
-    
+
     def __init__(self, searchPath, console):
         super(Preferences, self).__init__()
         self._searchPath = searchPath
         self._console = console
         self._prefs = None
-        
+
     def get(self, key, defaultValue):
         return self._getPreferences().get(key, defaultValue)
-    
+
     # +-----------------------------------------------------------------------+
     # | PYTHON DATA MODEL
     # +-----------------------------------------------------------------------+
@@ -358,8 +379,10 @@ class Preferences(object):
     def _getPreferences(self):
         if self._prefs is not None:
             return self._prefs
-        
-        preferenceFilePath = self._searchPath.findFirstFileOfNameOrThrow(Preferences.PREFERENCE_FILE_NAMES, "preferences")
-        self._prefs = parsers.ArduinoKeyValueParser.parse(preferenceFilePath, dict(), None, None, self._console)
-        
+
+        preferenceFilePath = self._searchPath.findFirstFileOfNameOrThrow(
+            Preferences.PREFERENCE_FILE_NAMES, "preferences")
+        self._prefs = parsers.ArduinoKeyValueParser.parse(
+            preferenceFilePath, dict(), None, None, self._console)
+
         return self._prefs

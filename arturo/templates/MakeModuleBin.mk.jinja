@@ -16,7 +16,7 @@ LOCAL_ARCHIVE              := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).a
 LOCAL_SOURCE               := $(shell {{commands.source_files}})
 LOCAL_INO_SOURCE           := $(filter %.ino, $(LOCAL_SOURCE))
 LOCAL_INO_INTERM_SOURCE    := $(addprefix $(LOCAL_SKETCH_DIR)/, $(LOCAL_INO_SOURCE:.ino=.cpp))
-LOCAL_HEADERS              := $(shell {{commands.source_headers}})
+LOCAL_HEADERS              := $(shell {{commands.header_libs}})
 LOCAL_C_HEADERS            := $(filter-out %.hpp, $(LOCAL_HEADERS))
 LOCAL_CPP_SOURCE           := $(filter %.cpp, $(LOCAL_SOURCE))
 LOCAL_C_SOURCE             := $(filter %.c, $(LOCAL_SOURCE))
@@ -28,6 +28,8 @@ LOCAL_OBJ_FILES            += $(LOCAL_INO_INTERM_SOURCE:.cpp=.o)
 
 LOCAL_BINARY			   := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).$(PROJECT_BINTYPE)
 LOCAL_HEX                  := $(DIR_BUILD_PATH)/$(LOCAL_MODULE_NAME).$(PROJECT_HEXTYPE)
+
+#TODO library archive dependencies
 
 -include $(MAKEMODULE_COMMON)
 
