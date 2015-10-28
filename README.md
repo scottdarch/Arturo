@@ -30,3 +30,31 @@ You might want to add the new ```.build_ano``` build output folder to your .giti
 
 
 <img src="docs/Toscanini.png" alt="Arturo Toscanini" height="150" width="147"/>
+
+## Getting Started
+
+There is an excellent [getting started guide for ino](http://inotool.org/quickstart) that contains
+everything you should need to get the Blink program running on your board.
+
+## Troubleshooting
+
+HALP!  I am getting:
+```
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 1 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 2 of 10: not in sync: resp=0x00
+...
+```
+
+The `-m` flag is particularly important and your upload may fail with the above error if
+you did not include it.
+
+For information about ano commands run:
+```
+ano --help
+```
+and
+```
+ano <subcommand> --help
+```
