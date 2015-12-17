@@ -297,20 +297,20 @@ class Build(Command):
 
         if flash_max > 0:
             print "Sketch uses {:,d} bytes ({:d}%) of " \
-                    "program storage space.\nMaxiumum is {:,d} bytes.".format(
+                    "program storage space.\nMaximum is {:,d} bytes.".format(
                             flash_size, flash_pct, flash_max )
         else:
             print "Sketch uses {:,d} bytes of program storage space.\n" \
-                    "Maxiumum is unknown.".format( flash_size )
+                    "Maximum is unknown.".format( flash_size )
 
         if sram_max > 0:
             print "Global variables use {:,d} bytes ({:d}%) of dynamic " \
                     "memory,\nleaving {:,d} bytes for local variables. " \
-                    "Maxiumum is {:,d} bytes.".format( sram_size, sram_pct,
+                    "Maximum is {:,d} bytes.".format( sram_size, sram_pct,
                             sram_max - sram_size, sram_max )
         else:
             print "Global variables use {:,d} bytes of dynamic memory.\n" \
-                    "Maxiumum is unknown.".format( sram_size )
+                    "Maximum is unknown.".format( sram_size )
 
         if flash_pct > 99:
             print "\033[91mSketch too big; see " \
