@@ -266,6 +266,16 @@ class Build(Command):
 
         return used_libs
 
+    def _size_by_search(self, patternstr, output):
+        patternmatch = re.search(patternstr, output)
+        if patternmatch is None:
+            return 0
+        else:
+            try:
+                return int(patternmatch.group(1))
+            except IndexError:
+                return 0
+
     def check_memory(self, args):
         board = self.e.board_model(args.board_model)
         boardVariant = args.cpu if ('cpu' in args) else None;
@@ -286,9 +296,9 @@ class Build(Command):
         firmware = os.path.join(self.e.build_dir, "firmware.elf")
         output = subprocess.Popen( [self.e.memsize, "--format=sysv", firmware],
             stdout=subprocess.PIPE).communicate()[0]
-        text_size = int(re.search('\.text\s+(\d+)', output).group(1))
-        data_size = int(re.search('\.data\s+(\d+)', output).group(1))
-        bss_size = int(re.search('\.bss\s+(\d+)', output).group(1))
+        text_size = self._size_by_search('\.text\s+(\d+)', output)
+        data_size = self._size_by_search('\.data\s+(\d+)', output)
+        bss_size = self._size_by_search('\.bss\s+(\d+)', output)
 
         flash_size = text_size + data_size
         sram_size = data_size + bss_size
