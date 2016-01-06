@@ -6,4 +6,7 @@ dist
 doc/.build
 .*.sw[op]
 ano.egg-info
+.project
+.settings
+.pydevproject
 
