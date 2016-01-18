@@ -55,6 +55,10 @@ def pjoin(base, *parts):
     return os.path.join(str(base), *map(str, parts))
 
 
+def oxname(filepath, basename_fmt):
+    head, basename = os.path.split(str(filepath))
+    return os.path.join(head, basename_fmt % basename)
+
 def xname(filepath, basename_fmt):
     head, tail = os.path.split(str(filepath))
     basename, _ = os.path.splitext(tail)
@@ -63,7 +67,7 @@ def xname(filepath, basename_fmt):
 
 @filter
 def objname(filepath):
-    return xname(filepath, '%s.o')
+    return oxname(filepath, '%s.o')
 
 
 @filter
@@ -83,7 +87,7 @@ relative_to = filter(os.path.relpath)
 
 @filter
 def filemap(sources, target_dir, rename_rule):
-    return FileMap((source, GlobFile(xname(source, rename_rule), target_dir)) 
+    return FileMap((source, GlobFile(oxname(source, rename_rule), target_dir)) 
                    for source in sources)
 
 @filter
