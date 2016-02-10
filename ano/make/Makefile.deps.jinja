@@ -4,13 +4,13 @@
 {% set src_build_dir = e.build_dir|pjoin(src_dir|basename) %}
 
 {#
- #   *.c *.cpp -> *.d
+ #   *.c *.cpp *.S -> *.d
  #}
 
 {% if src_dir == e.src_dir %}
-	{% set cpp = (src_dir|glob('*.c', '*.cpp') + src_build_dir|glob('*.cpp'))|filemap(src_build_dir, e.names.deps) %}
+	{% set cpp = (src_dir|glob('*.c', '*.cpp', '*.S') + src_build_dir|glob('*.cpp'))|filemap(src_build_dir, e.names.deps) %}
 {% else %}
-	{% set cpp = src_dir|glob('*.c', '*.cpp')|filemap(src_build_dir, e.names.deps) %}
+	{% set cpp = src_dir|glob('*.c', '*.cpp', '*.S')|filemap(src_build_dir, e.names.deps) %}
 {% endif %}
 
 {% for source, target in cpp.items() %}

@@ -46,6 +46,7 @@ class Build(Command):
     default_cppflags = '-ffunction-sections -fdata-sections -g -Os -w'
     default_cflags = ''
     default_cxxflags = '-fno-exceptions'
+    default_asmflags = '-x assembler-with-cpp'
     default_ldflags = '-Os --gc-sections'
     default_arch = 'AVR'
 
@@ -107,6 +108,12 @@ class Build(Command):
                             default=self.default_cxxflags,
                             help='Like --cppflags, but the flags specified '
                             'are only passed to compilations of C++ source '
+                            'files. Default: "%(default)s".')
+
+        parser.add_argument('--asmflags', metavar='FLAGS',
+                            default=self.default_asmflags,
+                            help='Like --cppflags, but the flags specified '
+                            'are only passed to compilations of assembler source '
                             'files. Default: "%(default)s".')
 
         parser.add_argument('--ldflags', metavar='FLAGS',
@@ -194,6 +201,7 @@ class Build(Command):
 
         self.e['cflags'] = SpaceList(shlex.split(args.cflags))
         self.e['cxxflags'] = SpaceList(shlex.split(args.cxxflags))
+        self.e['asmflags'] = SpaceList(shlex.split(args.asmflags))
 
         # Again, hard-code the flags that are essential to building the sketch
         self.e['ldflags'] = SpaceList([mcu])
@@ -205,6 +213,7 @@ class Build(Command):
             'obj': '%s.o',
             'lib': 'lib%s.a',
             'cpp': '%s.cpp',
+            'asm': '%s.S',
             'deps': '%s.d',
         }
 
