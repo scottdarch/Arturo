@@ -139,7 +139,7 @@ class Build(Command):
             self.e.find_dir('arduino_variants_dir', ['.'], [variants_place],
                             human_name='Arduino variants directory')
 
-        self.e.find_arduino_dir('arduino_core_libraries_dir', [os.path.join(board['_coredir'], 'libraries')],
+        self.e.find_arduino_dir('arduino_core_libraries_dir', ['libraries'],
                                 human_name='Arduino core libraries', optional=True)
 
         self.e.find_arduino_dir('arduino_libraries_dir', ['libraries'],
@@ -159,7 +159,7 @@ class Build(Command):
 
         for tool_key, tool_binary in toolset:
             self.e.find_arduino_tool(
-                tool_key, ['hardware', 'tools', 'avr', 'bin'], 
+                tool_key, ['hardware', 'tools', 'avr', 'bin'],
                 items=[tool_binary], human_name=tool_binary)
 
     def setup_flags(self, args):
@@ -174,7 +174,7 @@ class Build(Command):
             '-DARDUINO=' + str(self.e.arduino_lib_version.as_int()),
             '-DARDUINO_ARCH_' + args.arch.upper(),
             '-I' + self.e['arduino_core_dir'],
-        ]) 
+        ])
         # Add additional flags as specified
         self.e['cppflags'] += SpaceList(shlex.split(args.cppflags))
 
@@ -186,9 +186,9 @@ class Build(Command):
             self.e['cppflags'].append('-DUSB_PID=%s' % BoardModels.getValueForVariant(board, boardVariant, 'build', 'pid'))
         except KeyError:
             None
-            
+
         if self.e.arduino_lib_version.major:
-            variant_dir = os.path.join(self.e.arduino_variants_dir, 
+            variant_dir = os.path.join(self.e.arduino_variants_dir,
                                        board['build']['variant'])
             self.e.cppflags.append('-I' + variant_dir)
 
@@ -333,7 +333,7 @@ class Build(Command):
         # If lib A depends on lib B it have to appear before B in final
         # list so that linker could link all together correctly
         # but order of `_scan_dependencies` is not defined, so...
-        
+
         # 1. Get dependencies of sources in arbitrary order
         used_libs = list(self._scan_dependencies(self.e.src_dir, lib_dirs, inc_flags))
 
