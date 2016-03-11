@@ -139,7 +139,7 @@ class Build(Command):
             self.e.find_dir('arduino_variants_dir', ['.'], [variants_place],
                             human_name='Arduino variants directory')
 
-        self.e.find_arduino_dir('arduino_core_libraries_dir', ['libraries'],
+        self.e.find_arduino_dir('arduino_core_libraries_dir', [os.path.join(board['_coredir'], 'libraries')],
                                 human_name='Arduino core libraries', optional=True)
 
         self.e.find_arduino_dir('arduino_libraries_dir', ['libraries'],
