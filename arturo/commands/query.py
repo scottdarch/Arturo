@@ -1,5 +1,5 @@
-#  _____     _               
-# |  _  |___| |_ _ _ ___ ___ 
+#  _____     _
+# |  _  |___| |_ _ _ ___ ___
 # |     |  _|  _| | |  _| . |
 # |__|__|_| |_| |___|_| |___|
 # http://32bits.io/Arturo/
@@ -17,6 +17,8 @@ _ = i18n.language.ugettext
 # +---------------------------------------------------------------------------+
 # | Cmd_commands
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_commands(Command):
     '''
     List all Arturo commands.
@@ -44,6 +46,8 @@ class Cmd_commands(Command):
 # +---------------------------------------------------------------------------+
 # | Cmd_list_tools
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_list_tools(Command):
     '''
     List all known board types.
@@ -53,6 +57,7 @@ class Cmd_list_tools(Command):
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('List all known tools available in the environment.'))
 
@@ -61,7 +66,7 @@ class Cmd_list_tools(Command):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         None
-    
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -77,17 +82,21 @@ class Cmd_list_tools(Command):
                 toolchains = package.getToolChains()
                 for versions in toolchains.itervalues():
                     for toolchain in versions.itervalues():
-                        console.printInfo(_("{0} from {1}, version {2}.".format(toolchain.getName(), package.getName(), toolchain.getVersion())))
+                        console.printInfo(_("{0} from {1}, version {2}.".format(
+                            toolchain.getName(), package.getName(), toolchain.getVersion())))
                         console.shift()
                         system = toolchain.getHostToolChain()
                         if system:
                             localpath = system.getPath()
                             if localpath is None:
-                                console.printInfo(_("{0} tools are available from {1}.".format(system.getHost(), system.getUrl())))
+                                console.printInfo(
+                                    _("{0} tools are available from {1}.".format(system.getHost(), system.getUrl())))
                             else:
-                                console.printInfo(_("{0} tools are installed under {1}".format(system.getHost(), localpath)))
+                                console.printInfo(
+                                    _("{0} tools are installed under {1}".format(system.getHost(), localpath)))
                         else:
-                            console.printInfo(_("No known tools for host {0}.".format(toolchain.getCurrentHostName())))
+                            console.printInfo(
+                                _("No known tools for host {0}.".format(toolchain.getCurrentHostName())))
                         console.unshift()
                 console.unshift()
         finally:
@@ -96,6 +105,8 @@ class Cmd_list_tools(Command):
 # +---------------------------------------------------------------------------+
 # | Cmd_list_libraries
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_list_libraries(ConfiguredCommand):
     '''
     List all known libraries
@@ -103,6 +114,7 @@ class Cmd_list_libraries(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('List all known Arduino libraries available in the environment.'))
 
@@ -111,7 +123,7 @@ class Cmd_list_libraries(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         None
-    
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -145,11 +157,14 @@ class Cmd_list_libraries(ConfiguredCommand):
         for libraryVersions in librariesDict.itervalues():
             for libraryVersion in sorted(libraryVersions, distutils.version.LooseVersion, reverse=True):
                 library = libraryVersions[libraryVersion]
-                console.printInfo(_("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
-                
+                console.printInfo(
+                    _("{} -> {}".format(library.getNameAndVersion(), library.getPath())))
+
 # +---------------------------------------------------------------------------+
 # | Cmd_which_lib
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_which_lib(ConfiguredCommand):
 
     # +-----------------------------------------------------------------------+
@@ -163,10 +178,10 @@ class Cmd_which_lib(ConfiguredCommand):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         parser.add_argument("-l", "--library", required=True)
-    
+
     def onVisitArgs(self, args):
         setattr(self, "_library", args.library)
-    
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -175,17 +190,21 @@ class Cmd_which_lib(ConfiguredCommand):
         libNameAndVersion = Library.libNameAndVersion(self._library)
         libraryVersions = libraries.get(libNameAndVersion[0])
         if not libraryVersions:
-            self.getConsole().printInfo(_("No library with name {} was found.".format(libNameAndVersion[0])))
+            self.getConsole().printInfo(
+                _("No library with name {} was found.".format(libNameAndVersion[0])))
             return
         library = libraryVersions.get(libNameAndVersion[1])
         if not library:
-            self.getConsole().printInfo(_("Version {} of library {} was not available.".format(libNameAndVersion[1], libNameAndVersion[0])))
+            self.getConsole().printInfo(_("Version {} of library {} was not available.".format(
+                libNameAndVersion[1], libNameAndVersion[0])))
             return
         self.getConsole().printInfo(library.getPath())
 
 # +---------------------------------------------------------------------------+
 # | Cmd_list_boards
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_list_boards(Command):
     '''
     List all known board types.
@@ -195,6 +214,7 @@ class Cmd_list_boards(Command):
     # +-----------------------------------------------------------------------+
     # | Command
     # +-----------------------------------------------------------------------+
+
     def add_parser(self, subparsers):
         return subparsers.add_parser(self.getCommandName(), help=_('List all known board types defined in the environment.'))
 
@@ -203,7 +223,7 @@ class Cmd_list_boards(Command):
     # +-----------------------------------------------------------------------+
     def onVisitArgParser(self, parser):
         None
-    
+
     # +-----------------------------------------------------------------------+
     # | Runnable
     # +-----------------------------------------------------------------------+
@@ -223,7 +243,8 @@ class Cmd_list_boards(Command):
                     console.printInfo(_("Tools"))
                     console.shift()
                     for tools in platform.getToolChain():
-                        console.printInfo(_("{0} from {1}, version {2}.".format(tools.getName(), tools.getPackage().getName(), tools.getVersion())))
+                        console.printInfo(_("{0} from {1}, version {2}.".format(
+                            tools.getName(), tools.getPackage().getName(), tools.getVersion())))
                     console.unshift()
                     console.printInfo(_("Boards"))
                     boards = platform.getBoards()
@@ -239,14 +260,18 @@ class Cmd_list_boards(Command):
 # +---------------------------------------------------------------------------+
 # | Cmd_list_platform_data
 # +---------------------------------------------------------------------------+
+
+
 class Cmd_list_platform_data(ProjectCommand):
     '''
     List all known board types.
     This command will probably go away. We are working towards a more complete
     query syntax that may be encapsulated in a single Query command.
     '''
+
     def __init__(self, environment, project, console):
-        super(Cmd_list_platform_data, self).__init__(environment, project, console)
+        super(Cmd_list_platform_data, self).__init__(
+            environment, project, console)
         self._filter = None
         self._package = None
         self._platform = None
@@ -285,20 +310,20 @@ class Cmd_list_platform_data(ProjectCommand):
             packageList = [[key] for key in packages.keys()]
             package = console.askPickOneFromList(_("Select a package"), packageList, responseList=packages.values()) \
                 if self._package is None else packages[self._package]
-            
+
             platforms = package.getPlatforms()
             platformList = [[platform] for platform in platforms.keys()]
-            
+
             platform = console.askPickOneFromList(_("Select a platform"), platformList, responseList=platforms.values()) \
                 if self._platform is None else platforms[self._platform]
-            
+
             boards = platform.getBoards()
-            
+
             boardList = [[board] for board in boards.keys()]
-            
+
             board = console.askPickOneFromList(_("Select a board"), boardList, responseList=boards.values()) \
                 if self._board is None else boards[self._board]
-            
+
             buildInfo = board.processBuildInfo()
             console.printInfo(board.getPath())
             for key, value in buildInfo.iteritems():

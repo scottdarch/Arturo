@@ -32,6 +32,10 @@ MAKE_PROJECT                    := $(DIR_BUILD)/{{templates.makeproject}}
 # +----------------------------------------------------------------------------+
 # | TARGETS
 # +----------------------------------------------------------------------------+
+
+# we are cross compiling. Any default rule will be incorrect.
+.SUFFIXES:
+
 .PHONY : all
 all:
 	# Build all the things.

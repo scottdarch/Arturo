@@ -14,7 +14,8 @@ OBJ_DIR                 := obj
 SOURCE_LIB_NAMES        := $(shell {{commands.source_libs}})
 SOURCE_LIB_INCLUDES     := $(addsuffix /{{templates.makemodule_lib}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_LIB_NAMES)))
 PROJECT_BINTYPE         := elf
-SOURCE_BIN_NAMES        := $(PROJECT_NAME).$(PROJECT_BINTYPE)
+PROJECT_HEXTYPE         := hex
+SOURCE_BIN_NAMES        := $(PROJECT_NAME)
 SOURCE_BIN_INCLUDES     := $(addsuffix /{{templates.makemodule_bin}}, $(addprefix $(DIR_BUILD)/$(TARGET_PACKAGE)/$(TARGET_PLATFORM)/$(BOARD)/, $(SOURCE_BIN_NAMES)))
 
 LIB_ARCHIVES            := $(addprefix $(DIR_BUILD_PATH)/, $(addsuffix .a, $(SOURCE_LIB_NAMES)))
