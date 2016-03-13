@@ -21,6 +21,21 @@ _ = i18n.language.ugettext
 
 class Package(object):
 
+    @classmethod
+    def exists(cls, rootPath, packageMetaData):
+        return os.path.isdir(os.path.join(rootPath, packageMetaData['name']))
+
+    @classmethod
+    def synthesize(cls, environment, rootPath, searchPath, console, packageName):
+        hardware = os.path.join(rootPath, packageName, 'hardware')
+        platforms = []
+        for platformArch in os.listdir(hardware):
+            for platformVersion in os.listdir(os.path.join(hardware, platformArch)):
+                name = packageName + '-' + platformArch + '-' + platformVersion
+                platforms.append(
+                    {'name': name, 'version': platformVersion, 'architecture': platformArch, 'url': None})
+        return Package(environment, rootPath, searchPath, console, {"name": packageName, 'platforms': platforms})
+
     def __init__(self, environment, rootPath, searchPath, console, packageMetaData):
         super(Package, self).__init__()
         self._environment = environment
@@ -31,7 +46,7 @@ class Package(object):
         # dictionary (name) of dictionary (version) of ToolChain objects.
         self._toolChainsDict = None
 
-        if not os.path.isdir(self._packagePath):
+        if not self.exists(rootPath, packageMetaData):
             raise Exception("%s was not found" % (self._packagePath))
 
         self._hardwareDir = os.path.join(

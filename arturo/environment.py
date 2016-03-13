@@ -70,14 +70,20 @@ class Configuration(object):
 
     def getPackage(self):
         if self._package is None:
+            # TODO: if package is not listed in metadata try to synthesize it
+            # from the filesystem.
             self._package = self._project.getEnvironment().getPackages()[
                 self._packageName]
         return self._package
 
     def getPlatform(self):
         if self._platform is None:
-            self._platform = self.getPackage().getPlatforms()[
-                self._platformName]
+            try:
+                self._platform = self.getPackage().getPlatforms()[
+                    self._platformName]
+            except KeyError:
+                raise RuntimeError(
+                    _("Missing platform {}!").format(self._platformName))
         return self._platform
 
     def getBoard(self):
@@ -285,9 +291,18 @@ class Environment(object):
         if self._packageIndex is None:
             self._packageIndex = dict()
             for packageName, packageMetadata in self._getPackageMetadata().iteritems():
-                self._packageIndex[packageName] = Package(
-                    self, self._packageRootPath, self._searchPath, self._console, packageMetadata)
-
+                if Package.exists(self._packageRootPath, packageMetadata):
+                    self._packageIndex[packageName] = Package(
+                        self, self._packageRootPath, self._searchPath, self._console, packageMetadata)
+                else:
+                    self._console.printDebug(
+                        "Package {} is not available on this system.".format(packageName))
+            for dirname in os.listdir(self._packageRootPath):
+                if os.path.isdir(os.path.join(self._packageRootPath, dirname)) and dirname not in self._packageIndex.keys():
+                    self._console.printDebug(
+                        "Package {} was found on the system but was not listed in metadata".format(dirname))
+                    self._packageIndex[dirname] = Package.synthesize(self,
+                                                                     self._packageRootPath, self._searchPath, self._console, dirname)
         return self._packageIndex
 
     def getPreferences(self):

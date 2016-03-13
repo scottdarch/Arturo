@@ -212,6 +212,7 @@ class SearchPath(object):
     ARDUINO15_TOOLS_PATH = "tools"
     ARDUINO15_HARDWARE_PATH = "hardware"
     ARDUINO15_PATH = [os.path.expanduser("~/Library/Arduino15"),
+                      os.path.expanduser("~/.arduino15"),
                       os.path.expanduser("~/Documents/Arduino"),
                       os.path.expanduser("~/Arduino"),
                       os.path.expanduser(

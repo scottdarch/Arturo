@@ -5,17 +5,17 @@
 # http://32bits.io/Arturo/
 #
 from __builtin__ import classmethod
+import glob
 import os
 import re
 
-from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, parsers, \
+from arturo import SearchPathAgent, SearchPath, Arduino15PackageSearchPathAgent, parsers,\
     ConfigurationHeaderAggregator, ConfigurationSourceAggregator
+
 
 # +---------------------------------------------------------------------------+
 # | LibrarySearchAggregator
 # +---------------------------------------------------------------------------+
-
-
 class LibrarySearchAggregator(Arduino15PackageSearchPathAgent):
 
     def __init__(self, console):
@@ -73,22 +73,36 @@ class Library(object):
     def fromDir(cls, environment, fqLibraryDir, console, platform):
 
         libraryName = os.path.basename(fqLibraryDir)
+        librarySourcePath = None
         for sourceFolder in SearchPath.ARTURO2_PROJECT_SOURCE_FOLDERS:
+            sourceFolderPath = os.path.join(fqLibraryDir, sourceFolder)
             for headerExt in SearchPath.ARTURO2_HEADER_FILEEXT:
-                libraryHeader = os.path.abspath(
-                    os.path.join(fqLibraryDir, sourceFolder, "{}.{}".format(libraryName, headerExt)))
-                if os.path.isfile(libraryHeader):
-                    propertiesFilePath = os.path.join(
-                        fqLibraryDir, Library.PROPERTIES_FILE)
-                    if os.path.isfile(propertiesFilePath):
-                        libraryVersion = parsers.ArduinoKeyValueParser.parse(
-                            propertiesFilePath, dict(), console=console)['version']
-                    else:
-                        libraryVersion = None
-                    return Library(libraryName, environment, console, libraryVersion, os.path.dirname(libraryHeader), libraryPlatform=platform)
+                try:
+                    glob.iglob(
+                        os.path.join(sourceFolderPath, '*.' + headerExt)).next()
+                    # at least one header was found
+                    librarySourcePath = os.path.abspath(sourceFolderPath)
+                    break
+                except StopIteration:
+                    # no headers were found
+                    pass
+                if librarySourcePath is not None:
+                    break
+            if librarySourcePath is not None:
+                break
 
-        raise ValueError(
-            _("{0} is not a well formed library.".format(fqLibraryDir)))
+        if librarySourcePath is None:
+            raise ValueError(
+                _("{0} is not a well formed library.".format(fqLibraryDir)))
+        else:
+            propertiesFilePath = os.path.join(
+                fqLibraryDir, Library.PROPERTIES_FILE)
+            if os.path.isfile(propertiesFilePath):
+                libraryVersion = parsers.ArduinoKeyValueParser.parse(
+                    propertiesFilePath, dict(), console=console)['version']
+            else:
+                libraryVersion = None
+            return Library(libraryName, environment, console, libraryVersion, librarySourcePath, libraryPlatform=platform)
 
     def __init__(self, libraryName, environment, console, libraryVersion=None, libraryPath=None, libraryPlatform=None):
         super(Library, self).__init__()

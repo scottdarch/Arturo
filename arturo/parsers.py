@@ -211,7 +211,7 @@ class InferLibraryDependenciesFromSourceParser(object):
                         lineMatch = self._headerPattern.search(line)
                         if lineMatch:
                             console.printVerbose(
-                                "Ignoring commented out include " + lineMatch.get(1))
+                                "Ignoring commented out include " + lineMatch.group(1))
                 else:
                     lineMatch = self._headerPattern.search(line)
                     if lineMatch:
