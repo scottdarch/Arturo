@@ -74,7 +74,9 @@ class Environment(dict):
     arduino_user_dir_guesses = [
         'libraries',
         os.path.expanduser("~/Documents/Arduino"),
-        os.path.expanduser("~/Arduino")
+        os.path.expanduser("~/Arduino"),
+        os.path.expanduser("~/.arduino15"),
+        os.path.expanduser("~/.arduino")
     ]
 
     platformSystem = platform.system()
@@ -167,8 +169,8 @@ class Environment(dict):
         places = map(os.path.expanduser, places)
 
         glob_places = itertools.chain.from_iterable(glob(p) for p in places)
-        
-        print 'Searching for', human_name, '...',
+
+        print 'Searching for', human_name, ' in ', places
         results = []
         for p in glob_places:
             for i in items:
@@ -215,7 +217,8 @@ class Environment(dict):
         return self.find_dir(key, items, self.arduino_user_places(dirname_parts), human_name, multi=multi, optional=optional)
 
     def find_arduino_file(self, key, dirname_parts, items=None, human_name=None, multi=False):
-        return self.find_file(key, items, self.arduino_dist_places(dirname_parts), human_name, multi=multi)
+        places = self.arduino_user_places(dirname_parts) + (self.arduino_dist_places(dirname_parts))
+        return self.find_file(key, items, places, human_name, multi=multi)
 
     def find_arduino_tool(self, key, dirname_parts, items=None, human_name=None, multi=False):
         # if not bundled with Arduino Software the tool should be searched on PATH
@@ -251,7 +254,7 @@ class Environment(dict):
         # - hardware/arduino/{chipset}/boards.txt (Arduino 1.5.x, chipset like `avr`, `sam`)
         # - hardware/{platform}/boards.txt (MPIDE 0.xx, platform like `arduino`, `pic32`)
         # we should find and merge them all
-        boards_txts = self.find_arduino_file('boards.txt', ['hardware', '**'], 
+        boards_txts = self.find_arduino_file('boards.txt', ['**', 'hardware', '**'],
                                              human_name='Board description file (boards.txt)',
                                              multi=True)
 
@@ -298,21 +301,21 @@ class Environment(dict):
 
     def board_model(self, key):
         return self.board_models()[key]
-    
+
     def add_board_model_arg(self, parser):
         helpText = '\n'.join([
             "Arduino board model (default: %(default)s)",
-            "For a full list of supported models run:", 
+            "For a full list of supported models run:",
             "`ano list-models'"
         ])
 
-        parser.add_argument('-m', '--board-model', metavar='MODEL', 
+        parser.add_argument('-m', '--board-model', metavar='MODEL',
                             default=self.default_board_model, help=helpText)
 
         parser.add_argument('-s', '--source-dir', metavar='SOURCE',
                     default='src',
                     help='The name of the directory which contains '
-                    'the project source/sketches. By default this is ' 
+                    'the project source/sketches. By default this is '
                     'a folder named src.')
 
         parser.add_argument('--cpu', metavar='CPU',
@@ -320,7 +323,7 @@ class Environment(dict):
 Additional CPU argument required for board models available with different CPUs (e.g. Arduino Pro).''')
 
     def add_arduino_dist_arg(self, parser):
-        parser.add_argument('-d', '--arduino-dist', metavar='PATH', 
+        parser.add_argument('-d', '--arduino-dist', metavar='PATH',
                             help='Path to Arduino distribution, e.g. ~/Downloads/arduino-0022.\nTry to guess if not specified')
 
     def serial_port_patterns(self):
