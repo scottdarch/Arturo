@@ -32,6 +32,8 @@ class Upload(Command):
         super(Upload, self).setup_arg_parser(parser)
         parser.add_argument('-p', '--serial-port', metavar='PORT',
                             help='Serial port to upload firmware to\nTry to guess if not specified')
+        parser.add_argument('-q', '--quiet', default=False, action='store_true',
+                            help='Quell progress output')
 
         self.e.add_board_model_arg(parser)
         self.e.add_arduino_dist_arg(parser)
@@ -137,5 +139,6 @@ class Upload(Command):
             '-c', protocol,
             '-b', BoardModels.getValueForVariant(board, boardVariant, 'upload', 'speed'),
             '-D',
+            '-qq' if args.quiet else '',
             '-U', 'flash:w:%s:i' % self.e['hex_path'],
         ])
