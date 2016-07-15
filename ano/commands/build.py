@@ -252,8 +252,8 @@ class Build(Command):
     def recursive_inc_lib_flags(self, libdirs):
         flags = SpaceList()
         for d in libdirs:
-            flags.append('-I' + d)
-            flags.extend('-I' + subd for subd in list_subdirs(d, recursive=True, exclude=['examples', 'extras']))
+            flags.append('-I' + "\"" + d + "\"")
+            flags.extend('-I' + "\"" + subd + "\"" for subd in list_subdirs(d, recursive=True, exclude=['examples', 'extras']))
         return flags
 
     def _scan_dependencies(self, dirName, lib_dirs, inc_flags):
